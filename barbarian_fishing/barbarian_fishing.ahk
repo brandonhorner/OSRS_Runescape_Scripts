@@ -1,14 +1,30 @@
-;REQUIREMENTS:
-; Runelite client
-; Change your name in the window names in the code below.
-; This was made on a 1920 x 1080 screen size (In Windows) so use the same resolution for now.
-; You should have your inventory set up the same as 3_tick_setup.bmp provided if using 3 tick. 
-;        Otherwise just keep an empty slot in bottom right corner of your bag.
-; You should have fishing icons on. (Fishing in Runelite)
-; Zoom all the way out and face north.
-; optional: Go to the Camera option in Runelite and enable 'Vertical camera'.
-; requires an empty slot in the bottom right of bag
+;Created by Brandon Horner aKa BinaryBilly
+;   testing as of 11/29/2020
+;   
+;REQUIREMENTS CHECKLIST:
+;
+; 0. Must be using RuneLite client.
+;
+; 1. Change your name in the window names in the code below.
+global runescape_window := "RuneLite - BinaryBilly"
+;                                          ^replace this with your character's name
 
+; 2. This was made on a 1920 x 1080 screen. Use the same resolution for now.
+;
+; 3. You should have fishing icons on. 
+;   (Click wrench at top right of RuneLite. Go to 'Fishing' app settings)
+;
+; 4. Zoom all the way out so you can see all of the spawns and face north (click compass).  
+;
+; 5. Go to the top spawns (only one I tested).
+;
+; 6. Keep an empty slot in the bottom right of bag (the very corner) 
+;
+; 7. obviously you should have barbarian fishing harpoon and some bait (feathers probably).
+;
+; Optional: Go to the 'Camera' app in RuneLite and enable 'Vertical camera'.
+;           Go to 'Entities' app and turn off entities. (I have seen a fishing pole cover the spawn image before).
+; 
 
 #SingleInstance
 
@@ -44,15 +60,15 @@ global MENU_WIDTH = 140
 global MAX_INT = 92233
 global NUM_TRIES = 3
 
-global fishing_spot := "images\fishing_spot.bmp"
 global fishing_text := "images\fishing_text.bmp"
 global fishing := "images\fishing.bmp"
 global herb := "images\herb.bmp"
 global swamp_tar := "images\swamp_tar.bmp"
 global salmon := "images\salmon.bmp"
 global trout := "images\trout.bmp"
+global sturgeon := "images\sturgeon.bmp"
 global bag_is_open := "images\bag_is_open.bmp"
-global runescape_window := "RuneLite - BinaryBilly"
+
 
 ^`::
 {
@@ -62,19 +78,19 @@ global runescape_window := "RuneLite - BinaryBilly"
         count := 0
         while (is_fishing())
         {
-            ToolTip, we be fishing, 500, 500, 1
+            ToolTip, we be fishin', 500, 500, 1
             sleep_random(3000, 7000)
             count++
             value := Mod(count, 20)
             if( value = 0 )
             {
-                click_closest(fishing_spot)
+                click_closest(sturgeon)
                 ToolTip, 20th iteration of loop, 500, 500, 1
             }
         }
         ToolTip, we aint fishing -- checking if bag is full, 500, 500, 1
         ;if not fishing, check last bag slot
-        if (bag_is_full(trout) or bag_is_full(salmon))
+        if (bag_is_full(trout) or bag_is_full(salmon) or bag_is_full(sturgeon))
         {
             ToolTip, bag was full! dropping fish!, 500, 500, 1
             drop_fish()
@@ -82,7 +98,7 @@ global runescape_window := "RuneLite - BinaryBilly"
         ;back to scan for lobsters to catch
     SearchSpots:
         ToolTip, clicking new fishing spot, 500, 500, 1
-        click_closest(fishing_spot)
+        click_closest(sturgeon)
         sleep_random(4000, 5500)
 
         Goto, CheckFishing
@@ -126,6 +142,7 @@ drop_fish()
                 Send, {Shift Down}
                 image_search_and_click(trout, "new_area", "left", "item", current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
                 image_search_and_click(salmon, "new_area", "left", "item", current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
+                image_search_and_click(sturgeon, "new_area", "left", "item", current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
                 current_bag_slot_x1 += 40
                 current_bag_slot_x2 += 40
             }
