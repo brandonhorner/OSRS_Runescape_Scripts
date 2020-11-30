@@ -44,21 +44,19 @@ global MENU_WIDTH = 140
 global MAX_INT = 92233
 global NUM_TRIES = 3
 
-
-global pink_tile := 0xFF00FF
-
-global fishing_spot := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\barbarian_fishing\fishing_spot.bmp"
-global fishing_text := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\fishing_text.bmp"
-global fishing := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\fishing.bmp"
-global herb := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\barbarian_fishing\herb.bmp"
-global swamp_tar := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\barbarian_fishing\swamp_tar.bmp"
-global salmon := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\barbarian_fishing\salmon.bmp"
-global trout := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\barbarian_fishing\trout.bmp"
-global bag_is_open := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\bag_is_open.bmp"
+global fishing_spot := "images\fishing_spot.bmp"
+global fishing_text := "images\fishing_text.bmp"
+global fishing := "images\fishing.bmp"
+global herb := "images\herb.bmp"
+global swamp_tar := "images\swamp_tar.bmp"
+global salmon := "images\salmon.bmp"
+global trout := "images\trout.bmp"
+global bag_is_open := "images\bag_is_open.bmp"
+global runescape_window := "RuneLite - BinaryBilly"
 
 ^`::
 {
-    IfWinActive, RuneLite - BinaryBilly
+    IfWinActive, %runescape_window%
     {
     CheckFishing:
         count := 0
@@ -92,9 +90,8 @@ global bag_is_open := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\bag_
 return
 }
 
-
 ^r::
-    
+    drop_fish()
 return
 
 +`::Reload
@@ -109,7 +106,7 @@ drop_fish()
     offset_because_menu = 240
     current_bag_slot_x1 = 1684
     current_bag_slot_y1 = 750
-    current_bag_slot_x2 = 1720
+    current_bag_slot_x2 = 1724
     current_bag_slot_y2 = 785
     if (menu_is_open())
     {
@@ -124,14 +121,11 @@ drop_fish()
         column = 0
         Loop, %bag_columns% ;loop over 4 columns of bag
         {
-            IfWinActive, RuneLite - BinaryBilly
+            IfWinActive, %runescape_window%
             {
                 Send, {Shift Down}
-                if(image_search_and_click(trout, "new_area", "left", "item", current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2) = false and image_search_and_click(salmon, "new_area", "left", "item", current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2) = false)
-                    ;Tooltip, NOT FOUND: %row%x%column% @ %current_bag_slot_x1%x%current_bag_slot_y1% and %current_bag_slot_x2%x%current_bag_slot_y2%, 0, 300, 2
-                ;else
-                    ;Tooltip, FOUND: %row%x%column% @ %current_bag_slot_x1%x%current_bag_slot_y1% and %current_bag_slot_x2%x%current_bag_slot_y2%, 0, 500, 3
-
+                image_search_and_click(trout, "new_area", "left", "item", current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
+                image_search_and_click(salmon, "new_area", "left", "item", current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
                 current_bag_slot_x1 += 40
                 current_bag_slot_x2 += 40
             }
@@ -149,7 +143,7 @@ drop_fish()
 
 is_fishing()
 {
-    IfWinActive, RuneLite - BinaryBilly
+    IfWinActive, %runescape_window%
     {
         if (image_search_and_click(fishing, "top_left"))
             return true
@@ -190,18 +184,13 @@ click_closest(image_url)
 {
     ;how many pixels to expand the search area each iteration
     expansion_integer = 40
-    
+    menu_offset = 140
     ;center of screen, only character is enclosed
     x1 = 925
     y1 = 515
     x2 = 950
     y2 = 540
     
-    if(menu_is_open())
-    {
-        x1 -= %menu_width%
-        x2 -= %menu_width%
-    }
     count = 0
     while (x2 < A_ScreenWidth and y2 < A_ScreenHeight)
     {
@@ -270,7 +259,7 @@ image_search_and_click(image_url, scan_area:=0, click_type:=0, offset:=0, x1:=0,
     }
     
 RetryImageSearch:
-    IfWinActive, RuneLite - BinaryBilly
+    IfWinActive, %runescape_window%
     {
         ; delays should be randomized often
         set_random_delays()
@@ -357,7 +346,7 @@ menu_is_open()
     runelite_menu_test_pixel_y := 25
     runelite_menu_color := 0x282828
     
-    IfWinActive, RuneLite - BinaryBilly
+    IfWinActive, %runescape_window%
     {
         PixelGetColor, color, %runelite_menu_test_pixel_x%, %runelite_menu_test_pixel_y%
         if (color = runelite_menu_color)  ;runelite window is open
@@ -365,37 +354,9 @@ menu_is_open()
         else
             return false
     }
+    return false
 }
 
-;UNUSED -- TODO: Delete this
-exists(image_url, screen_area:=0)
-{ 
-    switch screen_area
-    {
-        case "top_left":
-        {
-            if (image_search_and_click(image_url, "top_left"))
-                return true
-        }
-        case "chat":
-        {
-            if (image_search_and_click(image_url, "chat"))
-                return true
-        }
-        case "bag":
-        {
-            if (image_search_and_click(image_url, "bag"))
-                return true
-        }   
-        default:
-        {
-            if (image_search_and_click(image_url, "middle"))
-                return true
-        }
-    }
-    
-    return false
-}  
 ; ---------------------- Utilities --------------------------------------------
 set_random_delays()
 {   

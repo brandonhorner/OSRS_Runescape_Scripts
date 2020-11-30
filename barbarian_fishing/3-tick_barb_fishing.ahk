@@ -1,3 +1,4 @@
+;THIS SCRIPT DOES NOT CURRENTLY WORK
 ;REQUIRED:
 ; Runelite client
 ; Change your name in the window names in the code below.

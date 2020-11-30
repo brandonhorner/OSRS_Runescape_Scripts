@@ -43,19 +43,19 @@ global num_of_tries = 5
 
 global enemy_color := 0xA4FF00
 
-global attack := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\blackjacking\attack_top_left.bmp"
-global failed_pickpocket := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\blackjacking\failed_pickpocket.bmp"
-global glancing_blow := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\blackjacking\glancing_blow.bmp"
-global knockout_option := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\blackjacking\knockout_option.bmp"
-global pickpocket_option := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\blackjacking\pickpocket_option.bmp"
-global cooked_lobster := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\blackjacking\cooked_lobster.bmp"
-global open_bag := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\open_bag.bmp"
-global unconscious := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\blackjacking\unconscious.bmp"
-global cannot_knockout := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\blackjacking\cannot_do_that.bmp"
-global healthbar := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\blackjacking\healthbar.bmp"
-global stunned := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\blackjacking\stunned.bmp"
-global missed_right_click := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\blackjacking\missed_right_click.bmp"
-global combat := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\blackjacking\combat.bmp"
+global attack := "images\attack_top_left.bmp"
+global failed_pickpocket := "images\failed_pickpocket.bmp"
+global glancing_blow := "images\glancing_blow.bmp"
+global knockout_option := "images\knockout_option.bmp"
+global pickpocket_option := "images\pickpocket_option.bmp"
+global cooked_lobster := "images\cooked_lobster.bmp"
+global open_bag := "images\open_bag.bmp"
+global unconscious := "images\unconscious.bmp"
+global cannot_knockout := "images\cannot_do_that.bmp"
+global healthbar := "images\healthbar.bmp"
+global stunned := "images\stunned.bmp"
+global missed_right_click := "images\missed_right_click.bmp"
+global combat := "images\combat.bmp"
 
 ^`::    
 Start:
