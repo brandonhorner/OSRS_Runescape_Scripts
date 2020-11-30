@@ -6,21 +6,21 @@
 ; 0. Must be using RuneLite client.
 ;
 ; 1. Change your name in the window names in the code below.
-global runescape_window := "RuneLite - BinaryBilly"
-;                                          ^replace this with your character's name
+global runelite_window := "RuneLite - BinaryBilly"
+;                                      ^  ^  ^ replace this with your character's name
 
 ; 2. This was made on a 1920 x 1080 screen. Use the same resolution for now.
 ;
-; 3. You should have fishing icons on. 
-;   (Click wrench at top right of RuneLite. Go to 'Fishing' app settings)
+; 3. You should have fishing icons on.
+;   - Click wrench at top right of RuneLite. Go to 'Fishing' app settings.
 ;
 ; 4. Zoom all the way out so you can see all of the spawns and face north (click compass).  
 ;
 ; 5. Go to the top spawns (only one I tested).
 ;
-; 6. Keep an empty slot in the bottom right of bag (the very corner) 
+; 6. Keep an empty slot in the bottom right of bag (the very corner slot). 
 ;
-; 7. obviously you should have barbarian fishing harpoon and some bait (feathers probably).
+; 7. You should have a barbarian fishing harpoon and some bait (10k feathers will easily last overnight).
 ;
 ; Optional: Go to the 'Camera' app in RuneLite and enable 'Vertical camera'.
 ;           Go to 'Entities' app and turn off entities. (I have seen a fishing pole cover the spawn image before).
@@ -32,72 +32,42 @@ CoordMode, Pixel, Screen    ; Starts pixel search at top left of ACTUAL SCREEN, 
 CoordMode, Mouse, Screen
 
 
-; ATTENTION all recorded coordinates should assume there is no menu, image_search_and_click will adjust for the runelite menu being up
-global bag_x1 = 1640
-global bag_y1 = 700
-global bag_x2 = 1855
-global bag_y2 = 1000
+;TODO: finish support for menu being open..
 
-global last_bagslot_x1 = 1805
-global last_bagslot_y1 = 965
-
-global chat_x1 = 0
-global chat_y1 = 975
-global chat_x2 = 515
-global chat_y2 = 1015
-
-global top_left_x1 = 0
-global top_left_y1 = 22
-global top_left_x2 = 190
-global top_left_y2 = 75
-
-global middle_x1 = 0
-global middle_y1 = 200
-global middle_x2 = 1650
-global middle_y2 = 970
-
-global MENU_WIDTH = 140
-global MAX_INT = 92233
-global NUM_TRIES = 3
-
-global fishing_text := "images\fishing_text.bmp"
-global fishing := "images\fishing.bmp"
-global herb := "images\herb.bmp"
-global swamp_tar := "images\swamp_tar.bmp"
 global salmon := "images\salmon.bmp"
 global trout := "images\trout.bmp"
 global sturgeon := "images\sturgeon.bmp"
-global bag_is_open := "images\bag_is_open.bmp"
 
 
 ^`::
 {
-    IfWinActive, %runescape_window%
+    main_tooltip_x1 = 700
+    main_tooltip_y1 = 500
+    IfWinActive, %runelite_window%
     {
     CheckFishing:
         count := 0
         while (is_fishing())
         {
-            ToolTip, we be fishin', 500, 500, 1
-            sleep_random(3000, 7000)
+            ToolTip, We be fishin'..., %main_tooltip_x1%, %main_tooltip_y1%, 1
+            sleep_random(3000, 60000)
             count++
             value := Mod(count, 20)
             if( value = 0 )
             {
                 click_closest(sturgeon)
-                ToolTip, 20th iteration of loop, 500, 500, 1
+                ToolTip, #%count% iteration of loop, 0, 0, 2
             }
         }
-        ToolTip, we aint fishing -- checking if bag is full, 500, 500, 1
-        ;if not fishing, check last bag slot
+        ToolTip, We aren't fishing. `rChecking if bag is full..., %main_tooltip_x1%, %main_tooltip_y1%, 1
+        ;if not fishing, check last bag slot to see if full
         if (bag_is_full(trout) or bag_is_full(salmon) or bag_is_full(sturgeon))
         {
-            ToolTip, bag was full! dropping fish!, 500, 500, 1
+            ToolTip, Bag was full...`r...Dropping fish, %main_tooltip_x1%, %main_tooltip_y1%, 1
             drop_fish()
         }
-        ;back to scan for lobsters to catch
-    SearchSpots:
-        ToolTip, clicking new fishing spot, 500, 500, 1
+        ;scan for fish to catch
+        ToolTip, Clicking new fishing spot..., %main_tooltip_x1%, %main_tooltip_y1%, 1
         click_closest(sturgeon)
         sleep_random(4000, 5500)
 
@@ -106,10 +76,6 @@ global bag_is_open := "images\bag_is_open.bmp"
 return
 }
 
-^r::
-    drop_fish()
-return
-
 +`::Reload
 
 ^F3::ExitApp
@@ -117,52 +83,57 @@ return
 
 drop_fish()
 {
-    bag_rows = 7
-    bag_columns = 4
-    offset_because_menu = 240
-    current_bag_slot_x1 = 1684
-    current_bag_slot_y1 = 750
-    current_bag_slot_x2 = 1724
-    current_bag_slot_y2 = 785
-    if (menu_is_open())
+    IfWinActive, %runelite_window%
     {
-        Tooltip, menu was open, 0,300
-        current_bag_slot_x1 -= %offset_because_menu%
-        current_bag_slot_x2 -= %offset_because_menu%
-    }
-
-    row = 0
-    Loop, %bag_rows%     ;loop over 7 rows of bag
-    {
-        column = 0
-        Loop, %bag_columns% ;loop over 4 columns of bag
+        bag_rows = 7
+        bag_columns = 4
+        offset_because_menu = 240
+        current_bag_slot_x1 = 1684
+        current_bag_slot_y1 = 750
+        current_bag_slot_x2 = 1724
+        current_bag_slot_y2 = 785
+        
+        if (menu_is_open())
         {
-            IfWinActive, %runescape_window%
-            {
-                Send, {Shift Down}
-                image_search_and_click(trout, "new_area", "left", "item", current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
-                image_search_and_click(salmon, "new_area", "left", "item", current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
-                image_search_and_click(sturgeon, "new_area", "left", "item", current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
-                current_bag_slot_x1 += 40
-                current_bag_slot_x2 += 40
-            }
-            column ++
+            current_bag_slot_x1 -= %offset_because_menu%
+            current_bag_slot_x2 -= %offset_because_menu%
         }
-        current_bag_slot_x1 -= 160
-        current_bag_slot_x2 -= 160
-        current_bag_slot_y1 += 35
-        current_bag_slot_y2 += 35
-        row ++
+
+        row = 0
+        Loop, %bag_rows%     ;loop over 7 rows of bag slots
+        {
+            column = 0
+            Loop, %bag_columns% ;loop over 4 columns of bag slots
+            {
+                IfWinActive, %runelite_window%
+                {
+                    Send, {Shift Down}
+                    image_search_and_click(trout,, "left", "item", current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
+                    image_search_and_click(salmon,, "left", "item", current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
+                    image_search_and_click(sturgeon,, "left", "item", current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
+                    current_bag_slot_x1 += 40
+                    current_bag_slot_x2 += 40
+                }
+                column ++
+            }
+            current_bag_slot_x1 -= 160
+            current_bag_slot_x2 -= 160
+            current_bag_slot_y1 += 35
+            current_bag_slot_y2 += 35
+            row ++
+        }
     }
     Send {Shift Up}
+    
     return true
 }
 
 is_fishing()
 {
-    IfWinActive, %runescape_window%
+    is_fishing := "images\is_fishing.bmp"
+    IfWinActive, %runelite_window%
     {
-        if (image_search_and_click(fishing, "top_left"))
+        if (image_search_and_click(is_fishing, "top_left"))
             return true
     }
     return false
@@ -170,17 +141,25 @@ is_fishing()
 
 bag_is_full(item)
 {
-    if (bag_is_open() = false)
+    IfWinActive, %runelite_window%
     {
-        ;open the bag
-        SendInput, {F3}
-    }
-    sleep_random(200, 600)
+        last_bagslot_x1 = 1805
+        last_bagslot_y1 = 965
+        bag_x2 = 1855
+        bag_y2 = 1000
         
-    if(image_search_and_click(item, "new_area", "none", "item", last_bagslot_x1, last_bagslot_y1, bag_x2, bag_y2))
-    {
-        ;TrayTip,, %last_bagslot_x1%x%last_bagslot_y1% | %bag_x2%x%bag_y2% | %item%
-        return true
+        if (bag_is_open() = false)
+        {
+            ;open the bag
+            SendInput, {F3}
+        }
+        sleep_random(200, 600)
+
+        if(image_search_and_click(item, "new_area", "none", "item", last_bagslot_x1, last_bagslot_y1, bag_x2, bag_y2))
+        {
+            ;TrayTip,, %last_bagslot_x1%x%last_bagslot_y1% | %bag_x2%x%bag_y2% | %item%
+            return true
+        }
     }
     return false
     
@@ -188,9 +167,10 @@ bag_is_full(item)
 
 bag_is_open()
 {
-    IfWinActive, Runelite - BinaryBilly
+    bag_is_open := "images\open_bag.bmp"
+    IfWinActive, %runelite_window%
     {
-        image_search_and_click(bag_is_open, top_of_bag_x1, top_of_bag_y1, top_of_bag_x2, top_of_bag_y2, bag_is_open)
+        image_search_and_click(bag_is_open, "bag")
         return true
     }
     return false
@@ -199,32 +179,35 @@ bag_is_open()
 ;searches in a square area around the player and expands the search area until an image is found or we are off screen.
 click_closest(image_url)
 {
-    ;how many pixels to expand the search area each iteration
-    expansion_integer = 40
-    menu_offset = 140
-    ;center of screen, only character is enclosed
-    x1 = 925
-    y1 = 515
-    x2 = 950
-    y2 = 540
-    
-    count = 0
-    while (x2 < A_ScreenWidth and y2 < A_ScreenHeight)
+    IfWinActive, %runelite_window%
     {
+        ;how many pixels to expand the search area each iteration
+        expansion_integer = 40
+        menu_offset = 140
+        ;center of screen, only character is enclosed
+        x1 = 925
+        y1 = 515
+        x2 = 950
+        y2 = 540
         
-        count++
+        count = 0
+        while (x2 < A_ScreenWidth and y2 < A_ScreenHeight)
+        {
+            
+            count++
 
-        ;TrayTip,, in while %count%: `r%x1%x%y1%'r       %x2%x%y2% `rIMAGE:%image_url%
-        if (image_search_and_click(image_url, "new_area", "left", "item", x1, y1, x2, y2))
-        {
-            return true
-        }
-        else    ;grow search area
-        {
-            x1 -= %expansion_integer%
-            y1 -= %expansion_integer%
-            x2 += %expansion_integer%
-            y2 += %expansion_integer%
+            ;TrayTip,, in while %count%: `r%x1%x%y1%'r       %x2%x%y2% `rIMAGE:%image_url%
+            if (image_search_and_click(image_url, "new_area", "left", "item", x1, y1, x2, y2))
+            {
+                return true
+            }
+            else    ;grow search area
+            {
+                x1 -= %expansion_integer%
+                y1 -= %expansion_integer%
+                x2 += %expansion_integer%
+                y2 += %expansion_integer%
+            }
         }
     }
     ;TrayTip,, returning false (click_closest())
@@ -237,46 +220,47 @@ click_closest(image_url)
 ;Search for an image and click on it. If screen area is omitted, then coordinates must be provided. Offset should
 ;   be "option" if you are clicking on a 'right-click option', "item" if you are clicking around an item image.
 ;   If click_type = "right", right click, "left" = left click, "mouseover" will move the mouse but doesn't click,
-;   "in-place" to click in place.
+;   "in-place" to click in place. Function will search 
 image_search_and_click(image_url, scan_area:=0, click_type:=0, offset:=0, x1:=0, y1:=0, x2:=0, y2:=0)
 {
-    abort_counter = %NUM_TRIES%
+    menu_width = 140
+    search_counter = 3
     shade_variation = 0
 
     switch scan_area
     {
         case "top_left":
-            x1 = %top_left_x1%
-            y1 = %top_left_y1%
-            x2 = %top_left_x2%
-            y2 = %top_left_y2%
-
-        case "chat":
-            x1 = %chat_x1%
-            y1 = %chat_y1%
-            x2 = %chat_x2%
-            y2 = %chat_y2%
-
+            x1 = 0
+            y1 = 22
+            x2 = 190
+            y2 = 75
+            
         case "bag":
-            x1 = %bag_x1%
-            y1 = %bag_y1%
-            x2 = %bag_x2%
-            y2 = %bag_y2%
+            x1 = 1640
+            y1 = 700
+            x2 = 1855
+            y2 = 1000
+            
+        case "chat":
+            x1 = 0
+            y1 = 975
+            x2 = `
+            y2 = 1015
 
         case "middle":
-            x1 = %middle_x1%
-            y1 = %middle_y1%
-            x2 = %middle_x2%
-            y2 = %middle_y2%
+            x1 = 0
+            y1 = 200
+            x2 = 1650
+            y2 = 970
     }
     if(menu_is_open())
     {
-        x1 -= %MENU_WIDTH%
-        x2 -= %MENU_WIDTH%
+        x1 -= %menu_width%
+        x2 -= %menu_width%
     }
     
 RetryImageSearch:
-    IfWinActive, %runescape_window%
+    IfWinActive, %runelite_window%
     {
         ; delays should be randomized often
         set_random_delays()
@@ -291,15 +275,15 @@ RetryImageSearch:
 
         else if (ErrorLevel = 1)    ;if we can't find the image
         {
-            abort_counter--
-            if (abort_counter > 0)
+            search_counter--
+            if (search_counter > 0)
             {
                 shade_variation += 40
                 Goto, RetryImageSearch
             }
             else
             {
-                ;Tooltip, Retried %NUM_TRIES% times- bot failed to find: `r%image_url%`rCoords:%x1%x%y1%  |  %x2%x%y2% `rn=%shade_variation% `rIt must be off screen or blocked., 100, 100, 1
+                ;Tooltip, Retried %search_counter% times- bot failed to find: `r%image_url%`rCoords:%x1%x%y1%  |  %x2%x%y2% `rn=%shade_variation% `rIt must be off screen or blocked., 100, 100, 1
                 return false
             }
         }
@@ -363,7 +347,7 @@ menu_is_open()
     runelite_menu_test_pixel_y := 25
     runelite_menu_color := 0x282828
     
-    IfWinActive, %runescape_window%
+    IfWinActive, %runelite_window%
     {
         PixelGetColor, color, %runelite_menu_test_pixel_x%, %runelite_menu_test_pixel_y%
         if (color = runelite_menu_color)  ;runelite window is open
