@@ -22,8 +22,6 @@ global bag_y1 = 700
 global bag_x2 = 1855
 global bag_y2 = 1000
 
-;global food_search_x1 = 
-
 global chat_x1 = 0
 global chat_y1 = 975
 global chat_x2 = 515
@@ -41,7 +39,7 @@ global middle_y2 = 970
 
 global num_of_tries = 5
 
-global enemy_color := 0xA4FF00
+global enemy_color := 0xA4FF00  ;some green color
 
 global attack := "images\attack_top_left.bmp"
 global failed_pickpocket := "images\failed_pickpocket.bmp"
@@ -56,69 +54,130 @@ global healthbar := "images\healthbar.bmp"
 global stunned := "images\stunned.bmp"
 global missed_right_click := "images\missed_right_click.bmp"
 global combat := "images\combat.bmp"
+global money_bag := "images\money_bag.bmp"
 
-^`::    
+global runelite_window := "RuneLite - BinaryBilly"
+
+
+^`::
+    tooltip_x = 600
+    tooltip_y = 550
 Start:
-IfWinActive, RuneLite - BinaryBilly
+IfWinActive, %runelite_window%
 {
     if (health_is_okay() = false)
     {
+        ToolTip, Health is not okay...!, 600, 500, 1
         if (eat_lobster())
-            sleep_random(1080,1500)
+        {
+            ToolTip, Eating lobster..., %tooltip_x%, %tooltip_y%, 2
+            click_money_bag()
+            ToolTip, eat_lobster() was true... `rGoing back to start, %tooltip_x%, 600, 3
+            Goto, Start
+        }
         else
         {
             MsgBox, Reload your inventory with lobsters!
             return
         }
     }
+    ToolTip, Health is okay!, 600, 500, 1
+Knockout:
+
+    ToolTip, Right clicking on bandit(1)..., %tooltip_x%, %tooltip_y%, 2
     right_click_bandit()
-    
+    ToolTip, Clicking knockout..., %tooltip_x%, %tooltip_y%, 2
+    click_knockout()
     if (exists("chat", stunned))
     {
         sleep_random(1900, 2300)
-    }
-    click_knockout()
-    
-    right_click_bandit()
-    
-    if (exists("chat", cannot_knockout)) 
-    {
-        sleep_random(1800, 2000)
+        ToolTip, We are stunned...`r...waiting 2 seconds., %tooltip_x%, %tooltip_y%, 2
         Goto, Start
     }
-    ;TODO: screenshot the you can't knock out in combat
-    ;if (exists("chat", combat))
+    ;if (exists("chat", cannot_knockout)) 
     ;{
-    ;    go to ladder
-    ;    sleep
-    ;    go to ladder
-    ;    sleep (
+    ;    ToolTip, Cannot knockout bandit right now...`r...waiting 2 seconds., %tooltip_x%, %tooltip_y%, 2 
+    ;    sleep_random(1800, 2000)
+    ;    ToolTip, cannot_knockout() exists `rGoing back to start, %tooltip_x%, 600, 3
+    ;    Goto, Start
     ;}
+    
+    ToolTip, Right clicking bandit (2)..., %tooltip_x%, %tooltip_y%, 2    
+    right_click_bandit()
     sleep_random(80,120)
+    ToolTip, Clicking pickpocket(1)..., %tooltip_x%, %tooltip_y%, 2
     click_pickpocket()
     
-PostKnockout:
+PostPickpocket:
     ;if we glancing blow
     if (exists("chat", glancing_blow))
     {   
-        sleep_random(800, 1000)
-        sleep_random(4000,5800)
+        ToolTip, Glancing blow...`rWaiting 4.8-6sec, %tooltip_x%, %tooltip_y%, 2
+        sleep_random(4800,6800)
     }
     else if (exists("chat", unconscious))
     {
-        sleep_random(100,150)
+        sleep_random(100,130)
         ;second pickpocket
+        ToolTip, Right clicking bandit (3)..., %tooltip_x%, %tooltip_y%, 2   
         right_click_bandit()
+        ToolTip, Clicking pickpocket (2)..., %tooltip_x%, %tooltip_y%, 2
         click_pickpocket()
     }
-
+    ToolTip, else of PostKnockout`rGoing back to start, %tooltip_x%, 600, 3
     Goto, Start
 }    
+return
+^r::
+
 return
 
 +`::Reload
 
 ^F1::ExitApp
+
+;TODO: NOT TESTED WITH MENU OPEN
+click_money_bag()
+{
+    IfWinActive, %runelite_window%
+    {
+        bag_rows = 7
+        bag_columns = 4
+        offset_because_menu = 240
+        current_bag_slot_x1 = 1684
+        current_bag_slot_y1 = 750
+        current_bag_slot_x2 = 1724
+        current_bag_slot_y2 = 785
+        
+        ;if (menu_is_open())
+        ;{
+        ;    current_bag_slot_x1 -= %offset_because_menu%
+        ;    current_bag_slot_x2 -= %offset_because_menu%
+        ;}
+
+        row = 0
+        Loop, %bag_rows%     ;loop over 7 rows of bag slots
+        {
+            column = 0
+            Loop, %bag_columns% ;loop over 4 columns of bag slots
+            {
+                IfWinActive, %runelite_window%
+                {
+                    image_search_and_click(current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2, money_bag, "left", "item")
+                    current_bag_slot_x1 += 40
+                    current_bag_slot_x2 += 40
+                }
+                column ++
+            }
+            current_bag_slot_x1 -= 160
+            current_bag_slot_x2 -= 160
+            current_bag_slot_y1 += 35
+            current_bag_slot_y2 += 35
+            row ++
+        }
+    }
+    return true
+}
 
 eat_lobster()
 {        
@@ -167,7 +226,7 @@ click_knockout()
 
 click_pickpocket()
 {    
-    counter = %num_of_tries%
+    counter = 2
     while (counter > 0)
     {
         if (!exists("middle", pickpocket_option))
@@ -185,38 +244,43 @@ click_pickpocket()
     return false
 }
 
+;searches in a square area around the player and expands the search area until an image is found or we are off screen.
 right_click_bandit()
 {
-    counter = %num_of_tries%
-    while (counter > 0)
+    IfWinActive, %runelite_window%
     {
-        Random, x, -5, 30
-        Random, y, -40, -50
-        ;mouseover bandit (in middle of screen)
-        pixel_search_and_click(middle_x1, middle_y1, middle_y2, middle_x2, enemy_color, "mouseover")
+        ;how many pixels to expand the search area each iteration
+        expansion_integer = 40
+        menu_offset = 140
+        ;center of screen, only character is enclosed
+        x1 = 925
+        y1 = 515
+        x2 = 950
+        y2 = 540
+        
+        count = 0
+        while (x2 < A_ScreenWidth and y2 < A_ScreenHeight)
+        {
+            count++
 
-        ;verify and checking for attack_top_left    
-        if (!exists("top_left", attack))    
-        {
-            sleep_random(10,20)
-        }
-        else
-        {
-            ;press right click (on the bandit)
-            Click, right
-            while(!exists("middle", pickpocket_option))
+            ;TrayTip,, in while %count%: `r%x1%x%y1%'r       %x2%x%y2% `rIMAGE:%image_url%
+            if (pixel_search_and_click(x1, y1, x2, y2, enemy_color, "right"))
             {
-                sleep_random(10,50)
-                MouseMove, %x%, %y%, 0, R
-                pixel_search_and_click(middle_x1, middle_y1, middle_y2, middle_x2, enemy_color, "right")
-                click_pickpocket()
+                return true
             }
-            return true
+            else    ;grow search area
+            {
+                x1 -= %expansion_integer%
+                y1 -= %expansion_integer%
+                x2 += %expansion_integer%
+                y2 += %expansion_integer%
+            }
         }
-        counter--
     }
+    ;TrayTip,, returning false (click_closest())
     return false
 }
+
   
 exists(image_area, image_url)
 {
@@ -264,7 +328,7 @@ image_search_and_click(x1, y1, x2, y2, image_url, modifier, offset)
     n = 0
 
 Retry:
-    IfWinActive, RuneLite - BinaryBilly
+    IfWinActive, %runelite_window%
     {
         ; delays should be randomized often
         set_random_delays()
@@ -273,7 +337,7 @@ Retry:
         ImageSearch, found_x, found_y, x1, y1, x2, y2, *%n% %image_url%
         if (ErrorLevel = 2)
         {
-            ;TrayTip,, Could not conduct the search using: %x1%x%y1% | %x2%x%y2% | %image_url%
+            ToolTip, Could not conduct the search using: %x1%x%y1% | %x2%x%y2% | %image_url%, 0, 100, 6
             return false
         }
 
@@ -288,7 +352,7 @@ Retry:
             }
             else
             {
-                ;TrayTip,, Retried 5 times- bot failed to find: `r%image_url%`rCoords:%x1%x%y1%  |  %x2%x%y2% `rn=%n% `rIt must be off screen or blocked.
+                ;ToolTip, Retried 5 times- bot failed to find: `r%image_url%`rCoords:%x1%x%y1%  |  %x2%x%y2% `rn=%n% `rIt must be off screen or blocked., 0, 100, 6
                 return false
             }
         }
@@ -298,7 +362,7 @@ Retry:
             if (offset = "option")
             {
                 ;we want to move mouse to the right 52 to 92 pixels to click more in the center of the image
-                Random, offset_horizontal, 52, 92
+                Random, offset_horizontal, 72, 98
                 ;we want to move mouse down 2 to 11 pixels to click randomly within the image
                 Random, offset_vertical, 2, 11
             }
@@ -335,7 +399,7 @@ Retry:
 ;     Otherwise left click.
 pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier)
 {
-    IfWinActive, RuneLite - BinaryBilly
+    IfWinActive, %runelite_window%
     {     
         ;delays should be randomized frequently
         set_random_delays()
@@ -352,8 +416,8 @@ pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier)
             
             ;these magic numbers are about the size of the tile to be clicked into, they might need to be adjusted
             ;  depending on how small the object inside of the tile is.
-            Random, offset_tile_x, 0, 10
-            Random, offset_tile_y, 40, 60
+            Random, offset_tile_x, 0, 5
+            Random, offset_tile_y, -10, -20 
             offset_x := found_x + offset_tile_x
             offset_y := found_y + offset_tile_y
             
@@ -378,7 +442,7 @@ pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier)
 ;check to see if bag is open
 open_bag()
 {
-    IfWinActive, RuneLite - BinaryBilly
+    IfWinActive, %runelite_window%
     {
         ImageSearch, found_x, found_y,  top_of_bag_x1, top_of_bag_y1, top_of_bag_x2, top_of_bag_y2, %open_bag%
         if (ErrorLevel = 2)
