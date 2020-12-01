@@ -52,11 +52,11 @@ global sturgeon := "images\sturgeon.bmp"
             ToolTip, We be fishin'..., %main_tooltip_x1%, %main_tooltip_y1%, 1
             sleep_random(3000, 60000)
             count++
-            value := Mod(count, 20)
+            value := Mod(count, 10)
             if( value = 0 )
             {
-                click_closest(sturgeon)
-                ToolTip, #%count% iteration of loop, 0, 0, 2
+                ToolTip, sleeping_random()
+                sleep_random(60000, 90000)
             }
         }
         ToolTip, We aren't fishing. `rChecking if bag is full..., %main_tooltip_x1%, %main_tooltip_y1%, 1

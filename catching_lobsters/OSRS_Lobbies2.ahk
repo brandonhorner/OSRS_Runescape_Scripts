@@ -74,10 +74,11 @@ global fishing_text := "images\fishing_text.bmp"
 global lobster_pot := "images\lobster_pot.bmp"
 global raw_lobster := "images\raw_lobster.bmp"
 
+global runelite_window := RuneLite - BinaryBilly
 
 ^+`::
 {
-    IfWinActive, RuneLite - BinaryBilly
+    IfWinActive, %runelite_window%
     {
     ;TODO
     ; Check where you with search_screen_portion
@@ -158,9 +159,10 @@ Numpad1::
         pixel_search_and_click_world_tile(middle_x1, middle_y1, middle_x2, middle_y2, pink_tile, 0)
 
 
+
 is_fishing()
 {
-    IfWinActive, RuneLite - BinaryBilly
+    IfWinActive, %runelite_window%
     {
         ImageSearch, found_x, found_y, %top_left_x1%, %top_left_y1%, %top_left_x2%, %top_left_y2%, *50 %fishing%
         if (ErrorLevel = 2)
@@ -205,7 +207,7 @@ bag_is_open()
 
 verify_and_click_bank()
 {
-    IfWinActive, RuneLite - BinaryBilly
+    IfWinActive, %runelite_window%
     {
         ImageSearch, found_x, found_y, %top_left_x1%, %top_left_y1%, %top_left_x2%, %top_left_y2%, *50 %bank%
         if (ErrorLevel = 2)
@@ -228,7 +230,7 @@ verify_and_click_bank()
 
 verify_and_click_lobsters()
 {
-    IfWinActive, RuneLite - BinaryBilly
+    IfWinActive, %runelite_window%
     {
         ImageSearch, found_x, found_y, %top_left_x1%, %top_left_y1%, %top_left_x2%, %top_left_y2%, *50 %fishing_text%
         if (ErrorLevel = 2)
@@ -324,7 +326,7 @@ scan_for_lobsters()
 
 menu_is_open()
 {
-    IfWinActive, RuneLite - BinaryBilly
+    IfWinActive, %runelite_window%
     {
     
         PixelGetColor, color, %runelite_menu_x%, %runelite_menu_y%
@@ -357,7 +359,7 @@ search_screen_portion(position_on_screen, image_url_or_pixel, modifier)
     Random, offset_vertical, -10, 10
     abort_counter = 3
 
-    IfWinActive, RuneLite - BinaryBilly
+    IfWinActive, %runelite_window%
     {
         ; how fast the mouse moves should be randomized
         Random, delaySpeed, 60, 110
@@ -412,7 +414,7 @@ image_search_and_click(x1, y1, x2, y2, image_url, modifier)
     Random, offset_vertical, -10, 10
     abort_counter = 3
 Retry:
-    IfWinActive, RuneLite - BinaryBilly
+    IfWinActive, %runelite_window%
     {
         ; how fast the mouse moves should be randomized
         Random, delaySpeed, 60, 110
@@ -462,7 +464,7 @@ Retry:
 ;    "mouseover" will move the mouse but doesn't click, otherwise left click.
 pixel_search_and_click_world_tile(x1, y1, x2, y2, pixel_color, modifier)
 {
-    IfWinActive, RuneLite - BinaryBilly
+    IfWinActive, %runelite_window%
     {
         
         Random, delaySpeed, 60, 110
