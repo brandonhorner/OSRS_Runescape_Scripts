@@ -250,23 +250,26 @@ right_click_bandit()
         ;how many pixels to expand the search area each iteration
         expansion_integer = 100
         menu_offset = 140
+        Random, offset_x, 200, 700
+        Random, offset_y, 200, 700
         ;center of screen, only character is enclosed
         x1 = 925
         y1 = 515
         x2 = 950
         y2 = 540
         
-        count = 0
         while (x2 < A_ScreenWidth and y2 < A_ScreenHeight)
         {
-            count++
-
-            ;TrayTip,, in while %count%: `r%x1%x%y1%'r       %x2%x%y2% `rIMAGE:%image_url%
-            if (pixel_search_and_click(x1, y1, x2, y2, enemy_color, "mouseover"))
-            {
-                if (exists("top_left", attack_top_left))
-                    Click, right
-            }
+        TryAgain:
+            ;TrayTip,, in while %count%: `r%x1%x%y1%'r%x2%x%y2% `rIMAGE:%image_url%
+            if (pixel_search_and_click(x1, y1, x2, y2, enemy_color, "right"))
+                sleep_random(100, 200)
+                if (!exists("middle", pickpocket_option))
+                {
+                    SetMouseDelay, 20
+                    MouseMove, %offset_x%, %offset_y%
+                    Goto, TryAgain
+                }
             else    ;grow search area
             {
                 x1 -= %expansion_integer%
@@ -274,6 +277,7 @@ right_click_bandit()
                 x2 += %expansion_integer%
                 y2 += %expansion_integer%
             }
+            return true
         }
     }
     return false
@@ -464,7 +468,7 @@ open_bag()
 set_random_delays()
 {   
     ;set the dalay of your mouse movement between 20ms and 40ms
-    Random, delaySpeed, 45, 47
+    Random, delaySpeed, 40, 43
     SetMouseDelay, %delaySpeed%
     
     Random, key_delay_speed, 80, 190
