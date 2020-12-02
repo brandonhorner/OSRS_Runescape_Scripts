@@ -298,11 +298,11 @@ RetrySearch:
     }
     if (image_search_and_click(x1, below_character_y1, x2, below_character_y2, raw_lobster, "mouseover"))
     {
-        if( verify_and_click_lobsters())
+        if (verify_and_click_lobsters())
             return true
         else
         {
-            if( abort_counter > 0 )
+            if (abort_counter > 0)
             {
                 abort_counter--
                 Goto, RetrySearch

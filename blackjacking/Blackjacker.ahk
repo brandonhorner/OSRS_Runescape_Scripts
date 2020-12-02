@@ -3,13 +3,11 @@
 ; This was made on a 1920 x 1080 screen size. (In Windows)
 ; You must set the bot up each time:
 ;   - your inventory depletes of lobsters.
-;   - you have too many loot bags
-;   - the bot misses a pickpocket after a glancing blow knockout
 ;   - the target disappears through a wall
-; You must have healtbar setup on inventory.
-; 
+; You must have 'Status Bars' in RuneLite on so that your health bar is shown on the left of your bag.
+; You must have 'NPC Indicators' highlight color the same as in the script (0xA4FF00).
 ;OPTIONAL:
-; Have your chat turned to "Game" Chat
+; Have your chat turned to "Game" Chat, this would help because we search for phrases in chat box.
 #SingleInstance
 
 CoordMode, Pixel, Screen    ; Starts pixel search at top left of ACTUAL SCREEN, delete if you want to search from top left of WINDOW
@@ -250,7 +248,7 @@ right_click_bandit()
     IfWinActive, %runelite_window%
     {
         ;how many pixels to expand the search area each iteration
-        expansion_integer = 40
+        expansion_integer = 100
         menu_offset = 140
         ;center of screen, only character is enclosed
         x1 = 925
@@ -264,9 +262,10 @@ right_click_bandit()
             count++
 
             ;TrayTip,, in while %count%: `r%x1%x%y1%'r       %x2%x%y2% `rIMAGE:%image_url%
-            if (pixel_search_and_click(x1, y1, x2, y2, enemy_color, "right"))
+            if (pixel_search_and_click(x1, y1, x2, y2, enemy_color, "mouseover"))
             {
-                return true
+                if (exists("top_left", attack_top_left))
+                    Click, right
             }
             else    ;grow search area
             {
@@ -277,7 +276,6 @@ right_click_bandit()
             }
         }
     }
-    ;TrayTip,, returning false (click_closest())
     return false
 }
 
