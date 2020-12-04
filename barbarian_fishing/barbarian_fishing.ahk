@@ -244,7 +244,7 @@ image_search_and_click(image_url, scan_area:=0, click_type:=0, offset:=0, x1:=0,
         case "chat":
             x1 = 0
             y1 = 975
-            x2 = `
+            x2 = 510
             y2 = 1015
 
         case "middle":
