@@ -59,7 +59,7 @@ global tooltip_x = 600
 global tooltip_y = 550
 
 
-`::
+^r::
 iteration = 0
 Start:
 iteration++
@@ -118,73 +118,10 @@ Knockout:
 }
 return
 
-^r::
-    MouseGetPos, x, y
-    search_x1 := x - 130
-    search_y1 := y
-    search_x2 := x + 120
-    search_y2 := y + 255
-    
-    image_search_and_click(search_x1, search_y1, search_x2, search_y2, pickpocket_option, "left", "option")
-return
-
-+`::Reload
++r::Reload
 
 ^F2::ExitApp
-was_glancing_blow()
-{
-    if (exists("chat", glancing_blow))
-        return true
-    return false
-}
-is_unconscious()
-{
-    if(exists("chat", unconscious))
-        return true
-    return false
-}
 
-;TODO: NOT TESTED WITH MENU OPEN
-click_money_bag()
-{
-    IfWinActive, %runelite_window%
-    {
-        ;offset_because_menu = 240
-        ;if (menu_is_open())
-        ;{
-        ;    bag_x1 -= %offset_because_menu%
-        ;    bag_x2 -= %offset_because_menu%
-        ;}
-        
-        image_search_and_click(bag_x1, bag_y1, bag_x2, bag_y2, money_bag, "left", "item")
-    }
-    return true
-}
-
-eat_lobster()
-{        
-    open_bag()
-    if (image_search_and_click(bag_x1, bag_y1, bag_x2, bag_y2, cooked_lobster, "left", "item"))
-       ;TrayTip,, returning true to eat lobster
-       return true
-    
-    ;TrayTip,, returning false to eat lobster
-    return false
-}
-
-health_is_okay()
-{
-    ImageSearch, x, y, 1400, 820, 1850, 850, %healthbar%
-    if (ErrorLevel = 2)
-    {
-        MsgBox Could not conduct the search.
-        return false
-    }
-    else if (ErrorLevel = 1)
-        return false
-    else
-        return true
-}
 
 click_knockout()
 {
@@ -270,6 +207,33 @@ right_click_bandit()
     return false
 }
 
+;TODO: NOT TESTED WITH MENU OPEN
+click_money_bag()
+{
+    IfWinActive, %runelite_window%
+    {
+        ;offset_because_menu = 240
+        ;if (menu_is_open())
+        ;{
+        ;    bag_x1 -= %offset_because_menu%
+        ;    bag_x2 -= %offset_because_menu%
+        ;}
+        
+        image_search_and_click(bag_x1, bag_y1, bag_x2, bag_y2, money_bag, "left", "item")
+    }
+    return true
+}
+
+eat_lobster()
+{        
+    open_bag()
+    if (image_search_and_click(bag_x1, bag_y1, bag_x2, bag_y2, cooked_lobster, "left", "item"))
+       ;TrayTip,, returning true to eat lobster
+       return true
+    
+    ;TrayTip,, returning false to eat lobster
+    return false
+}
 
 exists(image_area, image_url)
 {
