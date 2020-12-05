@@ -73,6 +73,7 @@ IfWinActive, %runelite_window%
         {
             ToolTip, Eating lobster..., %tooltip_x%, 500, 2
             click_money_bag()
+            sleep_random(1800, 8500)
             Goto, Start
         }
         else
@@ -89,7 +90,7 @@ Knockout:
     sleep_random(250, 255)
     click_knockout()
     right_click_bandit()
-    sleep_random(45, 50)
+    sleep_random(165, 170) ;from (45, 50)
     click_pickpocket()
     sleep_random(45, 50)
     ;3a. If the knockout resulted in a glancing blow.
@@ -103,7 +104,8 @@ Knockout:
     {   ;4b. Pickpocket twice.
         Tooltip, Is unconscious - pickpocket twice, %tooltip_x%, %tooltip_y%, 1
         right_click_bandit()
-        sleep_random(65, 70)
+;TODO TAKE THIS OUT?? from (60, 70)
+        sleep_random(0, 0) 
         click_pickpocket()
     }
     else
