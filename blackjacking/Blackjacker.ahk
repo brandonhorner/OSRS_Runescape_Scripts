@@ -91,7 +91,7 @@ Knockout:
     sleep_random(250, 255)
     click_knockout()
     right_click_bandit()
-    sleep_random(165, 170) ;from (45, 50)
+    sleep_random(205, 215)
     click_pickpocket()
     sleep_random(45, 50)
     ;3a. If the knockout resulted in a glancing blow.
