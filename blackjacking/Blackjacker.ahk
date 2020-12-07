@@ -59,7 +59,7 @@ global tooltip_x = 600
 global tooltip_y = 550
 
 
-^r::
+F1::
 iteration = 0
 Start:
 iteration++
@@ -73,7 +73,8 @@ IfWinActive, %runelite_window%
         {
             ToolTip, Eating lobster..., %tooltip_x%, 500, 2
             click_money_bag()
-            sleep_random(1800, 8500)
+;TODO: clarify why we are sleeping
+            sleep_random(1800, 8500) 
             Goto, Start
         }
         else
@@ -104,8 +105,6 @@ Knockout:
     {   ;4b. Pickpocket twice.
         Tooltip, Is unconscious - pickpocket twice, %tooltip_x%, %tooltip_y%, 1
         right_click_bandit()
-;TODO TAKE THIS OUT?? from (60, 70)
-        sleep_random(0, 0) 
         click_pickpocket()
     }
     else
@@ -118,7 +117,7 @@ Knockout:
 }
 return
 
-+r::Reload
++F1::Reload
 
 ^F2::ExitApp
 
@@ -235,6 +234,33 @@ eat_lobster()
     return false
 }
 
+health_is_okay()
+{
+    ImageSearch, x, y, 1400, 820, 1850, 850, %healthbar%
+    if (ErrorLevel = 2)
+    {
+        MsgBox Could not conduct the search.
+        return false
+    }
+    else if (ErrorLevel = 1)
+        return false
+    else
+        return true
+}
+
+was_glancing_blow()
+{
+    if (exists("chat", glancing_blow))
+        return true
+    return false
+}
+
+is_unconscious()
+{
+    if(exists("chat", unconscious))
+        return true
+    return false
+}
 exists(image_area, image_url)
 {
     ;options in the top left are good for verification before an action.  
@@ -304,7 +330,7 @@ Retry:
             }
             else
             {
-                ToolTip, Retried 5 times- bot failed to find: `r%image_url%`rCoords:%x1%x%y1%  |  %x2%x%y2% `rn=%n% `rIt must be off screen or blocked., 0, 100, 6
+                ;ToolTip, Retried 5 times- bot failed to find: `r%image_url%`rCoords:%x1%x%y1%  |  %x2%x%y2% `rn=%n% `rIt must be off screen or blocked., 0, 100, 6
                 return false
             }
         }
