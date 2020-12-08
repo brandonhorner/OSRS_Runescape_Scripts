@@ -239,7 +239,7 @@ health_is_okay()
     ImageSearch, x, y, 1400, 820, 1850, 850, %healthbar%
     if (ErrorLevel = 2)
     {
-        MsgBox Could not conduct the search.
+        ToolTip, health_is_okay() - could not conduct the search., 100, 500, 19
         return false
     }
     else if (ErrorLevel = 1)
@@ -437,7 +437,7 @@ open_bag()
     {
         ImageSearch, found_x, found_y,  top_of_bag_x1, top_of_bag_y1, top_of_bag_x2, top_of_bag_y2, %open_bag%
         if (ErrorLevel = 2)
-            MsgBox Error: In open_bag() -- Could not conduct the search.
+            ToolTip, Error: In open_bag() -- Could not conduct the search., 100, 400, 20
         else if (ErrorLevel = 1)
         {
             ; open bag was not found
