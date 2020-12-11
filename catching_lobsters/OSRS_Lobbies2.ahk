@@ -12,50 +12,50 @@ CoordMode, Mouse, Screen
 
 SetMouseDelay, 80
 ;TODO: Change all integer variables to = and take away %%
-global bag_x1 := 1385
-global bag_y1 := 700
-global last_bagslot_menu_x1 := 1565
-global last_bagslot_x1 := 1805
-global last_bagslot_y1 := 965
-global bag_x2 := 1855
-global bag_y2 := 1000
+global bag_x1 = 1385
+global bag_y1 = 700
+global last_bagslot_menu_x1 = 1565
+global last_bagslot_x1 = 1805
+global last_bagslot_y1 = 965
+global bag_x2 = 1855
+global bag_y2 = 1000
 
-global below_character_menu_x1 := 808
-global below_character_no_menu_x1 := 931
-global below_character_y1 := 550
-global below_character_menu_x2 := 839
-global below_character_no_menu_x2 := 960
-global below_character_y2 := 583
+global below_character_menu_x1 = 808
+global below_character_no_menu_x1 = 931
+global below_character_y1 = 550
+global below_character_menu_x2 = 839
+global below_character_no_menu_x2 = 960
+global below_character_y2 = 583
 
-global runelite_menu_x := 1880 
-global runelite_menu_y := 355   
+global runelite_menu_x = 1880 
+global runelite_menu_y = 355   
 
-global top_of_bag_x1 := 1400
-global top_of_bag_y1 := 700
-global top_of_bag_x2 := 1880
-global top_of_bag_y2 := 740
+global top_of_bag_x1 = 1400
+global top_of_bag_y1 = 700
+global top_of_bag_x2 = 1880
+global top_of_bag_y2 = 740
 
-global bank_inventory_x1 := 450
-global bank_inventory_y1 := 50
-global bank_inventory_x2 := 1060
-global bank_inventory_y2 := 850
+global bank_inventory_x1 = 450
+global bank_inventory_y1 = 50
+global bank_inventory_x2 = 1060
+global bank_inventory_y2 = 850
 
-global top_left_x1 := 0
-global top_left_y1 := 24
-global top_left_x2 := 190
-global top_left_y2 := 75
+global top_left_x1 = 0
+global top_left_y1 = 24
+global top_left_x2 = 190
+global top_left_y2 = 75
 
-global middle_x1 := 0
-global middle_y1 := 200
-global middle_area_no_bag_x2 := 1400
-global middle_area_no_bag_y2 := 850
-global middle_x2 := 1650
-global middle_y2 := 970
+global middle_x1 = 0
+global middle_y1 = 200
+global middle_area_no_bag_x2 = 1400
+global middle_area_no_bag_y2 = 850
+global middle_x2 = 1650
+global middle_y2 = 970
 
-global chat_x1 := 0
-global chat_y1 := 875
-global chat_x2 := 515
-global chat_y2 := 1015
+global chat_x1 = 0
+global chat_y1 = 875
+global chat_x2 = 515
+global chat_y2 = 1015
 
 global black_tile := 0x000000
 global blue_tile := 0x000FFF

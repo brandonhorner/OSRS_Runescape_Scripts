@@ -99,10 +99,8 @@ drop_fish()
             current_bag_slot_x2 -= %offset_because_menu%
         }
 
-        row = 0
         Loop, %bag_rows%     ;loop over 7 rows of bag slots
         {
-            column = 0
             Loop, %bag_columns% ;loop over 4 columns of bag slots
             {
                 IfWinActive, %runelite_window%
@@ -114,13 +112,11 @@ drop_fish()
                     current_bag_slot_x1 += 40
                     current_bag_slot_x2 += 40
                 }
-                column ++
             }
             current_bag_slot_x1 -= 160
             current_bag_slot_x2 -= 160
             current_bag_slot_y1 += 35
             current_bag_slot_y2 += 35
-            row ++
         }
     }
     Send {Shift Up}
@@ -236,7 +232,7 @@ image_search_and_click(image_url, scan_area:=0, click_type:=0, offset:=0, x1:=0,
             y2 = 75
             
         case "bag":
-            x1 = 1640
+            x1 = 1645
             y1 = 700
             x2 = 1855
             y2 = 1000

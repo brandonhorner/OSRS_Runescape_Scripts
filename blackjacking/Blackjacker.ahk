@@ -435,20 +435,18 @@ open_bag()
 {
     IfWinActive, %runelite_window%
     {
-        ImageSearch, found_x, found_y,  top_of_bag_x1, top_of_bag_y1, top_of_bag_x2, top_of_bag_y2, %open_bag%
+        ImageSearch, found_x, found_y, top_of_bag_x1, top_of_bag_y1, top_of_bag_x2, top_of_bag_y2, %open_bag%
         if (ErrorLevel = 2)
+        {
             ToolTip, Error: In open_bag() -- Could not conduct the search., 100, 400, 20
-        else if (ErrorLevel = 1)
+            return false
+        }
+        if (ErrorLevel = 1)
         {
-            ; open bag was not found
+            ; open bag was not found, open the bag with F3 by default
             SendInput, {F3} 
-            return true
         }
-        else
-        {
-            ; open bag found
-            return true
-        }
+        return true
     }
     return false
 }
