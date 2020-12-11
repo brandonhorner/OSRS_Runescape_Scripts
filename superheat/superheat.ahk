@@ -35,7 +35,7 @@ return
 superheat_ore(current_ore)
 {
     count = get_ore_count(current_ore)
-    While( count > 0 )
+    if( count > 0 )
     {
         IfWinActive, %runelite_window%
         {
@@ -53,10 +53,8 @@ superheat_ore(current_ore)
                 
                 click_ore(current_ore)
                 
-                Random, x, -250, -150
-                Random, y, -500, 50
-                MouseMove, %x%, %y%,, Relative
-                                                    if(report_messages)ToolTip, Restarting in 1-1.5 seconds, 500, 500, 1
+                mouse_move_random_offset(-250, -150, -500, 50)  ;move mouse out of inventory to avoid blocking ImageSearch
+                                                                if(report_messages)ToolTip, Restarting in .5-1 seconds, 500, 500, 1
                 sleep_random(500,1000)
                 count--
                 if ( count > 0 )
