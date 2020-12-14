@@ -20,6 +20,8 @@ global runelite_window := "RuneLite - BinaryBilly"
 ; 6. Equip a Fire Battlestaff (bot will not pick up fire runes currently).
 ;
 ; 7. In your bank, have nature runes and your pickaxe of choice in the first screen.
+;
+; 8. In the filter on your spellbook menu, turn off "Show spells you lack the runes for".
 
 ; Optional: Go to 'Entities' app and turn off entities (for more reliability).
 ; 
@@ -43,8 +45,8 @@ global current_ore := iron_ore
 global report_messages := true
 
 
-^`::
-                                                        if (report_messages) ToolTip, Setting up character, 500, 500, 1
+^Numpad1::
+                                                         if (report_messages) ToolTip, Setting up character, 500, 500, 1
     ;setup character
     setup()
 Start:
@@ -67,14 +69,14 @@ Start:
                                                          if (report_messages) ToolTip, Going to cyan, 500, 500, 1
     ;Go to cyan
     go_to_cyan()
-    num_of_ore -= 3
-                                                         if (report_messages) ToolTip, Superheating 3 ore, 500, 500, 1
+    num_of_ore -= 8
+                                                         if (report_messages) ToolTip, Superheating 8 ore, 500, 500, 1
     superheat_ore(current_ore, 3)   
                                                          if (report_messages) ToolTip, Going to green, 500, 500, 1
     ;Go to green
     go_to_green()
-    num_of_ore -= 4
-                                                         if (report_messages) ToolTip, Superheating 4 ore, 500, 500, 1
+    num_of_ore -= 8
+                                                         if (report_messages) ToolTip, Superheating 8 ore, 500, 500, 1
     superheat_ore(current_ore, 4)
                                                          if (report_messages) ToolTip, Going to pink, 500, 500, 1
     ;Go to pink
@@ -92,12 +94,12 @@ Start:
     return
 
 
-+`::Reload
+^Numpad2::Reload
 
 ^F3::ExitApp
 
 ^t::
-    mine_until_full()
+    remake_inventory()
     return
 ^r::
     ore_count := get_ore_count(current_ore)
@@ -279,8 +281,7 @@ superheat_ore(ore, count)
             click_superheat()
 
             click_ore(ore)
-            
-            mouse_move_random_offset(-250, -150, -500, 50)  ;move mouse out of inventory to avoid blocking ImageSearch
+
             count--
         }
     }
@@ -478,12 +479,14 @@ remake_inventory()
     deposit_all_items := "images\bank_deposit_all_items.bmp"
     image_search_and_click(deposit_all_items, "bank", "left", "item")
     
-    ;withdraw necessary items, you can add to this list after adding an image to the directory
     nature_runes := "images\nature_runes.bmp"
     adamant_pickaxe := "images\adamant_pickaxe.bmp"
+    rune_pickaxe := "images\rune_pickaxe.bmp"
+
+    ;withdraw necessary items, you can add to this list after adding an image to the directory
     image_search_and_click(nature_runes, "bank", "right", "item")
     click_withdraw_all()
-    image_search_and_click(adamant_pickaxe, "bank", "left", "item")
+    ;image_search_and_click(rune_pickaxe, "bank", "left", "item")
     
     close_bank := "images\exit_bank_button.bmp"
     image_search_and_click(close_bank, "bank", "left", "item")
@@ -621,8 +624,8 @@ RetryImageSearch:
                 ;"item" refers to an "item" in the "bag", also works for fishing spot indicators
                 case "item":
                     ;"item" pictures are cut so that the"middle" of the image is the starting point
-                    Random, offset_horizontal, -4, 4
-                    Random, offset_vertical, -4, 4
+                    Random, offset_horizontal, -2, 2
+                    Random, offset_vertical, -2, 2
 
                 ;default is no offset, can be used when searching but not clicking on an image
                 default:
