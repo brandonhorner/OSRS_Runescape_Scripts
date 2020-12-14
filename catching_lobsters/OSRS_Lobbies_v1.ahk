@@ -77,7 +77,7 @@ resetCharacter()
         }
         else
         {
-            TrayTip,, I can't see the starfish from here`nmoving down and to the right!,1
+            TrayTip,, I can't see the starfish from here`nmoving down and to the "right"!,1
             
             clickDownToTheRight()
             
@@ -261,7 +261,7 @@ bagIsFull()
 {
     lobster_color := 0x925424   ; a color (hopefully) unique to the lobster sprite
     
-    ; make sure lobster is in bottom right slot!
+    ; make sure lobster is in bottom "right" slot!
     PixelSearch, x, y, 1580, 960, 1616, 992, %lobster_color%, 0, RGB Fast
     
     ; if it is not full
@@ -279,9 +279,9 @@ openInventory()
     open_inventory_color := 0x3C1510
     PixelSearch, x, y, 1314, 1004, 1343, 1041, %open_inventory_color%, 2, RGB Fast
     
-    if( ErrorLevel = 1 ) ; if we didn't see the open bag color, the bag is closed
+    if( ErrorLevel = 1 ) ; if we didn't see the open "bag" color, the "bag" is closed
     {
-        ; So open the bag
+        ; So open the "bag"
         SendInput, {F3}
     }
     return
@@ -295,7 +295,7 @@ closeInventory()
     
     if( ErrorLevel = 0 )
     {
-        ; If we did see the open bag color then we close the bag!
+        ; If we did see the open "bag" color then we close the "bag"!
         SendInput, {F3}
     }
     return
@@ -334,7 +334,7 @@ clickToSpotTwo( x_coord, y_coord )
     return
 }
 
-; Clicks down to the right of the character one or two squares
+; Clicks down to the "right" of the character one or two squares
 clickDownToTheRight()
 {
     Random, x_pos, 840, 900
@@ -384,7 +384,7 @@ clickLobstersInFront()
     return, false
 }
 
-;Search for an image and click on it. If modifier = "right", right click,
+;Search for an image and click on it. If modifier = "right", "right" click,
 ;    otherwise left click.
 image_search_and_click(x1, y1, x2, y2, image_url, modifier)
 {

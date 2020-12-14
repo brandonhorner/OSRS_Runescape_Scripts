@@ -12,13 +12,13 @@ global runelite_window := "RuneLite - BinaryBilly"
 ; 2. This was made on a 1920 x 1080 screen. Use the same resolution for now.
 ;
 ; 3. You should have fishing icons on.
-;   - Click wrench at top right of RuneLite. Go to 'Fishing' app settings.
+;   - Click wrench at top "right" of RuneLite. Go to 'Fishing' app settings.
 ;
 ; 4. Zoom all the way out so you can see all of the spawns and face north (click compass).  
 ;
-; 5. Go to the top spawns (only one I tested).
+; 5. Go to the top spawns (only spot I tested).
 ;
-; 6. Keep an empty slot in the bottom right of bag (the very corner slot). 
+; 6. Keep an empty slot in the bottom "right" of "bag" (the very corner slot). 
 ;
 ; 7. You should have a barbarian fishing harpoon and some bait (10k feathers will easily last overnight).
 ;
@@ -27,12 +27,16 @@ global runelite_window := "RuneLite - BinaryBilly"
 ; 
 
 #SingleInstance
+#NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
+; #Warn  ; Enable warnings to assist with detecting common errors.
+SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
+SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
 CoordMode, Pixel, Screen    ; Starts pixel search at top left of ACTUAL SCREEN, delete if you want to search from top left of WINDOW
 CoordMode, Mouse, Screen
 
 
-;TODO: finish support for menu being open..
+;TODO: finish support for menu being open
 
 global salmon := "images\salmon.bmp"
 global trout := "images\trout.bmp"
@@ -59,8 +63,8 @@ global sturgeon := "images\sturgeon.bmp"
                 sleep_random(60000, 90000)
             }
         }
-        ToolTip, We aren't fishing. `rChecking if bag is full..., %main_tooltip_x1%, %main_tooltip_y1%, 1
-        ;if not fishing, check last bag slot to see if full
+        ToolTip, We aren't fishing. `rChecking if "bag" is full..., %main_tooltip_x1%, %main_tooltip_y1%, 1
+        ;if not fishing, check last "bag" slot to see if full
         if (bag_is_full(trout) or bag_is_full(salmon) or bag_is_full(sturgeon))
         {
             ToolTip, Bag was full...`r...Dropping fish, %main_tooltip_x1%, %main_tooltip_y1%, 1
@@ -99,16 +103,16 @@ drop_fish()
             current_bag_slot_x2 -= %offset_because_menu%
         }
 
-        Loop, %bag_rows%     ;loop over 7 rows of bag slots
+        Loop, %bag_rows%     ;loop over 7 rows of "bag" slots
         {
-            Loop, %bag_columns% ;loop over 4 columns of bag slots
+            Loop, %bag_columns% ;loop over 4 columns of "bag" slots
             {
                 IfWinActive, %runelite_window%
                 {
                     Send, {Shift Down}
-                    image_search_and_click(trout,, "left", "item", current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
-                    image_search_and_click(salmon,, "left", "item", current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
-                    image_search_and_click(sturgeon,, "left", "item", current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
+                    image_search_and_click(trout,, left, item, current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
+                    image_search_and_click(salmon,, left, item, current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
+                    image_search_and_click(sturgeon,, left, item, current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
                     current_bag_slot_x1 += 40
                     current_bag_slot_x2 += 40
                 }
@@ -146,12 +150,12 @@ bag_is_full(item)
         
         if (bag_is_open() = false)
         {
-            ;open the bag
+            ;open the "bag"
             SendInput, {F3}
         }
         sleep_random(200, 600)
 
-        if(image_search_and_click(item, "new_area", "none", "item", last_bagslot_x1, last_bagslot_y1, bag_x2, bag_y2))
+        if(image_search_and_click(item, "new_area", 0, item, last_bagslot_x1, last_bagslot_y1, bag_x2, bag_y2))
         {
             ;TrayTip,, %last_bagslot_x1%x%last_bagslot_y1% | %bag_x2%x%bag_y2% | %item%
             return true
@@ -193,7 +197,7 @@ click_closest(image_url)
             count++
 
             ;TrayTip,, in while %count%: `r%x1%x%y1%'r       %x2%x%y2% `rIMAGE:%image_url%
-            if (image_search_and_click(image_url, "new_area", "left", "item", x1, y1, x2, y2))
+            if (image_search_and_click(image_url, "new_area", left, item, x1, y1, x2, y2))
             {
                 return true
             }
@@ -214,9 +218,9 @@ click_closest(image_url)
 
 
 ;Search for an image and click on it. If screen area is omitted, then coordinates must be provided. Offset should
-;   be "option" if you are clicking on a 'right-click option', "item" if you are clicking around an item image.
-;   If click_type = "right", right click, "left" = left click, "mouseover" will move the mouse but doesn't click,
-;   "in-place" to click in place. Function will search 
+;   be option if you are clicking on a '"right"-click option', item if you are clicking around an item image.
+;   If click_type = "right", "right" click, left = left click, "mouseover" will move the mouse but doesn't click,
+;   in_place to click in place. Function will search 
 image_search_and_click(image_url, scan_area:=0, click_type:=0, offset:=0, x1:=0, y1:=0, x2:=0, y2:=0)
 {
     menu_width = 140
@@ -237,7 +241,7 @@ image_search_and_click(image_url, scan_area:=0, click_type:=0, offset:=0, x1:=0,
             x2 = 1855
             y2 = 1000
             
-        case "chat":
+        case chat:
             x1 = 0
             y1 = 975
             x2 = 510
@@ -288,18 +292,18 @@ RetryImageSearch:
             ;depending on what type of image, the offset will be different
             switch offset
             {
-                ;option refers to when you right click in-game, the top left of the image is 0,0
-                case "option":
+                ;option refers to when you "right" click in-game, the top left of the image is 0,0
+                case option:
                 {
-                    ;we want to move mouse to the right 52 to 92 pixels to click more in the center of the image
+                    ;we want to move mouse to the "right" 52 to 92 pixels to click more in the center of the image
                     Random, offset_horizontal, 52, 92
                     ;we want to move mouse down 2 to 11 pixels to click randomly within the image
                     Random, offset_vertical, 2, 11
                 }
-                ;item refers to an item in the bag, also works for fishing spot indicators
-                case "item":
+                ;item refers to an item in the "bag", also works for fishing spot indicators
+                case item:
                 {
-                    ;item pictures are cut so that the middle of the image is the starting point
+                    ;item pictures are cut so that the"middle" of the image is the starting point
                     Random, offset_horizontal, -10, 10
                     Random, offset_vertical, -10, 10
                 }
@@ -318,7 +322,7 @@ RetryImageSearch:
                 case "right":
                     Click, right, %offset_x%, %offset_y%
                     
-                case "left":
+                case left:
                     Click, %offset_x%, %offset_y%
                     
                 case "mouseover":
@@ -327,7 +331,7 @@ RetryImageSearch:
                 case "doubleclick":
                     Click, %offset_x%, %offset_y%, 2
                     
-                case "in-place":
+                case in_place:
                     Click, 0, 0, 0, Rel
             }
             ;otherwise we do not click and simply return

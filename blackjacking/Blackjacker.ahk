@@ -4,7 +4,7 @@
 ; You must set the bot up each time:
 ;   - your inventory depletes of lobsters.
 ;   - the target disappears through a wall
-; You must have 'Status Bars' in RuneLite on so that your health bar is shown on the left of your bag.
+; You must have 'Status Bars' in RuneLite on so that your health bar is shown on the left of your "bag".
 ; You must have 'NPC Indicators' highlight color the same as in the script (0xA4FF00).
 ;OPTIONAL:
 ; Have your chat turned to "Game" Chat, this would help because we search for phrases in chat box.
@@ -30,10 +30,10 @@ global top_left_y1 = 22
 global top_left_x2 = 190
 global top_left_y2 = 75
 
-global middle_x1 = 0
-global middle_y1 = 200
-global middle_x2 = 1650
-global middle_y2 = 970
+global"middle"_x1 = 0
+global"middle"_y1 = 200
+global"middle"_x2 = 1650
+global"middle"_y2 = 970
 
 global num_of_tries = 7
 
@@ -139,7 +139,7 @@ click_knockout()
         }
         else
         {
-            image_search_and_click(search_x1, search_y1, search_x2, search_y2, knockout_option, "left", "option")
+            image_search_and_click(search_x1, search_y1, search_x2, search_y2, knockout_option, left, option)
             return true
         }
         counter --
@@ -165,7 +165,7 @@ click_pickpocket()
         }
         else
         {
-            image_search_and_click(search_x1, search_y1, search_x2, search_y2, pickpocket_option, "left", "option")
+            image_search_and_click(search_x1, search_y1, search_x2, search_y2, pickpocket_option, left, option)
             return true
         }
         counter --
@@ -218,7 +218,7 @@ click_money_bag()
         ;    bag_x2 -= %offset_because_menu%
         ;}
         
-        image_search_and_click(bag_x1, bag_y1, bag_x2, bag_y2, money_bag, "left", "item")
+        image_search_and_click(bag_x1, bag_y1, bag_x2, bag_y2, money_bag, left, item)
     }
     return true
 }
@@ -226,7 +226,7 @@ click_money_bag()
 eat_lobster()
 {        
     open_bag()
-    if (image_search_and_click(bag_x1, bag_y1, bag_x2, bag_y2, cooked_lobster, "left", "item"))
+    if (image_search_and_click(bag_x1, bag_y1, bag_x2, bag_y2, cooked_lobster, left, item))
        ;TrayTip,, returning true to eat lobster
        return true
     
@@ -266,7 +266,6 @@ exists(image_area, image_url)
     ;options in the top left are good for verification before an action.  
     switch image_area
     {
-        ;change coordiantes to chat top left area
         case "top_left":
         {
             x1 = %top_left_x1%
@@ -275,14 +274,14 @@ exists(image_area, image_url)
             y2 = %top_left_y2%
         }
         ;change coordiantes to chat window area
-        case "chat":
+        case chat:
         {
             x1 = %chat_x1%
             y1 = %chat_y1%
             x2 = %chat_x2%
             y2 = %chat_y2%
         }
-        ;default to middle of screen coordiantes
+        ;default to"middle" of screen coordiantes
         default:
         {
             x1 = %middle_x1%
@@ -299,7 +298,7 @@ exists(image_area, image_url)
     
 
 
-;Search for an image and click on it. If modifier = "right", right click,
+;Search for an image and click on it. If modifier = "right", "right" click,
 ;    "mouseover" will move the mouse but doesn't click, otherwise left click.
 image_search_and_click(x1, y1, x2, y2, image_url, modifier, offset)
 {
@@ -336,15 +335,15 @@ Retry:
         }
         else
         {
-            ;option refer to when you right click in-game, the top left of the image is 0,0
-            if (offset = "option")
+            ;option refer to when you "right" click in-game, the top left of the image is 0,0
+            if (offset = option)
             {
-                ;we want to move mouse to the right 52 to 92 pixels to click more in the center of the image
+                ;we want to move mouse to the "right" 52 to 92 pixels to click more in the center of the image
                 Random, offset_horizontal, 72, 98
                 ;we want to move mouse down 2 to 11 pixels to click randomly within the image
                 Random, offset_vertical, 3, 10
             }
-            else if (offset = "item")
+            else if (offset = item)
             {
                 Random, offset_horizontal, -10, 10
                 Random, offset_vertical, -10, 10
@@ -363,7 +362,7 @@ Retry:
                 MouseMove, %offset_x%, %offset_y%
             if (modifier = "doubleclick")
                 Click, %offset_x%, %offset_y%, 2
-            if (modifier = "left")
+            if (modifier = left)
                 Click, %offset_x%, %offset_y%
             ;otherwise we do not click and simply return
             return true
@@ -372,7 +371,7 @@ Retry:
     return false
 }
 
-;Set the color of a tile in game and use that as the pixel color. if modifier = "right", right click,
+;Set the color of a tile in game and use that as the pixel color. if modifier = "right", "right" click,
 ;    "mouseover" will move the mouse but doesn't click, "doubleclick" clicks twice in the same spot.
 ;     Otherwise left click.
 pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier)
@@ -404,7 +403,7 @@ pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier)
                 MouseMove, %offset_x%, %offset_y%
             else if (modifier = "doubleclick")
                 Click, %offset_x%, %offset_y%, 2
-            if (modifier = "left")
+            if (modifier = left)
                 Click, %offset_x%, %offset_y%
             ;otherwise we do not click and simply return
             return true
@@ -430,7 +429,7 @@ menu_is_open()
     return false
 }
 
-;check to see if bag is open
+;check to see if "bag" is open
 open_bag()
 {
     IfWinActive, %runelite_window%
@@ -443,7 +442,7 @@ open_bag()
         }
         if (ErrorLevel = 1)
         {
-            ; open bag was not found, open the bag with F3 by default
+            ; open "bag" was not found, open the "bag" with F3 by default
             SendInput, {F3} 
         }
         return true

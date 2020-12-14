@@ -45,12 +45,12 @@ global top_left_y1 = 24
 global top_left_x2 = 190
 global top_left_y2 = 75
 
-global middle_x1 = 0
-global middle_y1 = 200
-global middle_area_no_bag_x2 = 1400
-global middle_area_no_bag_y2 = 850
-global middle_x2 = 1650
-global middle_y2 = 970
+global"middle"_x1 = 0
+global"middle"_y1 = 200
+global"middle"_area_no_bag_x2 = 1400
+global"middle"_area_no_bag_y2 = 850
+global"middle"_x2 = 1650
+global"middle"_y2 = 970
 
 global chat_x1 = 0
 global chat_y1 = 875
@@ -91,7 +91,7 @@ global runelite_window := RuneLite - BinaryBilly
         }
         loop_count--
         ;Clicking the bank stall (teal tile AND bank.bmp is showing)
-        pixel_search_and_click_world_tile(middle_x1, middle_y1, middle_x2, middle_y2, teal_tile, "mouseover")
+        pixel_search_and_click(middle_x1, "middle"_y1, "middle"_x2, "middle"_y2, teal_tile, "mouseover")
         verify_and_click_bank()
         sleep_random(9000, 12000)
         
@@ -104,7 +104,7 @@ global runelite_window := RuneLite - BinaryBilly
 
     LeaveBank:
         ;Leave the bank, clicking pink tile
-        pixel_search_and_click_world_tile(middle_x1, middle_y1, middle_x2, middle_y2, pink_tile, 0)
+        pixel_search_and_click(middle_x1, "middle"_y1, "middle"_x2, "middle"_y2, pink_tile, 0)
         sleep_random(9000, 12000)
     
     CheckFishing:
@@ -121,12 +121,12 @@ global runelite_window := RuneLite - BinaryBilly
                 ;TrayTip,, 10th iteration of watchspawn(), 1
             }
         }
-        ;if not fishing, check last bag slot
+        ;if not fishing, check last "bag" slot
         if (bag_is_full())
         {
-            TrayTip,, bag was full! returning to pink area
+            TrayTip,, "bag" was full! returning to pink area
             ;walk back to bank
-            pixel_search_and_click_world_tile(middle_x1, middle_y1, middle_x2, middle_y2, pink_tile, 0)
+            pixel_search_and_click(middle_x1, "middle"_y1, "middle"_x2, "middle"_y2, pink_tile, 0)
             sleep_random(8000, 9000)
             Goto, Bank
         }
@@ -142,7 +142,7 @@ global runelite_window := RuneLite - BinaryBilly
             if (!scan_for_lobsters()) ;if we can't find lobsters in scan, reposition
             {
                 ;TrayTip,, couldn't find lobsters in scan - moving to green
-                pixel_search_and_click_world_tile(middle_x1, middle_y1, middle_x2, middle_y2, green_tile, 0)
+                pixel_search_and_click(middle_x1, "middle"_y1, "middle"_x2, "middle"_y2, green_tile, 0)
                 sleep_random(4500,5500)
                 Goto SearchSpots
             }
@@ -156,7 +156,7 @@ return
 }
 
 Numpad1::
-        pixel_search_and_click_world_tile(middle_x1, middle_y1, middle_x2, middle_y2, pink_tile, 0)
+        pixel_search_and_click(middle_x1, "middle"_y1, "middle"_x2, "middle"_y2, pink_tile, 0)
 
 
 
@@ -183,7 +183,7 @@ is_fishing()
     return false
 }
 
-;check to see if bag is open
+;check to see if "bag" is open
 bag_is_open()
 {
     IfWinActive, Runelite - BinaryBilly
@@ -193,12 +193,12 @@ bag_is_open()
             MsgBox Error: In bag_is_open() -- Could not conduct the search.
         else if (ErrorLevel = 1)
         {
-            ; open bag was not found
+            ; open "bag" was not found
             return false
         }
         else
         {
-            ; open bag found
+            ; open "bag" found
             return true
         }
     }
@@ -255,7 +255,7 @@ bag_is_full()
 {
     if (bag_is_open() = false)
     {
-        ;open the bag
+        ;open the "bag"
         SendInput, {F3}
     }
     sleep_random(200, 600)
@@ -275,7 +275,7 @@ bag_is_full()
         ;TrayTip,, bag_is_full() - Icon could not be found on the screen.
         return false
     }
-    ;if we found a raw lobster, bag is full
+    ;if we found a raw lobster, "bag" is full
     else
     {
         return true
@@ -315,7 +315,7 @@ RetrySearch:
 
 scan_for_lobsters()
 {
-    if(image_search_and_click(middle_x1, middle_y1, middle_area_no_bag_x2, middle_area_no_bag_x2, raw_lobster, "mouseover"))
+    if(image_search_and_click(middle_x1, "middle"_y1, "middle"_area_no_bag_x2, "middle"_area_no_bag_x2, raw_lobster, "mouseover"))
     {
         if( verify_and_click_lobsters())
             return true
@@ -347,7 +347,7 @@ menu_is_open()
 search_screen_portion(position_on_screen, image_url_or_pixel, modifier)
 {
 ;TODO fill
-    ;if (position_on_screen = "middle")
+    ;if (position_on_screen ="middle")
     ;{
       
     ;}
@@ -406,7 +406,7 @@ search_screen_portion(position_on_screen, image_url_or_pixel, modifier)
     return false
 }
 
-;Search for an image and click on it. If modifier = "right", right click,
+;Search for an image and click on it. If modifier = "right", "right" click,
 ;    "mouseover" will move the mouse but doesn't click, otherwise left click.
 image_search_and_click(x1, y1, x2, y2, image_url, modifier)
 {
@@ -460,9 +460,9 @@ Retry:
     return false
 }
 
-;Set the color of a tile in game and use that as the pixel color. if modifier = "right", right click,
+;Set the color of a tile in game and use that as the pixel color. if modifier = "right", "right" click,
 ;    "mouseover" will move the mouse but doesn't click, otherwise left click.
-pixel_search_and_click_world_tile(x1, y1, x2, y2, pixel_color, modifier)
+pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier)
 {
     IfWinActive, %runelite_window%
     {

@@ -30,10 +30,10 @@ global top_left_y1 = 22
 global top_left_x2 = 190
 global top_left_y2 = 75
 
-global middle_x1 = 0
-global middle_y1 = 200
-global middle_x2 = 1650
-global middle_y2 = 970
+global"middle"_x1 = 0
+global"middle"_y1 = 200
+global"middle"_x2 = 1650
+global"middle"_y2 = 970
 
 global num_of_tries = 5
 
@@ -66,7 +66,7 @@ click_fishing_spot()
     Fish:
     IfWinActive, RuneLite - BinaryBilly
     {
-        image_search_and_click("middle", fishing_spot, "left", "item")        
+        image_search_and_click(middle, fishing_spot, left, item)        
         return false
     }
 }
@@ -75,7 +75,7 @@ click_herb()
 {
     if (exists("bag", herb))
     {
-        image_search_and_click("bag", herb, "left", "item")
+        image_search_and_click("bag", herb, left, item)
         return true
     }
     return false
@@ -85,7 +85,7 @@ click_swamp_tar()
 {
     if (exists("bag", swamp_tar))
     {
-        image_search_and_click("bag", swamp_tar, "left", "item")
+        image_search_and_click("bag", swamp_tar, left, item)
         return true
     }
     return false

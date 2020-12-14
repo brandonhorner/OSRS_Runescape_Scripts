@@ -35,10 +35,10 @@ global bank_inventory_y1 = 50
 global bank_inventory_x2 = 1060
 global bank_inventory_y2 = 850
 
-global middle_x1 = 0
-global middle_y1 = 200
-global middle_x2 = 1650
-global middle_y2 = 970
+global"middle"_x1 = 0
+global"middle"_y1 = 200
+global"middle"_x2 = 1650
+global"middle"_y2 = 970
 
 global chat_x1 = 0
 global chat_y1 = 875
@@ -104,7 +104,7 @@ global bank_chest := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\bank_
             
     Bank:        
         ;1. Open Bank
-        pixel_search_and_click_world_tile(middle_x1, middle_y1, middle_x2, middle_y2, red_tile, "mouseover")
+        pixel_search_and_click(middle_x1, "middle"_y1, "middle"_x2, "middle"_y2, red_tile, "mouseover")
         ;if we can't verify and click on the bank, try again
         if(!verify_and_click_bank())
         {
@@ -145,7 +145,7 @@ global bank_chest := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\bank_
 
     ClickBonfire:
         ;5. Mouse over bonfire
-        pixel_search_and_click_world_tile(middle_x1, middle_y1, middle_x2, middle_y2,  blue_tile, "mouseover")
+        pixel_search_and_click(middle_x1, "middle"_y1, "middle"_x2, "middle"_y2,  blue_tile, "mouseover")
         sleep_random(450 ,500)
 
         if (verify_and_click_bonfire())
@@ -160,7 +160,7 @@ global bank_chest := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\bank_
         }
         else
         {
-            pixel_search_and_click_world_tile(middle_x1, middle_y1, middle_x2, middle_y2,  green_tile, "doubleclick")
+            pixel_search_and_click(middle_x1, "middle"_y1, "middle"_x2, "middle"_y2,  green_tile, "doubleclick")
             Sleep_random(2000, 3400)
             Goto, CookLobster
         }
@@ -170,7 +170,7 @@ global bank_chest := "C:\Users\Tuco\Documents\AutoHotkey_Scripts\Runescape\bank_
         ;7. Press spacebar to start cooking
         Send, {space}
         sleep_random(500,1000)
-        pixel_search_and_click_world_tile(middle_x1, middle_y1, middle_x2, middle_y2,  red_tile, "mouseover")
+        pixel_search_and_click(middle_x1, "middle"_y1, "middle"_x2, "middle"_y2,  red_tile, "mouseover")
         
         
         ;8. wait while cooking is not done
@@ -208,7 +208,7 @@ Numpad1::
         TrayTip,, we not cookin
     }
 ;------------------------------------------FUNCTIONS--------------------------------------------------------
-;check to see if bag is open
+;check to see if "bag" is open
 open_bag()
 {
     IfWinActive, RuneLite - BinaryBilly
@@ -218,13 +218,13 @@ open_bag()
             MsgBox Error: In open_bag() -- Could not conduct the search.
         else if (ErrorLevel = 1)
         {
-            ; open bag was not found
+            ; open "bag" was not found
             SendInput, {F3} 
             return true
         }
         else
         {
-            ; open bag found
+            ; open "bag" found
             return true
         }
     }
@@ -327,14 +327,14 @@ bank_is_open()
     }
     return false
 }
-;Checks to see if there are any raw lobsters in bag, if so return false
+;Checks to see if there are any raw lobsters in "bag", if so return false
 cooking_is_done()
 {
     IfWinActive, RuneLite - BinaryBilly
     {
         if(open_bag() = false)
         {
-            ;open the bag
+            ;open the "bag"
             SendInput, {F3}
         }
         sleep_random(200, 600)
@@ -419,7 +419,7 @@ level_up_message_exists()
 }
 
 
-;Search for an image and click on it. If modifier = "right", right click,
+;Search for an image and click on it. If modifier = "right", "right" click,
 ;    "mouseover" will move the mouse but doesn't click, otherwise left click.
 image_search_and_click(x1, y1, x2, y2, image_url, modifier)
 {
@@ -476,10 +476,10 @@ Retry:
     return
 }
 
-;Set the color of a tile in game and use that as the pixel color. if modifier = "right", right click,
+;Set the color of a tile in game and use that as the pixel color. if modifier = "right", "right" click,
 ;    "mouseover" will move the mouse but doesn't click, "doubleclick" clicks twice in the same spot.
 ;     Otherwise left click.
-pixel_search_and_click_world_tile(x1, y1, x2, y2, pixel_color, modifier)
+pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier)
 {
     IfWinActive, RuneLite - BinaryBilly
     {     
