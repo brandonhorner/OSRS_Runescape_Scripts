@@ -46,14 +46,16 @@ global report_messages := true
 
 
 ^H::
-    run_count := 35
+    run_count := 0
+    run_limit := 35
                                                             if (report_messages) 
                                                             ToolTip, Setting up character, 500, 500, 1
     ;setup character
     setup()
 Start:
-    run_count--
-    if (run_count<=0)
+    run_count++
+    run_limit--
+    if (run_limit <= 0)
         return
                                                         if (report_messages) 
                                                             ToolTip, Teleporting to monastery, 500, 500, 1
@@ -100,14 +102,16 @@ Start:
     ;Superheat remaining ore
     superheat_ore(current_ore, num_of_ore)
     zoom_in()
-
                                                         if (report_messages) 
                                                            ToolTip, Remaking inventory and restarting, 300, 500, 1
     click_bank()
     sleep_random(2000, 3000)
+    
     ;deposit smelted ore
     remake_inventory()
     zoom_out()
+                                                        if (report_messages) 
+                                                           ToolTip, Times run = %run_count%, 300, 400, 2 
     Goto, Start
     return
 
@@ -116,6 +120,7 @@ Start:
 
 ^F3::ExitApp
 
+;use for testing
 ^t::
     return
 ^r::
