@@ -45,61 +45,78 @@ global current_ore := iron_ore
 global report_messages := true
 
 
-^Numpad1::
-                                                         if (report_messages) ToolTip, Setting up character, 500, 500, 1
+^H::
+    run_count := 35
+                                                            if (report_messages) 
+                                                            ToolTip, Setting up character, 500, 500, 1
     ;setup character
     setup()
 Start:
-                                                        if (report_messages) ToolTip, Teleporting to monastery, 500, 500, 1
+    run_count--
+    if (run_count<=0)
+        return
+                                                        if (report_messages) 
+                                                            ToolTip, Teleporting to monastery, 500, 500, 1
     ;teleport with ardougne cloak
     teleport_with_cloak()
     sleep_random(5000, 6000)
-                                                        if (report_messages) ToolTip, Clicking north iron node--Preparing for mining, 500, 500, 1
+                                                        if (report_messages) 
+                                                            ToolTip, Clicking north iron node--Preparing for mining, 500, 500, 1
     ;start mining
     mine_north_iron_node()
     zoom_in()
-    sleep_random(7000, 8000)
-                                                         if (report_messages) ToolTip, Beginning mining, 500, 500, 1
+    sleep_random(8000, 9500)
+                                                         if (report_messages) 
+                                                            ToolTip, Beginning mining, 500, 500, 1
     ;Mine until full
     mine_until_full()
     zoom_out()
-                                                         if (report_messages) ToolTip, Mining done--taking ore count, 500, 500, 1
+                                                         if (report_messages) 
+                                                            ToolTip, Mining done--taking ore count, 500, 500, 1
     ;count ore in inventory
     num_of_ore := get_ore_count(current_ore)
-                                                         if (report_messages) ToolTip, Going to cyan, 500, 500, 1
+                                                         if (report_messages) 
+                                                            ToolTip, Going to cyan, 500, 500, 1
     ;Go to cyan
     go_to_cyan()
     num_of_ore -= 8
-                                                         if (report_messages) ToolTip, Superheating 8 ore, 500, 500, 1
-    superheat_ore(current_ore, 3)   
-                                                         if (report_messages) ToolTip, Going to green, 500, 500, 1
+                                                         if (report_messages) 
+                                                            ToolTip, Superheating 8 ore, 500, 500, 1
+    superheat_ore(current_ore, 8)   
+                                                         if (report_messages) 
+                                                            ToolTip, Going to green, 500, 500, 1
     ;Go to green
     go_to_green()
-    num_of_ore -= 8
-                                                         if (report_messages) ToolTip, Superheating 8 ore, 500, 500, 1
-    superheat_ore(current_ore, 4)
-                                                         if (report_messages) ToolTip, Going to pink, 500, 500, 1
+    num_of_ore -= 9
+                                                         if (report_messages) 
+                                                            ToolTip, Superheating 9 ore, 500, 500, 1
+    superheat_ore(current_ore, 9)
+                                                         if (report_messages) 
+                                                            ToolTip, Going to pink, 500, 500, 1
     ;Go to pink
     go_to_pink()
-                                                         if (report_messages) ToolTip, Superheating remaining ore, 500, 500, 1
+                                                        if (report_messages) 
+                                                            ToolTip, Superheating remaining ore, 500, 500, 1
     ;Superheat remaining ore
     superheat_ore(current_ore, num_of_ore)
-    
-    ;Click teal (bank stall)
+    zoom_in()
+
+                                                        if (report_messages) 
+                                                           ToolTip, Remaking inventory and restarting, 300, 500, 1
     click_bank()
     sleep_random(2000, 3000)
     ;deposit smelted ore
     remake_inventory()
+    zoom_out()
     Goto, Start
     return
 
 
-^Numpad2::Reload
+^G::Reload
 
 ^F3::ExitApp
 
 ^t::
-    remake_inventory()
     return
 ^r::
     ore_count := get_ore_count(current_ore)
@@ -123,6 +140,7 @@ setup()
         Send, {up down}
         sleep_random(3000,3500)
         Send, {up up}
+        return
     }
 }
 zoom_in()
@@ -155,9 +173,11 @@ click_compass()
         Random, y_offset, -23, 0
         x_offset += found_x
         y_offset += found_y
-        Click, "left", %x_offset%, %y_offset%
+        Click, left, %x_offset%, %y_offset%
+        return
     }
 }
+
 
 teleport_with_cloak()
 {
@@ -169,12 +189,17 @@ teleport_with_cloak()
     
     ;"left" click kandarin monastery
     click_kandarin_monastery_menu_option()
+    return
 }
 
 mine_north_iron_node()
 {
     green = 0x00FF4D
+    Send, {Ctrl down}
     pixel_search_and_click(424, 35, 1628, 866, green, "left")
+    sleep_random(100,200)
+    Send, {Ctrl up}
+    return
 }
 
 mine_until_full()
@@ -251,33 +276,46 @@ go_to_cyan()
 {
     cyan = 0x377372
     pixel_search_and_click(424, 35, 1628, 866, cyan, "left")
+    return
 }
 
 go_to_green()
 {
     green = 0x00FF00
     pixel_search_and_click(424, 35, 1628, 866, green, "left")
+    return
 }
 
 go_to_pink()
 {
     pink = 0xFF00FF
     pixel_search_and_click(424, 35, 1628, 866, pink, "left")
+    return
 }
 
 click_bank()
 {
     teal = 0x00FFFF
-    pixel_search_and_click(424, 35, 1628, 866, teal, "left")
+    bank_text := "images\bank_text.bmp"
+    
+TryAgain:
+    if (pixel_search_and_click(424, 35, 1628, 866, teal, "mouseover"))
+    {
+        if(image_search_and_click(bank_text, "top_left"))
+            Click
+        else
+            Goto, TryAgain
+    }
+    return
 }
+
 superheat_ore(ore, count)
 {
     IfWinActive, %runelite_window%
     {
+        open_spellbook()
         while (count > 0)
         {
-            open_spellbook()
-            
             click_superheat()
 
             click_ore(ore)
@@ -285,7 +323,8 @@ superheat_ore(ore, count)
             count--
         }
     }
-    if (report_messages) ToolTip, finished superheating, 500, 500, 1
+    ;if (report_messages) 
+    ;   ToolTip, finished superheating, 500, 500, 1
     return
 }
 
@@ -298,8 +337,8 @@ click_kandarin_monastery_menu_option()
     {
         if(image_search_and_click(kandarin_monastery_menu_option, "under_mouse", "left", "option"))
         {
-            if (report_messages)
-                ToolTip, Clicking Kandarin Monastery "option", 500, 500, 1
+            ;if (report_messages)
+            ;    ToolTip, Clicking Kandarin Monastery "option", 500, 500, 1
             return true
         }
         else
@@ -318,15 +357,17 @@ click_ore(ore)
     {
         if(image_search_and_click(ore, "bag", "left", "item"))
         {
-            if (report_messages)
-                ToolTip, Clicking ore, 500, 500, 1
+            ;if (report_messages)
+            ;    ToolTip, Clicking ore, 500, 500, 1
             return true
         }
         else
         {
             sleep_random(10,20)
-            loop_max_count --
+            open_bag()
+            search_limit --
         }
+
         if(report_messages) 
             ToolTip, No ore was found, 500, 500, 1
     }
@@ -342,8 +383,8 @@ click_superheat()
     {
         if(image_search_and_click(superheat, "bag", "left", "item"))
         {
-            if (report_messages)
-                ToolTip, Clicking Superheat, 500, 500, 1
+            ;if (report_messages)
+            ;    ToolTip, Clicking Superheat, 500, 500, 1
             return true
         }
         else
@@ -371,8 +412,8 @@ exists(image_url)
 open_bag()
 {
     open_bag := "images\open_bag.bmp"
-    if (report_messages)
-        ToolTip, Opening "bag", 500, 500, 1
+    ;if (report_messages)
+    ;    ToolTip, Opening bag, 500, 500, 1
     if (!image_search_and_click(open_bag, "bag"))
         SendInput, {F3}
     return
@@ -383,8 +424,8 @@ open_bag()
 open_equipment()
 {
     open_equipment := "images\open_equipment.bmp"
-    if (report_messages)
-        ToolTip, Opening equipment, 500, 500, 1
+    ;if (report_messages)
+        ;ToolTip, Opening equipment, 500, 500, 1
     if (!image_search_and_click(open_equipment, "bag"))
         SendInput, {F4}
     return
@@ -395,8 +436,8 @@ open_equipment()
 open_spellbook()
 {
     open_spellbook := "images\open_spellbook.bmp"
-    if (report_messages)
-        ToolTip, Opening spellbook, 500, 500, 1
+    ;if (report_messages)
+        ;ToolTip, Opening spellbook, 500, 500, 1
     if (!image_search_and_click(open_spellbook, "bag"))
         SendInput, {F6}
     return
@@ -408,7 +449,6 @@ get_ore_count(ore)
 {
     IfWinActive, %runelite_window%
     {
-
         open_bag()
         count = 0
         bag_rows = 7
@@ -425,8 +465,8 @@ get_ore_count(ore)
             current_bag_slot_x2 -= %offset_because_menu%
         }
         
-        if (report_messages)
-            ToolTip, Getting count of ore, 500, 500, 1
+        ;if (report_messages)
+        ;    ToolTip, Getting count of ore, 500, 500, 1
             
         Loop, %bag_rows%     ;loop over the 7 rows of "bag" slots
         {
@@ -501,8 +541,8 @@ click_withdraw_all()
     {
         if(image_search_and_click(withdraw_all, "under_mouse", "left", "option"))
         {
-            if (report_messages)
-                ToolTip, Clicking Withdraw All "option", 500, 500, 1
+            ;if (report_messages)
+            ;    ToolTip, Clicking Withdraw All "option", 500, 500, 1
             return true
         }
         else
@@ -513,6 +553,33 @@ click_withdraw_all()
     }
     return false    
 }
+
+;click_run()
+;{
+;    xp_minimap_button := "images\xp_minimap_button.bmp"
+;
+;    ImageSearch, found_x, found_y, 0, 0, %A_ScreenWidth%, %A_ScreenHeight%, %xp_minimap_button%
+;    Random, x_offset, 11, 55
+;    Random, y_offset, 92, 106
+;    x_offset += found_x
+;    y_offset += found_y
+;
+;    if (ErrorLevel = 2)
+;    {
+;        Tooltip, Could not conduct the search`rsearch area: 0x0 and %A_ScreenWidth%x%A_ScreenHeight%`rimage = %xp_minimap_button%, 100, 500, 20
+;        return false
+;    }
+;    else if (ErrorLevel = 1)
+;    {
+;        Tooltip, Could not find xp minimap button `rsearch area: 0x0 and %A_ScreenWidth%x%A_ScreenHeight%`rimage = %xp_minimap_button%, 100, 500, 20
+;        return false
+;    }
+;    else
+;    {
+;
+;        Click, left, %x_offset%, %y_offset%
+;    }
+;}
 
 ; ---------------------- Utilities --------------------------------------------
 ;Search for an image and click on it. If screen area is omitted, then coordinates must be provided. Offset should
@@ -588,7 +655,7 @@ RetryImageSearch:
         set_random_delays()
         
         ImageSearch, found_x, found_y, %x1%, %y1%, %x2%, %y2%, *%shade_variation% %image_url%
-        ToolTip, Inside: image_search_and_click() @ImageSearch `r%image_url% was found at %found_x%x%found_y%`r%x1%x%y1% and %x2%x%y2% was the search area, 100, 200, 19
+        ;ToolTip, Inside: image_search_and_click() @ImageSearch `r%image_url% was found at %found_x%x%found_y%`r%x1%x%y1% and %x2%x%y2% was the search area, 100, 200, 19
         if (ErrorLevel = 2)     ;if the search wasn't able to start
         {
             MsgBox, Could not conduct the search using: %x1%x%y1% | %x2%x%y2% | %image_url%
@@ -605,7 +672,7 @@ RetryImageSearch:
             }
             else
             {
-                Tooltip, Retried too many times- bot failed to find: `r%image_url%`rCoords:%x1%x%y1%  |  %x2%x%y2% `rn=%shade_variation% `rIt must be off screen or blocked., 100, 100, 20
+                ;Tooltip, Retried too many times- bot failed to find: `r%image_url%`rCoords:%x1%x%y1%  |  %x2%x%y2% `rn=%shade_variation% `rIt must be off screen or blocked., 100, 100, 20
                 return false
             }
         }
@@ -677,12 +744,12 @@ pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier:=0, offset:=0)
         PixelSearch, found_x, found_y, x1, y1, x2, y2, pixel_color, 0, RGB fast ;search region for color
         if ErrorLevel
         {
-            ToolTip, The color %pixel_color% was not found in %x1%x%y1% %x2%x%y2%, 100, 400, 17
+            ;ToolTip, The color %pixel_color% was not found in %x1%x%y1% %x2%x%y2%, 100, 400, 17
             return false
         }
         else
         {
-            ToolTip, The color %pixel_color% was found at %found_x%x%found_y% `rmodifier= %modifier%, 100, 300, 18
+            ;ToolTip, The color %pixel_color% was found at %found_x%x%found_y% `rmodifier= %modifier%, 100, 300, 18
             
             ;these magic numbers are about the size of the tile to be clicked into, they might need to be adjusted
             ;         depending on how small the object inside of the tile is.
@@ -693,7 +760,7 @@ pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier:=0, offset:=0)
                     Random, offset_x, -50, -10
                     Random, offset_y, 0, 50
                 default:
-                    Random, offset_x, -5, 0
+                    Random, offset_x, -5, 10
                     Random, offset_y, 0, 15
             }
 
@@ -711,7 +778,7 @@ pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier:=0, offset:=0)
                 case "left":
                     Click, %offset_x%, %offset_y%
             }
-            ;otherwise do nothing
+            ;otherwise do nothing, but return 'true' meaning the color was found
             return true
         }
     }
