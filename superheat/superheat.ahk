@@ -122,6 +122,7 @@ Start:
 
 ;use for testing
 ^t::
+    mine_north_iron_node()
     return
 ^r::
     ore_count := get_ore_count(current_ore)
@@ -183,7 +184,6 @@ click_compass()
     }
 }
 
-
 teleport_with_cloak()
 {
     ardougne_cloak := "images\ardougne_cloak.bmp"
@@ -200,10 +200,25 @@ teleport_with_cloak()
 mine_north_iron_node()
 {
     green = 0x00FF4D
-    Send, {Ctrl down}
-    pixel_search_and_click(424, 35, 1628, 866, green, "left")
-    sleep_random(100,200)
-    Send, {Ctrl up}
+    mining_text := "images\mining_text.bmp"
+
+ClickIronNode:
+    if (pixel_search_and_click(424, 35, 1628, 866, green, "mouseover"))
+    {
+        if(image_search_and_click(mining_text, "top_left"))
+        {
+            Send, {Ctrl down}
+            sleep_random(100,200)
+            Click
+            sleep_random(100,200)
+            Send, {Ctrl up}
+        }
+        else
+        {
+            sleep_random(500, 1000)
+            Goto, ClickIronNode
+        }
+    }
     return
 }
 
@@ -303,13 +318,13 @@ click_bank()
     teal = 0x00FFFF
     bank_text := "images\bank_text.bmp"
     
-TryAgain:
+ClickBank:
     if (pixel_search_and_click(424, 35, 1628, 866, teal, "mouseover"))
     {
         if(image_search_and_click(bank_text, "top_left"))
             Click
         else
-            Goto, TryAgain
+            Goto, ClickBank
     }
     return
 }
