@@ -364,7 +364,7 @@ click_kandarin_monastery_menu_option()
         else
         {
             sleep_random(10,20)
-            loop_max_count --
+            search_limit --
         }
     }
     return false    
@@ -410,7 +410,8 @@ click_superheat()
         else
         {
             sleep_random(10,20)
-            loop_max_count --
+            search_limit --
+            mouse_move_random_offset(0, 10, -10, 10)
         }
     }
     return false    
