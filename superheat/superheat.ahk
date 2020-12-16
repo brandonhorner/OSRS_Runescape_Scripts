@@ -47,9 +47,9 @@ global report_messages := true
 
 ^H::
     run_count := 0
-    run_limit := 35
+    run_limit := 30
                                                             if (report_messages) 
-                                                            ToolTip, Setting up character, 500, 500, 1
+                                                                ToolTip, Setting up character, 500, 500, 1
     ;setup character
     setup()
 Start:
@@ -122,7 +122,7 @@ Start:
 
 ;use for testing
 ^t::
-    mine_north_iron_node()
+    click_superheat()
     return
 ^r::
     ore_count := get_ore_count(current_ore)
@@ -245,23 +245,23 @@ mine_until_full()
             if (!pixel_search_and_click(top_x1, top_y1, top_x2, top_y2, yellow))
             {
                 pixel_search_and_click(top_x1, top_y1, top_x2, top_y2, green, "left", "mining")
+                if (report_messages)
+                        ToolTip, Mining north iron node, 500, 500, 1
                 sleep_random(1000, 1500)
                 while (is_mining())
                 {
                     sleep_random(100,200)
-                    if (report_messages)
-                        ToolTip, Mining north iron node, 500, 500, 1
                 }
             }
             if (!pixel_search_and_click(bottom_x1, bottom_y1, bottom_x2, bottom_y2, yellow))
             {
                 pixel_search_and_click(bottom_x1, bottom_y1, bottom_x2, bottom_y2, green, "left", "mining")
+                if (report_messages) 
+                        ToolTip, Mining south iron node, 500, 500, 1
                 sleep_random(1000, 1500)
                 while (is_mining())
                 {
                     sleep_random(100,200)
-                    if (report_messages) 
-                        ToolTip, Mining south iron node, 500, 500, 1
                 }
             }
         }
@@ -386,7 +386,11 @@ click_ore(ore)
             sleep_random(10,20)
             open_bag()
             search_limit --
+<<<<<<< Updated upstream
             mouse_move_random_offset(2, 10, 2, 10)
+=======
+            mouse_move_random_offset(0, 10, -10, 10)
+>>>>>>> Stashed changes
         }
 
         if(report_messages) 
