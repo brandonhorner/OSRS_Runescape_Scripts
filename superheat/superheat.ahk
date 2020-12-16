@@ -386,6 +386,7 @@ click_ore(ore)
             sleep_random(10,20)
             open_bag()
             search_limit --
+            mouse_move_random_offset(2, 10, 2, 10)
         }
 
         if(report_messages) 
@@ -409,9 +410,9 @@ click_superheat()
         }
         else
         {
-            sleep_random(10,20)
+            sleep_random(20,200)
             search_limit --
-            mouse_move_random_offset(0, 10, -10, 10)
+            mouse_move_random_offset(2, 10, 2, 10)
         }
     }
     return false    

@@ -41,9 +41,9 @@ CoordMode, Mouse, Screen
 global salmon := "images\salmon.bmp"
 global trout := "images\trout.bmp"
 global sturgeon := "images\sturgeon.bmp"
+global report_erros := 0
 
-
-^`::
+^H::
 {
     main_tooltip_x1 = 700
     main_tooltip_y1 = 500
@@ -80,7 +80,7 @@ global sturgeon := "images\sturgeon.bmp"
 return
 }
 
-+`::Reload
+^G::Reload
 
 ^F3::ExitApp
 
@@ -97,11 +97,11 @@ drop_fish()
         current_bag_slot_x2 = 1724
         current_bag_slot_y2 = 785
         
-        if (menu_is_open())
-        {
-            current_bag_slot_x1 -= %offset_because_menu%
-            current_bag_slot_x2 -= %offset_because_menu%
-        }
+;        if (menu_is_open())
+;        {
+;            current_bag_slot_x1 -= %offset_because_menu%
+;            current_bag_slot_x2 -= %offset_because_menu%
+;        }
 
         Loop, %bag_rows%     ;loop over 7 rows of "bag" slots
         {
@@ -110,9 +110,9 @@ drop_fish()
                 IfWinActive, %runelite_window%
                 {
                     Send, {Shift Down}
-                    image_search_and_click(trout,, left, item, current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
-                    image_search_and_click(salmon,, left, item, current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
-                    image_search_and_click(sturgeon,, left, item, current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
+                    image_search_and_click(trout,, "left", "item", current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
+                    image_search_and_click(salmon,, "left", "item", current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
+                    image_search_and_click(sturgeon,, "left", "item", current_bag_slot_x1, current_bag_slot_y1, current_bag_slot_x2, current_bag_slot_y2)
                     current_bag_slot_x1 += 40
                     current_bag_slot_x2 += 40
                 }
@@ -155,7 +155,7 @@ bag_is_full(item)
         }
         sleep_random(200, 600)
 
-        if(image_search_and_click(item, "new_area", 0, item, last_bagslot_x1, last_bagslot_y1, bag_x2, bag_y2))
+        if(image_search_and_click(item, "new_area", 0, "item", last_bagslot_x1, last_bagslot_y1, bag_x2, bag_y2))
         {
             ;TrayTip,, %last_bagslot_x1%x%last_bagslot_y1% | %bag_x2%x%bag_y2% | %item%
             return true
@@ -183,7 +183,6 @@ click_closest(image_url)
     {
         ;how many pixels to expand the search area each iteration
         expansion_integer = 40
-        menu_offset = 140
         ;center of screen, only character is enclosed
         x1 = 925
         y1 = 515
@@ -193,11 +192,10 @@ click_closest(image_url)
         count = 0
         while (x2 < A_ScreenWidth and y2 < A_ScreenHeight)
         {
-            
             count++
 
             ;TrayTip,, in while %count%: `r%x1%x%y1%'r       %x2%x%y2% `rIMAGE:%image_url%
-            if (image_search_and_click(image_url, "new_area", left, item, x1, y1, x2, y2))
+            if (image_search_and_click(image_url, "new_area", "left", "item", x1, y1, x2, y2))
             {
                 return true
             }
@@ -219,7 +217,7 @@ click_closest(image_url)
 
 ;Search for an image and click on it. If screen area is omitted, then coordinates must be provided. Offset should
 ;   be option if you are clicking on a '"right"-click option', item if you are clicking around an item image.
-;   If click_type = "right", "right" click, left = left click, "mouseover" will move the mouse but doesn't click,
+;   If click_type = "right", "right" click, "left" = left click, "mouseover" will move the mouse but doesn't click,
 ;   in_place to click in place. Function will search 
 image_search_and_click(image_url, scan_area:=0, click_type:=0, offset:=0, x1:=0, y1:=0, x2:=0, y2:=0)
 {
@@ -233,7 +231,7 @@ image_search_and_click(image_url, scan_area:=0, click_type:=0, offset:=0, x1:=0,
             x1 = 0
             y1 = 22
             x2 = 190
-            y2 = 75
+            y2 = 120
             
         case "bag":
             x1 = 1645
@@ -241,7 +239,7 @@ image_search_and_click(image_url, scan_area:=0, click_type:=0, offset:=0, x1:=0,
             x2 = 1855
             y2 = 1000
             
-        case chat:
+        case "chat":
             x1 = 0
             y1 = 975
             x2 = 510
@@ -283,7 +281,8 @@ RetryImageSearch:
             }
             else
             {
-                ;Tooltip, Retried %search_counter% times- bot failed to find: `r%image_url%`rCoords:%x1%x%y1%  |  %x2%x%y2% `rn=%shade_variation% `rIt must be off screen or blocked., 100, 100, 1
+                if (report_errors)
+                    Tooltip, Retried too many times- bot failed to find: `r%image_url%`rCoords:%x1%x%y1%  |  %x2%x%y2% `rn=%shade_variation% `rIt must be off screen or blocked., 100, 200, 4
                 return false
             }
         }
@@ -293,7 +292,7 @@ RetryImageSearch:
             switch offset
             {
                 ;option refers to when you "right" click in-game, the top left of the image is 0,0
-                case option:
+                case "option":
                 {
                     ;we want to move mouse to the "right" 52 to 92 pixels to click more in the center of the image
                     Random, offset_horizontal, 52, 92
@@ -301,7 +300,7 @@ RetryImageSearch:
                     Random, offset_vertical, 2, 11
                 }
                 ;item refers to an item in the "bag", also works for fishing spot indicators
-                case item:
+                case "item":
                 {
                     ;item pictures are cut so that the"middle" of the image is the starting point
                     Random, offset_horizontal, -10, 10
@@ -314,7 +313,8 @@ RetryImageSearch:
                 }
             }
             
-            ;Tooltip, Found: `r%image_url%`rCoords Searched:%x1%x%y1%  |  %x2%x%y2% `r Found at %found_x%x%found_y%, 100, 100, 5
+            if (report_errors)
+                    Tooltip, Found: `r%image_url%`rCoords Searched:%x1%x%y1%  |  %x2%x%y2% `r Found at %found_x%x%found_y%, 100, 100, 5
             offset_x := found_x + offset_horizontal
             offset_y := found_y + offset_vertical
             switch click_type
@@ -322,7 +322,7 @@ RetryImageSearch:
                 case "right":
                     Click, right, %offset_x%, %offset_y%
                     
-                case left:
+                case "left":
                     Click, %offset_x%, %offset_y%
                     
                 case "mouseover":
@@ -331,7 +331,7 @@ RetryImageSearch:
                 case "doubleclick":
                     Click, %offset_x%, %offset_y%, 2
                     
-                case in_place:
+                case "in_place":
                     Click, 0, 0, 0, Rel
             }
             ;otherwise we do not click and simply return
@@ -343,19 +343,24 @@ RetryImageSearch:
 
 menu_is_open()
 {
-    runelite_menu_test_pixel_x := 1643 
-    runelite_menu_test_pixel_y := 25
-    runelite_menu_color := 0x282828
-    
-    IfWinActive, %runelite_window%
+    closed_runelite_menu := "images\closed_runelite_menu.bmp"
+    ImageSearch, dummy_x, dummy_y, 0, 0, %A_ScreenWidth%, %A_ScreenHeight%, %closed_runelite_menu%
+    if (ErrorLevel = 2)
     {
-        PixelGetColor, color, %runelite_menu_test_pixel_x%, %runelite_menu_test_pixel_y%
-        if (color = runelite_menu_color)  ;runelite window is open
-            return true
-        else
-            return false
+        ToolTip, Error: In menu_is_open() -- Could not conduct the search., 100, 400, 20
+        return false
     }
-    return false
+    else if (ErrorLevel = 1)
+    {
+        ; menu was not found to be closed
+        MsgBox, Please close the RuneLite menu.
+        return true
+    }
+    else
+    {
+        ;menu is closed
+        return false
+    }
 }
 
 ; ---------------------- Utilities --------------------------------------------
