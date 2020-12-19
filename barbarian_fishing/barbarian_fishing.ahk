@@ -22,8 +22,9 @@ global runelite_window := "RuneLite - BinaryBilly"
 ;
 ; 7. You should have a barbarian fishing harpoon and some bait (10k feathers will easily last overnight).
 ;
+; 8. Go to 'Entities' app and turn off entities. (I have seen a fishing pole cover the spawn image before).
 ; Optional: Go to the 'Camera' app in RuneLite and enable 'Vertical camera'.
-;           Go to 'Entities' app and turn off entities. (I have seen a fishing pole cover the spawn image before).
+;
 ; 
 
 #SingleInstance
@@ -367,7 +368,7 @@ menu_is_open()
 set_random_delays()
 {   
     ;set the dalay of your mouse movement between 20ms and 40ms
-    Random, delaySpeed, 30, 55
+    Random, delaySpeed, 15, 35
     SetMouseDelay, %delaySpeed%
     
     Random, key_delay_speed, 10, 12
