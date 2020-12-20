@@ -48,19 +48,19 @@ global report_errors := 0
 {
     main_tooltip_x1 = 700
     main_tooltip_y1 = 500
+    run_count := 0
+
+CheckFishing:
     IfWinActive, %runelite_window%
     {
-    CheckFishing:
-        run_count := 0
         while (is_fishing())
         {
-            ToolTip, We be fishin'..., %main_tooltip_x1%, %main_tooltip_y1%, 1
+            ToolTip, %run_count%. We be fishin'..., %main_tooltip_x1%, %main_tooltip_y1%, 1
             sleep_random(3000, 10000)
-            run_count++
             value := Mod(run_count, 10)
             if( value = 0 )
             {
-                ToolTip, sleeping_random()
+                ToolTip, %run_count%. Waiting extra time (3-10 sec), %main_tooltip_x1%, %main_tooltip_y1%
                 sleep_random(3000, 10000)
             }
         }
@@ -68,8 +68,11 @@ global report_errors := 0
         ;if not fishing, check last "bag" slot to see if full
         if (bag_is_full(trout) or bag_is_full(salmon) or bag_is_full(sturgeon))
         {
-            ToolTip, Bag was full...`r...Dropping fish, %main_tooltip_x1%, %main_tooltip_y1%, 1
+            run_count++
+            ToolTip, Bag was filled %run_count% time(s).`r...Dropping fish, %main_tooltip_x1%, %main_tooltip_y1%, 1
             drop_fish()
+            if (run_count >= 140)
+                return
         }
         ;scan for fish to catch
         ToolTip, Clicking new fishing spot..., %main_tooltip_x1%, %main_tooltip_y1%, 1
@@ -78,8 +81,10 @@ global report_errors := 0
 
         Goto, CheckFishing
     }
+    
 return
 }
+
 
 ^G::Reload
 
@@ -170,8 +175,9 @@ bag_is_open()
     bag_is_open := "images\open_bag.bmp"
     IfWinActive, %runelite_window%
     {
-        image_search_and_click(bag_is_open, "bag")
-        return true
+        if  (image_search_and_click(bag_is_open, "bag"))
+            return true
+        return false
     }
     return false
 }
@@ -189,12 +195,8 @@ click_closest(image_url)
         x2 = 950
         y2 = 540
         
-        count := 0
         while (x2 < A_ScreenWidth and y2 < A_ScreenHeight)
         {
-            count++
-
-            ;TrayTip,, in while %count%: `r%x1%x%y1%'r       %x2%x%y2% `rIMAGE:%image_url%
             if (image_search_and_click(image_url, "new_area", "left", "item", x1, y1, x2, y2, "slow"))
             {
                 mouse_move_random_offset()
