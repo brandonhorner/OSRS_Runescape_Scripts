@@ -36,7 +36,6 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 CoordMode, Pixel, Screen    ; Starts pixel search at top left of ACTUAL SCREEN, delete if you want to search from top left of WINDOW
 CoordMode, Mouse, Screen
 
-
 ;TODO: finish support for menu being open
 
 global salmon := "images\salmon.bmp"
@@ -60,7 +59,7 @@ global report_erros := 0
             value := Mod(count, 10)
             if( value = 0 )
             {
-                ToolTip, sleeping_random()
+                ToolTip, pause 1-1.5 minutes, %main_tooltip_x1%, %main_tooltip_y1%, 1
                 sleep_random(60000, 90000)
             }
         }
