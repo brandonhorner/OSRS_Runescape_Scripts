@@ -29,7 +29,7 @@ global runelite_window := "RuneLite - BinaryBilly"
 
 #SingleInstance
 #NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
-; #Warn  ; Enable warnings to assist with detecting common errors.
+#Warn  ; Enable warnings to assist with detecting common errors.
 SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
 SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
@@ -41,34 +41,39 @@ CoordMode, Mouse, Screen
 global salmon := "images\salmon.bmp"
 global trout := "images\trout.bmp"
 global sturgeon := "images\sturgeon.bmp"
-global report_erros := 0
+global report_errors := 0
 
 ^H::
 {
     main_tooltip_x1 = 700
     main_tooltip_y1 = 500
+    run_count := 0
+
+CheckFishing:
     IfWinActive, %runelite_window%
     {
-    CheckFishing:
-        count := 0
         while (is_fishing())
         {
-            ToolTip, We be fishin'..., %main_tooltip_x1%, %main_tooltip_y1%, 1
-            sleep_random(3000, 60000)
-            count++
-            value := Mod(count, 10)
+            ToolTip, %run_count%. We be fishin'..., %main_tooltip_x1%, %main_tooltip_y1%, 1
+            sleep_random(3000, 10000)
+            value := Mod(run_count, 10)
             if( value = 0 )
             {
                 ToolTip, pause 1-1.5 minutes, %main_tooltip_x1%, %main_tooltip_y1%, 1
                 sleep_random(60000, 90000)
+                ToolTip, %run_count%. Waiting extra time (3-10 sec), %main_tooltip_x1%, %main_tooltip_y1%
+                sleep_random(3000, 10000)
             }
         }
         ToolTip, We aren't fishing. `rChecking if "bag" is full..., %main_tooltip_x1%, %main_tooltip_y1%, 1
         ;if not fishing, check last "bag" slot to see if full
         if (bag_is_full(trout) or bag_is_full(salmon) or bag_is_full(sturgeon))
         {
-            ToolTip, Bag was full...`r...Dropping fish, %main_tooltip_x1%, %main_tooltip_y1%, 1
+            run_count++
+            ToolTip, Bag was filled %run_count% time(s).`r...Dropping fish, %main_tooltip_x1%, %main_tooltip_y1%, 1
             drop_fish()
+            if (run_count >= 140)
+                return
         }
         ;scan for fish to catch
         ToolTip, Clicking new fishing spot..., %main_tooltip_x1%, %main_tooltip_y1%, 1
@@ -77,8 +82,10 @@ global report_erros := 0
 
         Goto, CheckFishing
     }
+    
 return
 }
+
 
 ^G::Reload
 
@@ -161,8 +168,7 @@ bag_is_full(item)
             return true
         }
     }
-    return false
-    
+    return false 
 }
 
 bag_is_open()
@@ -170,8 +176,9 @@ bag_is_open()
     bag_is_open := "images\open_bag.bmp"
     IfWinActive, %runelite_window%
     {
-        image_search_and_click(bag_is_open, "bag")
-        return true
+        if  (image_search_and_click(bag_is_open, "bag"))
+            return true
+        return false
     }
     return false
 }
@@ -189,14 +196,11 @@ click_closest(image_url)
         x2 = 950
         y2 = 540
         
-        count = 0
         while (x2 < A_ScreenWidth and y2 < A_ScreenHeight)
         {
-            count++
-
-            ;TrayTip,, in while %count%: `r%x1%x%y1%'r       %x2%x%y2% `rIMAGE:%image_url%
-            if (image_search_and_click(image_url, "new_area", "left", "item", x1, y1, x2, y2))
+            if (image_search_and_click(image_url, "new_area", "left", "item", x1, y1, x2, y2, "slow"))
             {
+                mouse_move_random_offset()
                 return true
             }
             else    ;grow search area
@@ -214,12 +218,11 @@ click_closest(image_url)
 
 
 
-
 ;Search for an image and click on it. If screen area is omitted, then coordinates must be provided. Offset should
 ;   be option if you are clicking on a '"right"-click option', item if you are clicking around an item image.
 ;   If click_type = "right", "right" click, "left" = left click, "mouseover" will move the mouse but doesn't click,
 ;   in_place to click in place. Function will search 
-image_search_and_click(image_url, scan_area:=0, click_type:=0, offset:=0, x1:=0, y1:=0, x2:=0, y2:=0)
+image_search_and_click(image_url, scan_area:=0, click_type:=0, offset:=0, x1:=0, y1:=0, x2:=0, y2:=0, delay:="fast")
 {
     menu_width = 140
     search_counter = 3
@@ -261,8 +264,14 @@ RetryImageSearch:
     IfWinActive, %runelite_window%
     {
         ; delays should be randomized often
-        set_random_delays()
-        
+        if (delay = "slow")
+        {
+            set_random_delays(45, 85)
+        }
+        else
+        {
+            set_random_delays(15, 30)
+        }
         ImageSearch, found_x, found_y, %x1%, %y1%, %x2%, %y2%, *%shade_variation% %image_url%
 
         if (ErrorLevel = 2)     ;if the search wasn't able to start
@@ -364,14 +373,14 @@ menu_is_open()
 }
 
 ; ---------------------- Utilities --------------------------------------------
-set_random_delays()
+set_random_delays(mouse_delay_low :=15, mouse_delay_high:=35, key_delay_low:=20, key_delay_high:=45, press_duration_low:=20, press_duration_high := 45)
 {   
-    ;set the dalay of your mouse movement between 20ms and 40ms
-    Random, delaySpeed, 15, 35
+    ;set the delay of your mouse movement in microseconds
+    Random, delaySpeed, %mouse_delay_low%, %mouse_delay_high%
     SetMouseDelay, %delaySpeed%
     
-    Random, key_delay_speed, 10, 12
-    Random, press_duration, 10, 12
+    Random, key_delay_speed, %key_delay_low%, %key_delay_high%
+    Random, press_duration, %press_duration_low%, %press_duration_high%
     SetKeyDelay, %key_delay_speed%, %press_duration%
     
 }
@@ -386,7 +395,8 @@ sleep_random( sleep_time_low, sleep_time_high )
 ;Move the mouse randomly, offset from the current location
 mouse_move_random_offset()
 {
-    Random, rand_x, -100, 100
+    set_random_delays(45, 85)
+    Random, rand_x, 30, 100
     Random, rand_y, -90, 90
     MouseMove, rand_x, rand_y,, R
 }
