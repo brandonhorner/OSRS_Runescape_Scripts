@@ -10,6 +10,8 @@
 ; Have your chat turned to "Game" Chat, this would help because we search for phrases in chat box.
 #SingleInstance
 
+SetWorkingDir %A_ScriptDir%\..
+
 CoordMode, Pixel, Screen    ; Starts pixel search at top left of ACTUAL SCREEN, delete if you want to search from top left of WINDOW
 CoordMode, Mouse, Screen
 
@@ -39,20 +41,20 @@ global num_of_tries = 7
 
 global enemy_color := 0xA4FF00 ;Menaphite - 666317 ;Bandit - CAD0B6 ;- all of them (inaccurate) A4FF00  ;some green color
 
-global attack := "images\attack_top_left.bmp"
-global failed_pickpocket := "images\failed_pickpocket.bmp"
-global glancing_blow := "images\glancing_blow.bmp"
-global knockout_option := "images\knockout_option.bmp"
-global pickpocket_option := "images\pickpocket_option.bmp"
-global cooked_lobster := "images\cooked_lobster.bmp"
-global open_bag := "images\open_bag.bmp"
-global unconscious := "images\unconscious.bmp"
-global cannot_knockout := "images\cannot_do_that.bmp"
-global healthbar := "images\healthbar.bmp"
-global stunned := "images\stunned.bmp"
-global missed_right_click := "images\missed_right_click.bmp"
-global combat := "images\combat.bmp"
-global money_bag := "images\money_bag.bmp"
+global attack := "image_library\attack_top_left.bmp"
+global failed_pickpocket := "image_library\failed_pickpocket.bmp"
+global glancing_blow := "image_library\glancing_blow.bmp"
+global knockout_option := "image_library\knockout_option.bmp"
+global pickpocket_option := "image_library\pickpocket_option.bmp"
+global cooked_lobster := "image_library\cooked_lobster.bmp"
+global open_bag := "image_library\open_bag.bmp"
+global unconscious := "image_library\unconscious.bmp"
+global cannot_knockout := "image_library\cannot_do_that.bmp"
+global healthbar := "image_library\healthbar.bmp"
+global stunned := "image_library\stunned.bmp"
+global missed_right_click := "image_library\missed_right_click.bmp"
+global combat := "image_library\combat.bmp"
+global money_bag := "image_library\money_bag.bmp"
 
 global runelite_window := "RuneLite - BinaryBilly"
 global tooltip_x = 600
@@ -250,14 +252,14 @@ health_is_okay()
 
 was_glancing_blow()
 {
-    if (exists("chat", glancing_blow))
+    if (exists("chat", "glancing_blow"))
         return true
     return false
 }
 
 is_unconscious()
 {
-    if(exists("chat", unconscious))
+    if(exists("chat", "unconscious"))
         return true
     return false
 }
@@ -274,7 +276,7 @@ exists(image_area, image_url)
             y2 = %top_left_y2%
         }
         ;change coordiantes to chat window area
-        case chat:
+        case "chat":
         {
             x1 = %chat_x1%
             y1 = %chat_y1%

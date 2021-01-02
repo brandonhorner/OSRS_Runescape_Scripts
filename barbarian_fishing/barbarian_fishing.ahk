@@ -38,9 +38,9 @@ CoordMode, Mouse, Screen
 
 ;TODO: finish support for menu being open
 
-global salmon := "images\salmon.bmp"
-global trout := "images\trout.bmp"
-global sturgeon := "images\sturgeon.bmp"
+global salmon := "image_library\salmon.bmp"
+global trout := "image_library\trout.bmp"
+global sturgeon := "image_library\sturgeon.bmp"
 global report_errors := 0
 
 ^H::
@@ -137,7 +137,7 @@ drop_fish()
 
 is_fishing()
 {
-    is_fishing := "images\is_fishing.bmp"
+    is_fishing := "image_library\is_fishing.bmp"
     IfWinActive, %runelite_window%
     {
         if (image_search_and_click(is_fishing, "top_left"))
@@ -173,7 +173,7 @@ bag_is_full(item)
 
 bag_is_open()
 {
-    bag_is_open := "images\open_bag.bmp"
+    bag_is_open := "image_library\open_bag.bmp"
     IfWinActive, %runelite_window%
     {
         if  (image_search_and_click(bag_is_open, "bag"))
@@ -352,7 +352,7 @@ RetryImageSearch:
 
 menu_is_open()
 {
-    closed_runelite_menu := "images\closed_runelite_menu.bmp"
+    closed_runelite_menu := "image_library\closed_runelite_menu.bmp"
     ImageSearch, dummy_x, dummy_y, 0, 0, %A_ScreenWidth%, %A_ScreenHeight%, %closed_runelite_menu%
     if (ErrorLevel = 2)
     {
