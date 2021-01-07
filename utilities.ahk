@@ -1,3 +1,6 @@
+
+global TRIES := 5
+
 setup()
 {
     IfWinActive, %runelite_window%
@@ -19,20 +22,25 @@ setup()
 }
 
 ;zooms the camera in to max by default
-zoom_in(zoom_level:=35)
+zoom_in(zoom_level:=30)
 {
-    Send, {Wheelup %zoom_level%}
+    Loop, %zoom_level%
+    {
+        Send, {Wheelup}
+        sleep_random(10, 60)
+    }
     return
 }
 
 ;zooms the camera out to max by default
-zoom_out(zoom_level:=35)
+zoom_out(zoom_level:=30)
 {
-    IfWinActive, %runelite_window%
-    {
-        Send, {Wheeldown %zoom_level%}
+        Loop, %zoom_level%
+        {
+            Send, {Wheeldown}
+            sleep_random(10, 60)
+        }
         return
-    }
 }
 
 click_compass()
@@ -74,7 +82,7 @@ menu_is_open()
     else if (ErrorLevel = 1)
     {
         ; menu was open
-        MsgBox, Please close the RuneLite menu.
+        TrayTip,, Please close the RuneLite menu.
         return true
     }
     else
@@ -84,16 +92,85 @@ menu_is_open()
     }
 }
 
-; ---------------------- Utilities --------------------------------------------
+click_closest(image_url)
+{
+    IfWinActive, %runelite_window%
+    {
+        ;how many pixels to expand the search area each iteration
+        expansion_x = 40
+        expansion_y = 22
+        ;center of screen, only character is enclosed
+        x1 := 925
+        y1 := 515
+        x2 := 950
+        y2 := 540
+        
+        while (x2 < A_ScreenWidth and y2 < A_ScreenHeight)
+        {
+            ;click the image within the current area
+            if (image_search_and_click(image_url, "new_area", "left", "item", x1, y1, x2, y2))
+            {
+                ;mouse_move_random_offset()
+                return true
+            }
+            else    ;grow search area
+            {
+                x1 -= %expansion_x%
+                y1 -= %expansion_y%
+                x2 += %expansion_x%
+                y2 += %expansion_y%
+            }
+        }
+    }
+    ;TrayTip,, returning false (click_closest())
+    return false
+}
+
+click_closest_pixel(pixel_color, click_type:="left", offset_x:=0, offset_y:=0)
+{
+    IfWinActive, %runelite_window%
+    {
+        ;how many pixels to expand the search area each iteration
+        expansion_x = 80
+        expansion_y = 44
+        ;center of screen, only character is enclosed
+        x1 := 925
+        y1 := 515
+        x2 := 950
+        y2 := 540
+        
+        while (x2 < A_ScreenWidth and y2 < A_ScreenHeight)
+        {
+            ;ToolTip, %pixel_color% was not found %x1%x%y1% and %x2%x%y2%, 300, 300, 17
+            if (pixel_search_and_click(x1, y1, x2, y2, pixel_color, click_type, offset_x, offset_y))
+            {
+                ;mouse_move_random_offset()
+                ;ToolTip, %pixel_color% was found at %x1%x%y1% and %x2%x%y2%, 700, 700, 16
+                return true
+            }
+            else    ;grow search area
+            {
+                x1 -= %expansion_x%
+                y1 -= %expansion_y%
+                x2 += %expansion_x%
+                y2 += %expansion_y%
+            }
+            sleep_random(200, 300)
+
+        }
+    }
+    return false
+}
+
 ;Search for an image and click on it. If screen area is omitted, then coordinates must be provided. Offset should
 ;   be "option" if you are clicking on a '"right"-click "option"' and "item" if you are clicking around an "item" image.
 ;   If click_type = "right", "right" click, "left" = "left" click, "mouseover" will move the mouse but doesn't click,
 ;   "doubleclick" clicks twice, "in_place" to click in place.
 image_search_and_click(image_url, scan_area:=0, click_type:=0, offset:=0, x1:=0, y1:=0, x2:=0, y2:=0)
 {
-    search_counter = 5
+    attempts = 5
     menu_width = 140
-    shade_variation = 0
+    shade_variation = 15
     
     switch scan_area
     {
@@ -167,16 +244,15 @@ RetryImageSearch:
 
         else if (ErrorLevel = 1)    ;if we can't find the image
         {
-            if (search_counter >= 0)
+            if (attempts >= 0)
             {   
-                shade_variation += 10
-                search_counter--
+                shade_variation += 15
+                attempts--
                 Goto, RetryImageSearch
             }
             else
             {
-                Tooltip, Retried too many times- bot failed to find: `r%image_url%`rCoords:%x1%x%y1%  |  %x2%x%y2% `rn=%shade_variation% `rIt must be off screen or blocked., 100, 100, 20
-                Tooltip, Retried too many times- bot failed to find: `r%image_url%`rCoords:%x1%x%y1%  |  %x2%x%y2% `rn=%shade_variation% `rIt must be off screen or blocked., 100, 100, 20
+                ;Tooltip, Retried too many times- bot failed to find: `r%image_url%`rCoords:%x1%x%y1%  |  %x2%x%y2% `rn=%shade_variation% `rIt must be off screen or blocked., 100, 100, 20
                 return false
             }
         }
@@ -231,9 +307,10 @@ RetryImageSearch:
     return false
 }
 
+
 ;Set the color of a tile in game and use that as the pixel color. if modifier = "right", "right" click,
 ;    "mouseover" will move the mouse but doesn't click, otherwise "left" click.
-pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier:=0, offset:=0)
+pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier:=0, offset_x:=0, offset_y:=0)
 {
     IfWinActive, %runelite_window%
     {
@@ -249,26 +326,13 @@ pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier:=0, offset:=0)
         else
         {
             ;ToolTip, The color %pixel_color% was found at %found_x%x%found_y% `rmodifier= %modifier%, 100, 300, 18
-            
-            ;these magic numbers are about the size of the tile to be clicked into, they might need to be adjusted
-            ;         depending on how small the object inside of the tile is.
-            
-            switch offset
-            {
-                case "mining":
-                    Random, offset_x, -50, -10
-                    Random, offset_y, 0, 50
-                default:
-                    Random, offset_x, -5, 10
-                    Random, offset_y, 0, 15
-            }
-
+            ;these offsets should be determined on a case by case basis
             offset_x += found_x
             offset_y += found_y
             
             switch modifier
             {
-                case "right":
+                case "right":   
                     Click, right, %offset_x%, %offset_y%
             
                 case "mouseover":
@@ -283,7 +347,6 @@ pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier:=0, offset:=0)
     }
     return false
 }
-
 set_random_delays()
 {   
     ;set the dalay of your mouse movement between 20ms and 40ms
@@ -293,13 +356,12 @@ set_random_delays()
     Random, key_delay_speed, 10, 12
     Random, press_duration, 10, 12
     SetKeyDelay, %key_delay_speed%, %press_duration%
-    
+    return
 }
-sleep_random( sleep_time_low, sleep_time_high )
+sleep_random(minimum_time, maximum_time)
 {
-    Random, sleep_time, sleep_time_low, sleep_time_high
+    Random, sleep_time, minimum_time, maximum_time
     Sleep, %sleep_time%
-    
     return
 }
 
@@ -309,4 +371,5 @@ mouse_move_random_offset(lower_x:=-100, upper_x:=100, lower_y:=-90, upper_y:=90)
     Random, rand_x, lower_x, upper_x
     Random, rand_y, lower_y, upper_y
     MouseMove, rand_x, rand_y,, R
+    return
 }

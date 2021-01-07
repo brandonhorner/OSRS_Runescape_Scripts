@@ -227,6 +227,7 @@ mine_until_full()
 {   
     green = 0x00FF4D
     yellow = 0xFFFF00
+    
     ;top iron ore search area
     top_x1 := 660 
     top_y1 := 250 
@@ -239,13 +240,15 @@ mine_until_full()
     bottom_x2 := 1224
     bottom_y2 := 1020
     
+    Random, offset_x, -50, -10
+    Random, offset_y, 0, 50
     while(bag_is_full() == false)
     {
         IfWinActive, %runelite_window%
         {
             if (!pixel_search_and_click(top_x1, top_y1, top_x2, top_y2, yellow))
             {
-                pixel_search_and_click(top_x1, top_y1, top_x2, top_y2, green, "left", "mining")
+                pixel_search_and_click(top_x1, top_y1, top_x2, top_y2, green, "left", offset_x, offset_y)
                 if (report_messages)
                         ToolTip, Mining north iron node, 500, 500, 1
                 sleep_random(1000, 1500)
@@ -256,7 +259,7 @@ mine_until_full()
             }
             if (!pixel_search_and_click(bottom_x1, bottom_y1, bottom_x2, bottom_y2, yellow))
             {
-                pixel_search_and_click(bottom_x1, bottom_y1, bottom_x2, bottom_y2, green, "left", "mining")
+                pixel_search_and_click(bottom_x1, bottom_y1, bottom_x2, bottom_y2, green, "left", offset_x, offset_y)
                 if (report_messages) 
                         ToolTip, Mining south iron node, 500, 500, 1
                 sleep_random(1000, 1500)
@@ -753,7 +756,7 @@ RetryImageSearch:
 
 ;Set the color of a tile in game and use that as the pixel color. if modifier = "right", "right" click,
 ;    "mouseover" will move the mouse but doesn't click, otherwise "left" click.
-pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier:=0, offset:=0)
+pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier:=0, offset_x:=0, offset_y:=0)
 {
     IfWinActive, %runelite_window%
     {
@@ -769,20 +772,7 @@ pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier:=0, offset:=0)
         else
         {
             ;ToolTip, The color %pixel_color% was found at %found_x%x%found_y% `rmodifier= %modifier%, 100, 300, 18
-            
-            ;these magic numbers are about the size of the tile to be clicked into, they might need to be adjusted
-            ;         depending on how small the object inside of the tile is.
-            
-            switch offset
-            {
-                case "mining":
-                    Random, offset_x, -50, -10
-                    Random, offset_y, 0, 50
-                default:
-                    Random, offset_x, -5, 10
-                    Random, offset_y, 0, 15
-            }
-
+            ;these offsets should be determined on a case by case basis
             offset_x += found_x
             offset_y += found_y
             
