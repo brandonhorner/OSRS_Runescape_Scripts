@@ -33,11 +33,11 @@ global runelite_window := "RuneLite - BinaryBilly"
 #NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
 ; #Warn  ; Enable warnings to assist with detecting common errors.
 SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
-SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
+SetWorkingDir %A_ScriptDir%\..  ; Ensures a consistent starting directory.
 
-global iron_ore := "images\iron_ore.bmp"
-global mithril_ore := "images\mithril_ore.bmp"
-global silver_ore := "images\silver_ore.bmp"
+global iron_ore := "image_library\iron_ore.bmp"
+global mithril_ore := "image_library\mithril_ore.bmp"
+global silver_ore := "image_library\silver_ore.bmp"
 
 ;currently we must change iron_ore to whatever ore is desired.
 global current_ore := iron_ore
@@ -163,7 +163,7 @@ zoom_out()
 
 click_compass()
 {   
-    xp_minimap_button := "images\xp_minimap_button.bmp"
+    xp_minimap_button := "image_library\xp_minimap_button.bmp"
     
     ImageSearch, found_x, found_y, 0, 0, %A_ScreenWidth%, %A_ScreenHeight%, %xp_minimap_button%
     if (ErrorLevel = 2)
@@ -186,7 +186,7 @@ click_compass()
 
 teleport_with_cloak()
 {
-    ardougne_cloak := "images\ardougne_cloak.bmp"
+    ardougne_cloak := "image_library\ardougne_cloak.bmp"
     
     open_equipment()
     ;"right" click ardougne cloak
@@ -200,23 +200,24 @@ teleport_with_cloak()
 mine_north_iron_node()
 {
     green = 0x00FF4D
-    mining_text := "images\mining_text.bmp"
-
-ClickIronNode:
-    if (pixel_search_and_click(424, 35, 1628, 866, green, "mouseover"))
+    mining_text := "image_library\mining_text.bmp"
+    loop_count := 5
+    while(loop_count > 0)
     {
-        if(image_search_and_click(mining_text, "top_left"))
+        if (pixel_search_and_click(424, 35, 1628, 866, green, "mouseover"))
         {
-            Send, {Ctrl down}
-            sleep_random(100,200)
-            Click
-            sleep_random(100,200)
-            Send, {Ctrl up}
-        }
-        else
-        {
-            sleep_random(500, 1000)
-            Goto, ClickIronNode
+            if(image_search_and_click(mining_text, "top_left"))
+            {
+                Send, {Ctrl down}
+                sleep_random(100,200)
+                Click
+                sleep_random(100,200)
+                Send, {Ctrl up}
+            }
+            else
+            {
+                sleep_random(500, 1000)
+            }       
         }
     }
     return
@@ -226,6 +227,7 @@ mine_until_full()
 {   
     green = 0x00FF4D
     yellow = 0xFFFF00
+    
     ;top iron ore search area
     top_x1 := 660 
     top_y1 := 250 
@@ -238,13 +240,15 @@ mine_until_full()
     bottom_x2 := 1224
     bottom_y2 := 1020
     
+    Random, offset_x, -50, -10
+    Random, offset_y, 0, 50
     while(bag_is_full() == false)
     {
         IfWinActive, %runelite_window%
         {
             if (!pixel_search_and_click(top_x1, top_y1, top_x2, top_y2, yellow))
             {
-                pixel_search_and_click(top_x1, top_y1, top_x2, top_y2, green, "left", "mining")
+                pixel_search_and_click(top_x1, top_y1, top_x2, top_y2, green, "left", offset_x, offset_y)
                 if (report_messages)
                         ToolTip, Mining north iron node, 500, 500, 1
                 sleep_random(1000, 1500)
@@ -255,7 +259,7 @@ mine_until_full()
             }
             if (!pixel_search_and_click(bottom_x1, bottom_y1, bottom_x2, bottom_y2, yellow))
             {
-                pixel_search_and_click(bottom_x1, bottom_y1, bottom_x2, bottom_y2, green, "left", "mining")
+                pixel_search_and_click(bottom_x1, bottom_y1, bottom_x2, bottom_y2, green, "left", offset_x, offset_y)
                 if (report_messages) 
                         ToolTip, Mining south iron node, 500, 500, 1
                 sleep_random(1000, 1500)
@@ -272,7 +276,7 @@ mine_until_full()
 
 is_mining()
 {
-    is_mining := "images\is_mining.bmp"
+    is_mining := "image_library\is_mining.bmp"
     if (image_search_and_click(is_mining, "top_left"))
         return true
     return false
@@ -316,7 +320,7 @@ go_to_pink()
 click_bank()
 {
     teal = 0x00FFFF
-    bank_text := "images\bank_text.bmp"
+    bank_text := "image_library\bank_text.bmp"
     
 ClickBank:
     if (pixel_search_and_click(424, 35, 1628, 866, teal, "mouseover"))
@@ -351,7 +355,7 @@ superheat_ore(ore, count)
 
 click_kandarin_monastery_menu_option()
 {
-    kandarin_monastery_menu_option := "images\kandarin_monastery_menu_option.bmp"
+    kandarin_monastery_menu_option := "image_library\kandarin_monastery_menu_option.bmp"
     search_limit = 30
     while(search_limit > 0)
     {
@@ -386,11 +390,8 @@ click_ore(ore)
             sleep_random(10,20)
             open_bag()
             search_limit --
-<<<<<<< Updated upstream
             mouse_move_random_offset(2, 10, 2, 10)
-=======
             mouse_move_random_offset(0, 10, -10, 10)
->>>>>>> Stashed changes
         }
 
         if(report_messages) 
@@ -402,7 +403,7 @@ click_ore(ore)
 
 click_superheat()
 {
-    superheat := "images\superheat.bmp"
+    superheat := "image_library\superheat.bmp"
     search_limit = 30
     while(search_limit > 0)
     {
@@ -437,7 +438,7 @@ exists(image_url)
 ;check to see if "bag" is open, if not then open it
 open_bag()
 {
-    open_bag := "images\open_bag.bmp"
+    open_bag := "image_library\open_bag.bmp"
     ;if (report_messages)
     ;    ToolTip, Opening bag, 500, 500, 1
     if (!image_search_and_click(open_bag, "bag"))
@@ -449,7 +450,7 @@ open_bag()
 ;check to see if equipment is open, if not then open it
 open_equipment()
 {
-    open_equipment := "images\open_equipment.bmp"
+    open_equipment := "image_library\open_equipment.bmp"
     ;if (report_messages)
         ;ToolTip, Opening equipment, 500, 500, 1
     if (!image_search_and_click(open_equipment, "bag"))
@@ -461,7 +462,7 @@ open_equipment()
 ;check to see if spellbook is open, if not then open it
 open_spellbook()
 {
-    open_spellbook := "images\open_spellbook.bmp"
+    open_spellbook := "image_library\open_spellbook.bmp"
     ;if (report_messages)
         ;ToolTip, Opening spellbook, 500, 500, 1
     if (!image_search_and_click(open_spellbook, "bag"))
@@ -520,7 +521,7 @@ get_ore_count(ore)
 ;returns true if menu is open, false otherwise
 menu_is_open()
 {
-    closed_runelite_menu := "images\closed_runelite_menu.bmp"
+    closed_runelite_menu := "image_library\closed_runelite_menu.bmp"
     ImageSearch, dummy_x, dummy_y, 0, 0, %A_ScreenWidth%, %A_ScreenHeight%, %closed_runelite_menu%
     if (ErrorLevel = 2)
     {
@@ -529,7 +530,7 @@ menu_is_open()
     }
     else if (ErrorLevel = 1)
     {
-        ; menu was not found to be closed
+        ; menu was open
         MsgBox, Please close the RuneLite menu.
         return true
     }
@@ -542,26 +543,26 @@ menu_is_open()
 
 remake_inventory()
 {
-    deposit_all_items := "images\bank_deposit_all_items.bmp"
+    deposit_all_items := "image_library\bank_deposit_all_items.bmp"
     image_search_and_click(deposit_all_items, "bank", "left", "item")
     
-    nature_runes := "images\nature_runes.bmp"
-    adamant_pickaxe := "images\adamant_pickaxe.bmp"
-    rune_pickaxe := "images\rune_pickaxe.bmp"
+    nature_runes := "image_library\nature_runes.bmp"
+    adamant_pickaxe := "image_library\adamant_pickaxe.bmp"
+    rune_pickaxe := "image_library\rune_pickaxe.bmp"
 
     ;withdraw necessary items, you can add to this list after adding an image to the directory
     image_search_and_click(nature_runes, "bank", "right", "item")
     click_withdraw_all()
     ;image_search_and_click(rune_pickaxe, "bank", "left", "item")
     
-    close_bank := "images\exit_bank_button.bmp"
+    close_bank := "image_library\exit_bank_button.bmp"
     image_search_and_click(close_bank, "bank", "left", "item")
     return
 }
 
 click_withdraw_all()
 {
-    withdraw_all := "images\withdraw_all_menu_option.bmp"
+    withdraw_all := "image_library\withdraw_all_menu_option.bmp"
     search_limit = 30
     while(search_limit > 0)
     {
@@ -582,7 +583,7 @@ click_withdraw_all()
 
 ;click_run()
 ;{
-;    xp_minimap_button := "images\xp_minimap_button.bmp"
+;    xp_minimap_button := "image_library\xp_minimap_button.bmp"
 ;
 ;    ImageSearch, found_x, found_y, 0, 0, %A_ScreenWidth%, %A_ScreenHeight%, %xp_minimap_button%
 ;    Random, x_offset, 11, 55
@@ -755,18 +756,13 @@ RetryImageSearch:
 
 ;Set the color of a tile in game and use that as the pixel color. if modifier = "right", "right" click,
 ;    "mouseover" will move the mouse but doesn't click, otherwise "left" click.
-pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier:=0, offset:=0)
+pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier:=0, offset_x:=0, offset_y:=0)
 {
     IfWinActive, %runelite_window%
     {
         Random, delaySpeed, 60, 110
         SetMouseDelay, %delaySpeed%
-        menu_width := 240
-        if (menu_is_open())
-        {
-            x1 -= menu_width
-            x2 -= menu_width
-        }
+
         PixelSearch, found_x, found_y, x1, y1, x2, y2, pixel_color, 0, RGB fast ;search region for color
         if ErrorLevel
         {
@@ -776,20 +772,7 @@ pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier:=0, offset:=0)
         else
         {
             ;ToolTip, The color %pixel_color% was found at %found_x%x%found_y% `rmodifier= %modifier%, 100, 300, 18
-            
-            ;these magic numbers are about the size of the tile to be clicked into, they might need to be adjusted
-            ;         depending on how small the object inside of the tile is.
-            
-            switch offset
-            {
-                case "mining":
-                    Random, offset_x, -50, -10
-                    Random, offset_y, 0, 50
-                default:
-                    Random, offset_x, -5, 10
-                    Random, offset_y, 0, 15
-            }
-
+            ;these offsets should be determined on a case by case basis
             offset_x += found_x
             offset_y += found_y
             

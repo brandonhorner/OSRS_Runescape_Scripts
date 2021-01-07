@@ -10,7 +10,7 @@
 #NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
 ; #Warn  ; Enable warnings to assist with detecting common errors.
 SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
-SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
+SetWorkingDir %A_ScriptDir%\..  ; Ensures a consistent starting directory.
 
 CoordMode, Pixel, Screen    ; Starts pixel search at top left of ACTUAL SCREEN, delete if you want to search from top left of WINDOW
 CoordMode, Mouse, Screen
@@ -20,8 +20,8 @@ global bank_inventory_y1 := 50
 global bank_inventory_x2 := 1060
 global bank_inventory_y2 := 850
 
-global bank_deposit_all_items := "images\bank_deposit_all_items.bmp"
-global lobster_pot := "images\lobster_pot.bmp"
+global bank_deposit_all_items := "image_library\bank_deposit_all_items.bmp"
+global lobster_pot := "image_library\lobster_pot.bmp"
 
 SetMouseDelay, 80
 

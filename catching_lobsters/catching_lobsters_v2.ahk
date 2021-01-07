@@ -4,7 +4,7 @@
 ; your inventory looks like.
 ; This was made on a 1920 x 1080 screen size. (In Windows).
 ; Have a lobster pot in the first screen of your bank (turn on "Always set placeholders")
- 
+SetWorkingDir, %A_ScriptDir%\..
 #SingleInstance
 
 CoordMode, Pixel, Screen    ; Starts pixel search at top left of ACTUAL SCREEN, delete if you want to search from top left of WINDOW
@@ -66,13 +66,13 @@ global red_tile := 0xFF0000
 global teal_tile := 0x377372
 global yellow_tile := 0xFFFF00
 
-global bag_is_open := "images\bag_is_open.bmp"
-global bank := "images\bank.bmp"
-global bank_deposit_all_items := "images\bank_deposit_all_items.bmp"
-global fishing := "images\fishing.bmp"
-global fishing_text := "images\fishing_text.bmp"
-global lobster_pot := "images\lobster_pot.bmp"
-global raw_lobster := "images\raw_lobster.bmp"
+global bag_is_open := "image_library\bag_is_open.bmp"
+global bank := "image_library\bank.bmp"
+global bank_deposit_all_items := "image_library\bank_deposit_all_items.bmp"
+global fishing := "image_library\fishing.bmp"
+global fishing_text := "image_library\fishing_text.bmp"
+global lobster_pot := "image_library\lobster_pot.bmp"
+global raw_lobster := "image_library\raw_lobster.bmp"
 
 global runelite_window := RuneLite - BinaryBilly
 

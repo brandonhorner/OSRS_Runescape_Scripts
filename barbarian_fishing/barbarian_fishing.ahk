@@ -37,12 +37,11 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 CoordMode, Pixel, Screen    ; Starts pixel search at top left of ACTUAL SCREEN, delete if you want to search from top left of WINDOW
 CoordMode, Mouse, Screen
 
-
 ;TODO: finish support for menu being open
 
-global salmon := "images\salmon.bmp"
-global trout := "images\trout.bmp"
-global sturgeon := "images\sturgeon.bmp"
+global salmon := "image_library\salmon.bmp"
+global trout := "image_library\trout.bmp"
+global sturgeon := "image_library\sturgeon.bmp"
 global report_errors := 0
 
 ^H::
@@ -59,6 +58,10 @@ global report_errors := 0
             {
                 MsgBox, Cannot find feather. Please replenish stocks.`r`rPress OK when you are ready.
                 sleep_random(500, 1500)
+                ToolTip, pause 1-1.5 minutes, %main_tooltip_x1%, %main_tooltip_y1%, 1
+                sleep_random(60000, 90000)
+                ToolTip, %run_count%. Waiting extra time (3-10 sec), %main_tooltip_x1%, %main_tooltip_y1%
+                sleep_random(3000, 10000)
             }
             while (is_fishing())
             {
@@ -87,7 +90,7 @@ global report_errors := 0
         TrayTip,, %runelite_window% was not in the forefront, try again!
         sleep_random(500, 1500)
     }
-                                                                                                                                                                                        ToolTip, Finished %run_count% runs., %main_tooltip_x1%, %main_tooltip_y1%, 1
+                                                                                                                                                                                        ToolTip, Finished %run_count% runs., %main_tooltip_x1%, %main_too_y1%, 1
 return
 }
 
@@ -159,7 +162,7 @@ feather_in_inventory()
 
 is_fishing()
 {
-    is_fishing := "images\is_fishing.bmp"
+    is_fishing := "image_library\is_fishing.bmp"
     IfWinActive, %runelite_window%
     {
         if (image_search_and_click(is_fishing, "top_left"))
@@ -201,7 +204,7 @@ bag_is_full(item)
 
 bag_is_open()
 {
-    bag_is_open := "images\open_bag.bmp"
+    bag_is_open := "image_library\open_bag.bmp"
     IfWinActive, %runelite_window%
     {
         if  (image_search_and_click(bag_is_open, "bag"))
@@ -380,7 +383,7 @@ RetryImageSearch:
 
 menu_is_open()
 {
-    closed_runelite_menu := "images\closed_runelite_menu.bmp"
+    closed_runelite_menu := "image_library\closed_runelite_menu.bmp"
     ImageSearch, dummy_x, dummy_y, 0, 0, %A_ScreenWidth%, %A_ScreenHeight%, %closed_runelite_menu%
     if (ErrorLevel = 2)
     {
