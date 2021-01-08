@@ -15,7 +15,7 @@ global world_tile_color := 0xFF00FF ;pink
 
 ;constants
 global TRIES := 5   ; how many tries you want the functions to run before giving up.
-global XTOOLTIP := 500, YTOOLTIP := 500
+global XTOOLTIP := 1300, YTOOLTIP := 800
 
 
 ;clicks on a pixel of a certain color closest to the center of the screen. searches entire screen.
@@ -45,7 +45,7 @@ click_existing_marks()
         ;TODO EDIT OFFSET FOR MARK OF GRACE
             Random, offset_x, -5, 5
             Random, offset_y,-5, 5
-            if (pixel_search_and_click(0, 0, A_ScreenWidth - 200, A_ScreenHeight, mark_of_grace_color, "mouseover"))
+            if (pixel_search_and_click(0, 0, A_ScreenWidth - 355, A_ScreenHeight, mark_of_grace_color, "mouseover"))
             {
                 if (image_search_and_click(mark_of_grace_text, "top_left"))
                 {
@@ -63,7 +63,7 @@ click_existing_marks()
 
 on_ground(world_tile_color)
 {
-    if(pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, world_tile_color, "left"))
+    if(pixel_search_and_click(0, 0, A_ScreenWidth - 355, A_ScreenHeight, world_tile_color, "left"))
     {
         ToolTip, on the ground - zooming out - starting over`r      (5-8 second pause), XTOOLTIP, YTOOLTIP, 1
         zoom_out()
@@ -135,7 +135,8 @@ click_obstacle(obstacle)
                 in_game_verification_text := "image_library\agility_course\jump_edge_text.png"
                 message := "jumping off edge"
         }
-        ToolTip, obstacle is %obstacle% `rtries are %tries% `rtrying to find the colorz, XTOOLTIP, YTOOLTIP, 1
+        ToolTip, obstacle is %obstacle% `r%tries% tries left`rtrying to find the obstacle colors, XTOOLTIP, YTOOLTIP, 1
+        ;search both obstacle colors, sometimes an obstacle will be the alternate color, and you must travel to the mark of grace at another obstacle.
         if (pixel_search_and_click(x1, y1, x2, y2, obstacle_color, "mouseover", offset_x, offset_y) 
             or pixel_search_and_click(x1, y1, x2, y2, obstacle_alternate_color, "mouseover", offset_x, offset_y)
             or pixel_search_and_click(0, 0, A_ScreenWidth - 355, A_ScreenHeight, obstacle_color, "mouseover", offset_x, offset_y)
@@ -143,7 +144,7 @@ click_obstacle(obstacle)
         {
             if (image_search_and_click(in_game_verification_text, "top_left"))
             {
-                ToolTip, obstacle is %obstacle% `r%tries% tries left. `rsleeping %sleep_time_min%ms to %sleep_time_max%ms, XTOOLTIP, YTOOLTIP, 1
+                ToolTip, obstacle is %obstacle% (success)`r%tries% tries left. `rsleeping %sleep_time_min%ms to %sleep_time_max%ms, XTOOLTIP, YTOOLTIP, 1
                 ctrl_click_in_place()
                 sleep_random(sleep_time_min, sleep_time_max)
                 return true
