@@ -63,15 +63,15 @@ numpad1::
 {
     IfWinActive, %runelite_window%
     {
-        loop_count := 500
+        successful_runs := 0
         pink_tile := 0xFF00FF
         
         ;setup character
         setup()
         
-        while (loop_count > 0)
+        while (successful_runs < 500)
         {
-            ToolTip, %loop_count% runs left., XTOOLTIP, 475, 2
+            ToolTip, %successful_runs% successful runs completed!, XTOOLTIP, 775, 2
             
             ;click the bank wall
             click_obstacle("climb_bank_wall")
@@ -84,7 +84,7 @@ numpad1::
             click_obstacle("jump_gap_1")
             
             if(on_ground(pink_tile))
-                goto LoopEnd
+                continue
             
             ;check for marks
             click_existing_marks()
@@ -93,7 +93,7 @@ numpad1::
             click_obstacle("cross_tightrope")
             
             if(on_ground(pink_tile))
-                goto LoopEnd
+                continue
             
             ;check for marks
             click_existing_marks()
@@ -102,7 +102,7 @@ numpad1::
             click_obstacle("jump_gap_2")
 
             if(on_ground(pink_tile))
-                goto LoopEnd
+                continue
 
             ;check for marks
             click_existing_marks()
@@ -111,18 +111,17 @@ numpad1::
             click_obstacle("jump_gap_3")
             
             if(on_ground(pink_tile))
-                goto LoopEnd
+                continue
 
             ;check for marks
             click_existing_marks()
             
             ;click to jump edge
-            click_obstacle("jump_edge")
+            if(click_obstacle("jump_edge"))
+                successful_runs++
             zoom_out()
             
             click_colored_world_tile(pink_tile)
-        LoopEnd:
-            loop_count --
         }
     }
     return
