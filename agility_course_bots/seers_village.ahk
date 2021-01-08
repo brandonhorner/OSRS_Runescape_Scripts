@@ -5,9 +5,10 @@ SetWorkingDir %A_ScriptDir%\..  ; Ensures a consistent starting directory.
 
 #Include ..\utilities.ahk
 
-/*  
+/*  Must change your color scheme in 'Agility' app to the colors below. 
+    Must add pink squares within view of the climb bank wall spot.
     If you have problems with the bot, try changing the following values to a new unique color.
-    Change the color in the RuneLite default app "Agility" and change the colors there as well.
+    Change the color in the RuneLite default app 'Agility' and change the colors there as well.
 */ 
 global obstacle_color := 0x2190E5    ;cyan/teal
 global obstacle_alternate_color := 0x00FFFF    ;teal

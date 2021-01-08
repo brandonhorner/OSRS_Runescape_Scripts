@@ -59,7 +59,7 @@ global runelite_window := "RuneLite - BinaryBilly"
     return
 }
 ;Main hotkey to run the script.
-^r::
+numpad1::
 {
     IfWinActive, %runelite_window%
     {
