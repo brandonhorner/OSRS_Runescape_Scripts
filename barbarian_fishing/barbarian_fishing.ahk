@@ -1,31 +1,32 @@
-;Created by Brandon Horner aKa BinaryBilly
-;   testing as of 11/29/2020
-;   
-;REQUIREMENTS CHECKLIST:
-;
-; 0. Must be using RuneLite client.
-;
-; 1. Change your name in the window names in the code below.
-global runelite_window := "RuneLite - BinaryBilly"
-;                                      ^  ^  ^ replace this with your character's name
-
-; 2. This was made on a 1920 x 1080 screen. Use the same resolution for now.
-;
-; 3. You should have fishing icons on.
-;   - Click wrench at top "right" of RuneLite. Go to 'Fishing' app settings.
-;
-; 4. Zoom all the way out so you can see all of the spawns and face north (click compass).  
-;
-; 5. Go to the top spawns (only spot I tested).
-;
-; 6. Keep an empty slot in the bottom "right" of "bag" (the very corner slot). 
-;
-; 7. You should have a barbarian fishing harpoon and some bait (10k feathers will easily last overnight).
-;
-; 8. Go to 'Entities' app and turn off entities. (I have seen a fishing pole cover the spawn image before).
-; Optional: Go to the 'Camera' app in RuneLite and enable 'Vertical camera'.
-;
-; 
+/*Created by Brandon Horner aKa BinaryBilly
+ *  testing as of 11/29/2020
+ *
+ * REQUIREMENTS CHECKLIST:
+ *
+ * 0. Must be using RuneLite client.
+ *
+ * 1. Change your name in the window names in the code below.
+ */
+    global runelite_window := "RuneLite - BinaryBilly"
+/*                                                        ^  ^  ^ replace BinaryBilly with your character's name
+ *
+ * 2. This was made on a 1920 x 1080 screen. Use the same resolution for now.
+ *
+ * 3. You should have fishing icons on.
+ *   - Click wrench at top "right" of RuneLite. Go to 'Fishing' app settings.
+ *
+ * 4. Zoom all the way out so you can see all of the spawns and face north (click compass).  
+ *
+ * 5. Go to the top spawns (only spot I tested).
+ *
+ * 6. Keep an empty slot in the bottom "right" of "bag" (the very corner slot). 
+ *
+ * 7. You should have a barbarian fishing harpoon and some bait (10k feathers will easily last overnight).
+ *
+ * 8. Go to 'Entities' app and turn off entities. (I have seen a fishing pole cover the spawn image before).
+ * Optional: Go to the 'Camera' app in RuneLite and enable 'Vertical camera'.
+ *
+ */
 
 #SingleInstance
 #NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
@@ -48,41 +49,48 @@ global report_errors := 0
     main_tooltip_x1 = 700
     main_tooltip_y1 = 500
     run_count := 0
-
-CheckFishing:
-    IfWinActive, %runelite_window%
+    
+    while  (run_count < 400)
     {
-        while (is_fishing())
+        IfWinActive, %runelite_window%
         {
-            ToolTip, %run_count%. We be fishin'..., %main_tooltip_x1%, %main_tooltip_y1%, 1
-            sleep_random(3000, 10000)
-            value := Mod(run_count, 10)
-            if( value = 0 )
+            if (!feather_in_inventory())
             {
+                MsgBox, Cannot find feather. Please replenish stocks.`r`rPress OK when you are ready.
+                sleep_random(500, 1500)
                 ToolTip, pause 1-1.5 minutes, %main_tooltip_x1%, %main_tooltip_y1%, 1
                 sleep_random(60000, 90000)
                 ToolTip, %run_count%. Waiting extra time (3-10 sec), %main_tooltip_x1%, %main_tooltip_y1%
                 sleep_random(3000, 10000)
             }
+            while (is_fishing())
+            {
+                                                                                                                                                                                        ToolTip, %run_count%. We be fishin'..., %main_tooltip_x1%, %main_tooltip_y1%, 1
+                sleep_random(3000, 18000)
+                value := Mod(run_count, 10)
+                if (value = 0)
+                {
+                                                                                                                                                                                        ToolTip, %run_count%. Waiting extra time (30-100 sec), %main_tooltip_x1%, %main_tooltip_y1%
+                    sleep_random(30000, 100000)
+                }
+            }
+                                                                                                                                                                                        ToolTip, %run_count%. We aren't fishing. `rChecking if "bag" is full..., %main_tooltip_x1%, %main_tooltip_y1%, 1
+            ;if not fishing, check last "bag" slot to see if full
+            if (bag_is_full(trout) or bag_is_full(salmon) or bag_is_full(sturgeon))
+            {
+                run_count++
+                                                                                                                                                                                        ToolTip, Bag was filled %run_count% time(s).`r...Dropping fish, %main_tooltip_x1%, %main_tooltip_y1%, 1
+                drop_fish()
+            }
+                                                                                                                                                                                        ToolTip, %run_count%. Clicking new fishing spot..., %main_tooltip_x1%, %main_tooltip_y1%, 1
+            ;scan for fish to catch
+            click_closest(sturgeon)
+            sleep_random(4000, 5500)
         }
-        ToolTip, We aren't fishing. `rChecking if "bag" is full..., %main_tooltip_x1%, %main_tooltip_y1%, 1
-        ;if not fishing, check last "bag" slot to see if full
-        if (bag_is_full(trout) or bag_is_full(salmon) or bag_is_full(sturgeon))
-        {
-            run_count++
-            ToolTip, Bag was filled %run_count% time(s).`r...Dropping fish, %main_tooltip_x1%, %main_tooltip_y1%, 1
-            drop_fish()
-            if (run_count >= 140)
-                return
-        }
-        ;scan for fish to catch
-        ToolTip, Clicking new fishing spot..., %main_tooltip_x1%, %main_tooltip_y1%, 1
-        click_closest(sturgeon)
-        sleep_random(4000, 5500)
-
-        Goto, CheckFishing
+        TrayTip,, %runelite_window% was not in the forefront, try again!
+        sleep_random(500, 1500)
     }
-    
+                                                                                                                                                                                        ToolTip, Finished %run_count% runs., %main_tooltip_x1%, %main_too_y1%, 1
 return
 }
 
@@ -135,6 +143,23 @@ drop_fish()
     return true
 }
 
+feather_in_inventory()
+{
+    feather := "images\feather.bmp"
+    open_bag()
+    num_of_attempts = 0
+    WinActivate, %runelite_window%
+    while (num_of_attempts < 10)
+    {
+        if  (image_search_and_click(feather, "bag"))
+            return true
+        sleep_random(500, 1000)
+        mouse_move_random_offset()
+        num_of_attempts++
+    }
+    return false
+}
+
 is_fishing()
 {
     is_fishing := "image_library\is_fishing.bmp"
@@ -146,6 +171,16 @@ is_fishing()
     return false
 }
 
+open_bag()
+{
+        if (bag_is_open() = false)
+        {
+            SendInput, {F3}             ;open the "bag"'
+            return true
+        }
+        return false
+}         
+  
 bag_is_full(item)
 {
     IfWinActive, %runelite_window%
@@ -155,11 +190,7 @@ bag_is_full(item)
         bag_x2 = 1855
         bag_y2 = 1000
         
-        if (bag_is_open() = false)
-        {
-            ;open the "bag"
-            SendInput, {F3}
-        }
+        open_bag()
         sleep_random(200, 600)
 
         if(image_search_and_click(item, "new_area", 0, "item", last_bagslot_x1, last_bagslot_y1, bag_x2, bag_y2))
