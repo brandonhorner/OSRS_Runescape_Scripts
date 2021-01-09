@@ -42,17 +42,18 @@ click_existing_marks()
     {
         while (tries > 0)
         {
-        ToolTip, click_existing_marks():`r%tries% tries left. `rtrying to find the mark of grace color, XTOOLTIP, YTOOLTIP, 1
-        ;TODO EDIT OFFSET FOR MARK OF GRACE
+            ToolTip, click_existing_marks():`r%tries% tries left. `rtrying to find the mark of grace color, XTOOLTIP, YTOOLTIP, 1
+            min_sleep_time := 2000
+            max_sleep_time := 3000
             Random, offset_x, -5, 5
             Random, offset_y,-5, 5
             if (pixel_search_and_click(0, 0, A_ScreenWidth - 355, A_ScreenHeight, mark_of_grace_color, "mouseover"))
             {
                 if (image_search_and_click(mark_of_grace_text, "top_left"))
                 {
-                    ToolTip, Clicking on the mark of grace! `r      (5-8 second pause), XTOOLTIP, YTOOLTIP, 1
+                    ToolTip, Clicking on the mark of grace! `r      (%min_sleep_time%ms to %max_sleep_time% ms pause), XTOOLTIP, YTOOLTIP, 1
                     ctrl_click_in_place()
-                    sleep_random(5000, 8000)
+                    sleep_random(min_sleep_time, max_sleep_time)
                     return true
                 }
             }
@@ -80,6 +81,8 @@ click_obstacle(obstacle)
     
     while (tries > 0)
     {
+        IfWinActive, %runelite_window%
+        {
         switch obstacle     ;based on the obstacle we have different areas to
         {                   ;   randomize our clicks within
             case "climb_bank_wall":
@@ -151,11 +154,12 @@ click_obstacle(obstacle)
                 return true
             }
         }
-        ;always put a sleep in your loop
-        sleep_random(100, 200)
+        ;slow the loop down so they don't lock up the process
+        sleep_random(50, 100)
         tries--
         ToolTip, tries = %tries%... failed to find the colorz, XTOOLTIP, YTOOLTIP, 1
-    }
+    } ;end switch
+    } ;end IfWinActive
     return false        
 }
 

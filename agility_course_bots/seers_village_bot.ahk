@@ -14,52 +14,19 @@ Ctrl+r to run the script
 */
 global runelite_window := "RuneLite - BinaryBilly"
 
-/*
-^`::
-    cross_tightrope_text := "image_library\agility_course\cross_tightrope_text.png"
-    jump_edge_text := "image_library\agility_course\jump_edge_text.png"
-    jump_gap_text := "image_library\agility_course\jump_gap_text.png"
-    climb_bank_text := "image_library\agility_course\climb_bank_text.png"
-    verification_texts := [(climb_bank_text), (jump_gap_text), (cross_tightrope_text), (jump_edge_text)]
-    for index, text in verification_texts
-    {
-        s .= index "=" text "`n"
-        MsgBox % s
-    }
-    return
-*/
-
 ;Hotkey to reload the script.
 ^g::
 {
     reload
     return
 }
-/*
-^`::
-{
-    PixelSearch, Px, Py, 0, 50, 1645, 1100, 0x00FF00, 0, RGB fast
-    if(Px)
-        ToolTip, %Px%x%Py%, 800, 800, 13
-    if(!click_closest_pixel(0x00FF00, "mouseover"))
-    {
-        ToolTip, failed ya boy, 500, 500, 1
-    }
-    return
-}
-*/
 
-^,::
-    zoom_in(19)
+;Main hotkey to run the script.
+^r::
+    main()
     return
     
-^`::
-{
-    click_obstacle("jump_edge")
-    return
-}
-;Main hotkey to run the script.
-numpad1::
+main()
 {
     IfWinActive, %runelite_window%
     {
@@ -71,6 +38,11 @@ numpad1::
         
         while (successful_runs < 500)
         {
+            if(successful_runs >= 20 and Mod(successful_runs, 10) = 0)
+            {
+                ToolTip, sleeping 10-30 seconds, XTOOLTIP, YTOOLTIP, 1
+                sleep_random(10000, 30000)
+            }
             ToolTip, %successful_runs% successful runs completed!, XTOOLTIP, 775, 2
             
             ;click the bank wall
