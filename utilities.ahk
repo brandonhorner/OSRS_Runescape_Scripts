@@ -27,7 +27,7 @@ zoom_in(zoom_level:=30)
     Loop, %zoom_level%
     {
         Send, {Wheelup}
-        sleep_random(10, 60)
+        sleep_random(25, 50)
     }
     return
 }
@@ -38,7 +38,7 @@ zoom_out(zoom_level:=30)
         Loop, %zoom_level%
         {
             Send, {Wheeldown}
-            sleep_random(10, 60)
+            sleep_random(25, 50)
         }
         return
 }
