@@ -81,7 +81,7 @@ global runelite_window := RuneLite - BinaryBilly
     IfWinActive, %runelite_window%
     {
     ;TODO
-    ; Check where you with search_screen_portion
+    ; Check where are you with search_screen_portion
     Goto, CheckFishing
     Bank:
         loop_count := 50
