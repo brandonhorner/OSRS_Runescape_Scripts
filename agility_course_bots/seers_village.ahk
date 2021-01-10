@@ -21,11 +21,16 @@ global XTOOLTIP := 1300, YTOOLTIP := 800
 
 ;clicks on a pixel of a certain color closest to the center of the screen. searches entire screen.
 click_colored_world_tile(color_of_tile)
-{
-    if (click_closest_pixel(color_of_tile, "left"))
+{   
+    if (click_closest_pixel(color_of_tile, "mouseover"))
     {
-        ToolTip, Clicking on the colored world tile. `r    (8.5 - 12 second pause), XTOOLTIP, YTOOLTIP, 1
-        sleep_random(8500, 12000)
+        min_sleep_time := 8500
+        max_sleep_time := 12000
+        ToolTip, Clicking on the colored world tile. `r    (%min_sleep_time% - %max_sleep_time% second pause), XTOOLTIP, YTOOLTIP, 1
+        Random, offset_x, -50, 100
+        Random, offset_y, -50, 5
+        MouseClick, left, offset_x, offset_y,,,, Relative
+        sleep_random(min_sleep_time, min_sleep_time)
         return true
     }
     return false
@@ -74,7 +79,14 @@ on_ground(world_tile_color)
     return false
 }
 
-
+/* 
+   Depending on the obstacle that we are at, we have different areas to search/click on,
+   different sleep times, and different text to be looking for during verification.
+   Parameters
+   obstacle - the current obstacle should input in the correct order as they appear
+    (the obstacles of seers village are seen below in the switch cases).
+   
+*/ 
 click_obstacle(obstacle)
 {
     tries := 5
@@ -83,13 +95,13 @@ click_obstacle(obstacle)
     {
         IfWinActive, %runelite_window%
         {
-        switch obstacle     ;based on the obstacle we have different areas to
-        {                   ;   randomize our clicks within
+        switch obstacle 
+        {   
             case "climb_bank_wall":
                 x1 := 1000, y1 := 75, x2 := 1375, y2 := 750
-                Random, offset_x, 2, 20
-                Random, offset_y, 2, 20
-                sleep_time_min = 9500 ;8 seconds
+                Random, offset_x, 2, 16
+                Random, offset_y, 4, 16
+                sleep_time_min = 9500  ;9.5 seconds
                 sleep_time_max = 12500
                 in_game_verification_text := "image_library\agility_course\climb_bank_text.png"
                 message := "climbing bank wall"
@@ -98,7 +110,7 @@ click_obstacle(obstacle)
                 x1 := 160, y1 := 100, x2 := 550, y2 := 400
                 Random, offset_x, -10, -3
                 Random, offset_y, -5, 50
-                sleep_time_min = 6500 ;5 seconds
+                sleep_time_min = 6500 
                 sleep_time_max = 8500
                 in_game_verification_text := "image_library\agility_course\jump_gap_text.png"
                 message := "jumping first gap"
@@ -146,16 +158,21 @@ click_obstacle(obstacle)
             or pixel_search_and_click(0, 0, A_ScreenWidth - 355, A_ScreenHeight, obstacle_color, "mouseover", offset_x, offset_y)
             or pixel_search_and_click(0, 0, A_ScreenWidth - 355, A_ScreenHeight, obstacle_alternate_color, "mouseover", offset_x, offset_y))
         {
+            ;sleep_random(50, 100)
             if (image_search_and_click(in_game_verification_text, "top_left"))
             {
-                ToolTip, obstacle is %obstacle% (success)`r%tries% tries left. `rsleeping %sleep_time_min%ms to %sleep_time_max%ms, XTOOLTIP, YTOOLTIP, 1
+                ToolTip, %message%`r `rsleeping %sleep_time_min%ms to %sleep_time_max%ms, XTOOLTIP, YTOOLTIP, 1
                 ctrl_click_in_place()
                 sleep_random(sleep_time_min, sleep_time_max)
                 return true
             }
         }
-        ;slow the loop down so they don't lock up the process
-        sleep_random(50, 100)
+        ;slow the loop down so you don't lock up the process
+        ;sleep_random(10, 100)
+        MouseGetPos, x_pos, y_pos
+        Random, new_x_pos, %x_pos%, A_ScreenWidth/2
+        Random, new_y_pos, %y_pos%, A_ScreenHeight/2
+        MouseMove, %new_x_pos%, %new_y_pos%
         tries--
         ToolTip, tries = %tries%... failed to find the colorz, XTOOLTIP, YTOOLTIP, 1
     } ;end switch
