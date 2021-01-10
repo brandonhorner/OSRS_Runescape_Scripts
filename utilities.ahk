@@ -15,7 +15,7 @@ setup()
         
         ;move camera angle to above character
         Send, {up down}
-        sleep_random(3000,3500)
+        sleep_random(1300, 5000)
         Send, {up up}
         return
     }
@@ -350,7 +350,7 @@ pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier:=0, offset_x:=0, of
 set_random_delays()
 {   
     ;set the dalay of your mouse movement between 20ms and 40ms
-    Random, delaySpeed, 60, 80
+    Random, delaySpeed, 20, 40
     SetMouseDelay, %delaySpeed%
     
     Random, key_delay_speed, 10, 12
