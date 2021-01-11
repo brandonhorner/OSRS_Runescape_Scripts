@@ -6,7 +6,7 @@ setup()
     IfWinActive, %runelite_window%
     {
         ;zoom all the way out
-        zoom_out()
+        zoom("out")
         sleep_random(100, 200)
         
         ;Face North (click compass)
@@ -21,26 +21,40 @@ setup()
     }
 }
 
-;zooms the camera in to max by default
-zoom_in(zoom_level:=30)
+;after each iteration, move the mouse, this can fix what went wrong during the loop, as sometimes the mouse gets in the way.
+move_mouse_center()
 {
-    Loop, %zoom_level%
-    {
-        Send, {Wheelup}
-        sleep_random(25, 50)
-    }
-    return
+    Random, offset_x, -300, 300
+    Random, offset_y, -300, 300
+    
+    new_x_pos := A_ScreenWidth/2 + offset_x
+    new_y_pos := A_ScreenHeight/2 + offset_y
+    
+    MouseMove, %new_x_pos%, %new_y_pos%
 }
 
 ;zooms the camera out to max by default
-zoom_out(zoom_level:=30)
+zoom(zoom_direction, zoom_level:=30)
 {
+    move_mouse_center()
+    
+    if (zoom_direction = "out")
+    {
         Loop, %zoom_level%
         {
             Send, {Wheeldown}
             sleep_random(25, 50)
         }
-        return
+    }
+    else ;zooming in
+    {
+        Loop, %zoom_level%
+        {
+            Send {Wheelup}
+            sleep_random(25, 50)
+        }
+    }
+    return
 }
 
 click_compass()

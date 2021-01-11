@@ -27,7 +27,7 @@ click_colored_world_tile(color_of_tile)
         sleep_time_min := 8500
         sleep_time_max := 12000
         ToolTip, Clicking on the colored world tile. `r    (%sleep_time_min% - %sleep_time_max% second pause), XTOOLTIP, YTOOLTIP, 1
-        Random, offset_x, -50, 100
+        Random, offset_x, -50, 70
         Random, offset_y, -50, 5
         MouseClick, left, offset_x, offset_y,,,, Relative
         sleep_random(sleep_time_min, sleep_time_max)
@@ -36,7 +36,9 @@ click_colored_world_tile(color_of_tile)
     return false
 }
 
-;check for marks of grace and collect them
+/*
+    Check for marks of grace and click them
+*/
 click_existing_marks()
 {
     tries := 5
@@ -54,10 +56,11 @@ click_existing_marks()
             Random, offset_y,-5, 5
             if (pixel_search_and_click(0, 0, A_ScreenWidth - 355, A_ScreenHeight, mark_of_grace_color, "mouseover"))
             {
+                sleep_random(50, 75)
                 if (image_search_and_click(mark_of_grace_text, "top_left"))
                 {
                     ToolTip, Clicking on the mark of grace! `rWaiting %sleep_time_min%ms to %sleep_time_max%ms, XTOOLTIP, YTOOLTIP, 1
-                    ctrl_click_in_place()
+                    ctrl_click()
                     sleep_random(sleep_time_min, sleep_time_max)
                     return true
                 }
@@ -68,12 +71,18 @@ click_existing_marks()
     return false
 }
 
+/*
+    If user has fallen to the ground, this should click on user placed tiles that are within 
+    sight of the bank wall obstacle.
+    Parameter
+    world_tile_color - the color of the user placed tiles (should match your in game tiles)
+*/
 on_ground(world_tile_color)
 {
     if(pixel_search_and_click(0, 0, A_ScreenWidth - 355, A_ScreenHeight, world_tile_color, "left"))
     {
         ToolTip, On the ground - zooming out - starting over, XTOOLTIP, YTOOLTIP, 1
-        zoom_out()
+        zoom("out")
         return true
     }
     return false
@@ -82,7 +91,7 @@ on_ground(world_tile_color)
 /* 
    Depending on the obstacle that we are at, we have different areas to search/click on,
    different sleep times, and different text to be looking for during verification.
-   Parameters
+   Parameter
    obstacle - the current obstacle should input in the correct order as they appear
     (the obstacles of seers village are seen below in the switch cases).
    
@@ -98,9 +107,9 @@ click_obstacle(obstacle)
             switch obstacle 
             {   
                 case "climb_bank_wall":
-                    x1 := 1000, y1 := 75, x2 := 1375, y2 := 750
-                    Random, offset_x, 2, 16
-                    Random, offset_y, 4, 16
+                    x1 := 800, y1 := 75, x2 := 1375, y2 := 600
+                    Random, offset_x, 5, 12
+                    Random, offset_y, 5, 12
                     sleep_time_min = 9500  ;9.5 seconds
                     sleep_time_max = 12500
                     in_game_verification_text1 := "image_library\agility_course\climb_bank_text1.png"
@@ -108,8 +117,8 @@ click_obstacle(obstacle)
                     message := "climbing bank wall"
 
                 case "jump_gap_1":
-                    x1 := 160, y1 := 100, x2 := 550, y2 := 400
-                    Random, offset_x, -10, -3
+                    x1 := 100, y1 := 100, x2 := 825, y2 := 825
+                    Random, offset_x, -5, -3
                     Random, offset_y, -5, 50
                     sleep_time_min = 6500 
                     sleep_time_max = 8500
@@ -118,7 +127,7 @@ click_obstacle(obstacle)
                     message := "jumping first gap"
                     
                 case "cross_tightrope":
-                    x1 := 690, y1 := 900, x2 := 1360, y2 := 990
+                    x1 := 660, y1 := 575, x2 := 1375, y2 := 1025
                     Random, offset_x, -30, 30
                     Random, offset_y, 5, 60
                     sleep_time_min = 8500
@@ -128,7 +137,7 @@ click_obstacle(obstacle)
                     message := "crossing tightrope"
                     
                 case "jump_gap_2":
-                    x1 := 950, y1 := 800, x2 := 1200, y2 := 880
+                    x1 := 555, y1 := 550, x2 := 1370, y2 := 990
                     Random, offset_x, -20, 200
                     Random, offset_y, 5, 60
                     sleep_time_min = 4500
@@ -138,7 +147,7 @@ click_obstacle(obstacle)
                     message := "jumping second gap"
                     
                 case "jump_gap_3":
-                    x1 := 100, y1 := 750, x2 := 315, y2 := 800
+                    x1 := 50, y1 := 610, x2 := 1165, y2 := 930
                     Random, offset_x, -30, 100
                     Random, offset_y, 5, 60
                     sleep_time_min = 5500
@@ -148,7 +157,7 @@ click_obstacle(obstacle)
                     message := "jumping third gap"
                     
                 case "jump_edge":
-                    x1 := 960, y1 := 550, x2 := 1020, y2 := 800
+                    x1 := 955, y1 := 115, x2 := 1370, y2 := 900
                     Random, offset_x, 10, 100
                     Random, offset_y, 5, 300
                     sleep_time_min = 200
@@ -157,40 +166,37 @@ click_obstacle(obstacle)
                     in_game_verification_text2 := "image_library\agility_course\jump_edge_text2.png"
                     message := "jumping off edge"
             } ;end switch
-            ToolTip, obstacle is %obstacle% `r%tries% tries left`rtrying to find the obstacle colors, XTOOLTIP, YTOOLTIP, 1
+            
+            ToolTip, Current obstacle is: %obstacle% `r%tries% tries left`rtrying to find the obstacle colors, XTOOLTIP, YTOOLTIP, 1
+            
             ;search both obstacle colors, sometimes an obstacle will be the alternate color, and you must travel to the mark of grace at another obstacle.
             if (pixel_search_and_click(x1, y1, x2, y2, obstacle_color, "mouseover", offset_x, offset_y) 
-                or pixel_search_and_click(x1, y1, x2, y2, obstacle_alternate_color, "mouseover", offset_x, offset_y))
+              or pixel_search_and_click(x1, y1, x2, y2, obstacle_alternate_color, "mouseover", offset_x, offset_y))
             {
                 if (image_search_and_click(in_game_verification_text1, "top_left") 
-                    && image_search_and_click(in_game_verification_text2, "top_left"))
+                  && image_search_and_click(in_game_verification_text2, "top_left"))
                 {
                     ToolTip, %message%`rWaiting %sleep_time_min%ms to %sleep_time_max%ms, XTOOLTIP, YTOOLTIP, 1
-                    ctrl_click_in_place()
+                    ctrl_click()
                     sleep_random(sleep_time_min, sleep_time_max)
                     return true
                 }
             }
-            ;slow the loop down so you don't lock up the process
-            ;sleep_random(10, 100)
-            MouseGetPos, x_pos, y_pos
-            Random, new_x_pos, %x_pos%, A_ScreenWidth/2
-            Random, new_y_pos, %y_pos%, A_ScreenHeight/2
-            MouseMove, %new_x_pos%, %new_y_pos%
             tries--
             ToolTip, tries = %tries%... failed to find the colorz, XTOOLTIP, YTOOLTIP, 1
         } ;end IfWinActive
     } ;end while
+    
     return false        
 }
 
 ;presses down ctrl just before clicking and then lets up off of the ctrl key.
-ctrl_click_in_place()
+ctrl_click()
 {
     Send, {Ctrl down}
-    sleep_random(100,200)
+    sleep_random(30, 60)
     Click
-    sleep_random(100,200)
+    sleep_random(30, 60)
     Send, {Ctrl up}
     return
 }

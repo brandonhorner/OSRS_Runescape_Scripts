@@ -15,14 +15,14 @@ Ctrl+r to run the script
 global runelite_window := "RuneLite - BinaryBilly"
 
 ;Hotkey to reload the script.
-^g::
+F1::
 {
     reload
     return
 }
 
 ;Main hotkey to run the script.
-^r::
+F2::
     main()
     return
     
@@ -47,7 +47,8 @@ main()
             
             ;click the bank wall
             click_obstacle("climb_bank_wall")
-            zoom_in(19)
+            
+            zoom("in", 19)
 
             ;check for marks of grace and collect them
             click_existing_marks()
@@ -75,7 +76,9 @@ main()
 
             if(on_ground(pink_tile))
                 continue
-
+                
+            zoom("out", 7)
+            
             ;check for marks
             click_existing_marks()
             
@@ -89,10 +92,10 @@ main()
             click_existing_marks()
             
             ;click to jump edge
-            if(click_obstacle("jump_edge"))
+            if (click_obstacle("jump_edge"))
                 successful_runs++
-            zoom_out()
             
+            zoom("out", 10)
             click_colored_world_tile(pink_tile)
         }
     }
