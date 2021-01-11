@@ -24,13 +24,13 @@ click_colored_world_tile(color_of_tile)
 {   
     if (click_closest_pixel(color_of_tile, "mouseover"))
     {
-        min_sleep_time := 8500
-        max_sleep_time := 12000
-        ToolTip, Clicking on the colored world tile. `r    (%min_sleep_time% - %max_sleep_time% second pause), XTOOLTIP, YTOOLTIP, 1
+        sleep_time_min := 8500
+        sleep_time_max := 12000
+        ToolTip, Clicking on the colored world tile. `r    (%sleep_time_min% - %sleep_time_max% second pause), XTOOLTIP, YTOOLTIP, 1
         Random, offset_x, -50, 100
         Random, offset_y, -50, 5
         MouseClick, left, offset_x, offset_y,,,, Relative
-        sleep_random(min_sleep_time, min_sleep_time)
+        sleep_random(sleep_time_min, sleep_time_max)
         return true
     }
     return false
@@ -42,23 +42,23 @@ click_existing_marks()
     tries := 5
     mark_of_grace_color := 0x9A8713
     mark_of_grace_text := "image_library\agility_course\mark_of_grace_text.png"
-
+    
     if (pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, obstacle_alternate_color))
     {
         while (tries > 0)
         {
             ToolTip, click_existing_marks():`r%tries% tries left. `rtrying to find the mark of grace color, XTOOLTIP, YTOOLTIP, 1
-            min_sleep_time := 2000
-            max_sleep_time := 3000
+            sleep_time_min := 2000
+            sleep_time_max := 3000
             Random, offset_x, -5, 5
             Random, offset_y,-5, 5
             if (pixel_search_and_click(0, 0, A_ScreenWidth - 355, A_ScreenHeight, mark_of_grace_color, "mouseover"))
             {
                 if (image_search_and_click(mark_of_grace_text, "top_left"))
                 {
-                    ToolTip, Clicking on the mark of grace! `r      (%min_sleep_time%ms to %max_sleep_time% ms pause), XTOOLTIP, YTOOLTIP, 1
+                    ToolTip, Clicking on the mark of grace! `rWaiting %sleep_time_min%ms to %sleep_time_max%ms, XTOOLTIP, YTOOLTIP, 1
                     ctrl_click_in_place()
-                    sleep_random(min_sleep_time, max_sleep_time)
+                    sleep_random(sleep_time_min, sleep_time_max)
                     return true
                 }
             }
@@ -72,7 +72,7 @@ on_ground(world_tile_color)
 {
     if(pixel_search_and_click(0, 0, A_ScreenWidth - 355, A_ScreenHeight, world_tile_color, "left"))
     {
-        ToolTip, on the ground - zooming out - starting over`r      (5-8 second pause), XTOOLTIP, YTOOLTIP, 1
+        ToolTip, On the ground - zooming out - starting over, XTOOLTIP, YTOOLTIP, 1
         zoom_out()
         return true
     }
@@ -95,88 +95,92 @@ click_obstacle(obstacle)
     {
         IfWinActive, %runelite_window%
         {
-        switch obstacle 
-        {   
-            case "climb_bank_wall":
-                x1 := 1000, y1 := 75, x2 := 1375, y2 := 750
-                Random, offset_x, 2, 16
-                Random, offset_y, 4, 16
-                sleep_time_min = 9500  ;9.5 seconds
-                sleep_time_max = 12500
-                in_game_verification_text := "image_library\agility_course\climb_bank_text.png"
-                message := "climbing bank wall"
+            switch obstacle 
+            {   
+                case "climb_bank_wall":
+                    x1 := 1000, y1 := 75, x2 := 1375, y2 := 750
+                    Random, offset_x, 2, 16
+                    Random, offset_y, 4, 16
+                    sleep_time_min = 9500  ;9.5 seconds
+                    sleep_time_max = 12500
+                    in_game_verification_text1 := "image_library\agility_course\climb_bank_text1.png"
+                    in_game_verification_text2 := "image_library\agility_course\climb_bank_text2.png"
+                    message := "climbing bank wall"
 
-            case "jump_gap_1":
-                x1 := 160, y1 := 100, x2 := 550, y2 := 400
-                Random, offset_x, -10, -3
-                Random, offset_y, -5, 50
-                sleep_time_min = 6500 
-                sleep_time_max = 8500
-                in_game_verification_text := "image_library\agility_course\jump_gap_text.png"
-                message := "jumping first gap"
-                
-            case "cross_tightrope":
-                x1 := 690, y1 := 900, x2 := 730, y2 := 980
-                Random, offset_x, -30, 30
-                Random, offset_y, 5, 60
-                sleep_time_min = 9000
-                sleep_time_max = 9500
-                in_game_verification_text := "image_library\agility_course\cross_tightrope_text.png"
-                message := "crossing tightrope"
-                
-            case "jump_gap_2":
-                x1 := 950, y1 := 800, x2 := 1200, y2 := 880
-                Random, offset_x, -20, 200
-                Random, offset_y, 5, 60
-                sleep_time_min = 4500
-                sleep_time_max = 6500
-                in_game_verification_text := "image_library\agility_course\jump_gap_text.png"
-                message := "jumping second gap"
-                
-            case "jump_gap_3":
-                x1 := 100, y1 := 750, x2 := 315, y2 := 800
-                Random, offset_x, -30, 100
-                Random, offset_y, 5, 60
-                sleep_time_min = 5500
-                sleep_time_max = 7500
-                in_game_verification_text := "image_library\agility_course\jump_gap_text.png"
-                message := "jumping third gap"
-                
-            case "jump_edge":
-                x1 := 960, y1 := 550, x2 := 1020, y2 := 800
-                Random, offset_x, 10, 100
-                Random, offset_y, 5, 300
-                sleep_time_min = 200
-                sleep_time_max = 300
-                in_game_verification_text := "image_library\agility_course\jump_edge_text.png"
-                message := "jumping off edge"
-        }
-        ToolTip, obstacle is %obstacle% `r%tries% tries left`rtrying to find the obstacle colors, XTOOLTIP, YTOOLTIP, 1
-        ;search both obstacle colors, sometimes an obstacle will be the alternate color, and you must travel to the mark of grace at another obstacle.
-        if (pixel_search_and_click(x1, y1, x2, y2, obstacle_color, "mouseover", offset_x, offset_y) 
-            or pixel_search_and_click(x1, y1, x2, y2, obstacle_alternate_color, "mouseover", offset_x, offset_y)
-            or pixel_search_and_click(0, 0, A_ScreenWidth - 355, A_ScreenHeight, obstacle_color, "mouseover", offset_x, offset_y)
-            or pixel_search_and_click(0, 0, A_ScreenWidth - 355, A_ScreenHeight, obstacle_alternate_color, "mouseover", offset_x, offset_y))
-        {
-            ;sleep_random(50, 100)
-            if (image_search_and_click(in_game_verification_text, "top_left"))
+                case "jump_gap_1":
+                    x1 := 160, y1 := 100, x2 := 550, y2 := 400
+                    Random, offset_x, -10, -3
+                    Random, offset_y, -5, 50
+                    sleep_time_min = 6500 
+                    sleep_time_max = 8500
+                    in_game_verification_text1 := "image_library\agility_course\jump_gap_text1.png"
+                    in_game_verification_text2 := "image_library\agility_course\jump_gap_text2.png"
+                    message := "jumping first gap"
+                    
+                case "cross_tightrope":
+                    x1 := 690, y1 := 900, x2 := 1360, y2 := 990
+                    Random, offset_x, -30, 30
+                    Random, offset_y, 5, 60
+                    sleep_time_min = 8500
+                    sleep_time_max = 9000
+                    in_game_verification_text1 := "image_library\agility_course\cross_tightrope_text1.png"
+                    in_game_verification_text2 := "image_library\agility_course\cross_tightrope_text2.png"
+                    message := "crossing tightrope"
+                    
+                case "jump_gap_2":
+                    x1 := 950, y1 := 800, x2 := 1200, y2 := 880
+                    Random, offset_x, -20, 200
+                    Random, offset_y, 5, 60
+                    sleep_time_min = 4500
+                    sleep_time_max = 6500
+                    in_game_verification_text1 := "image_library\agility_course\jump_gap_text1.png"
+                    in_game_verification_text2 := "image_library\agility_course\jump_gap_text2.png"
+                    message := "jumping second gap"
+                    
+                case "jump_gap_3":
+                    x1 := 100, y1 := 750, x2 := 315, y2 := 800
+                    Random, offset_x, -30, 100
+                    Random, offset_y, 5, 60
+                    sleep_time_min = 5500
+                    sleep_time_max = 7500
+                    in_game_verification_text1 := "image_library\agility_course\jump_gap_text1.png"
+                    in_game_verification_text2 := "image_library\agility_course\jump_gap_text2.png"
+                    message := "jumping third gap"
+                    
+                case "jump_edge":
+                    x1 := 960, y1 := 550, x2 := 1020, y2 := 800
+                    Random, offset_x, 10, 100
+                    Random, offset_y, 5, 300
+                    sleep_time_min = 200
+                    sleep_time_max = 300
+                    in_game_verification_text1 := "image_library\agility_course\jump_edge_text1.png"
+                    in_game_verification_text2 := "image_library\agility_course\jump_edge_text2.png"
+                    message := "jumping off edge"
+            } ;end switch
+            ToolTip, obstacle is %obstacle% `r%tries% tries left`rtrying to find the obstacle colors, XTOOLTIP, YTOOLTIP, 1
+            ;search both obstacle colors, sometimes an obstacle will be the alternate color, and you must travel to the mark of grace at another obstacle.
+            if (pixel_search_and_click(x1, y1, x2, y2, obstacle_color, "mouseover", offset_x, offset_y) 
+                or pixel_search_and_click(x1, y1, x2, y2, obstacle_alternate_color, "mouseover", offset_x, offset_y))
             {
-                ToolTip, %message%`r `rsleeping %sleep_time_min%ms to %sleep_time_max%ms, XTOOLTIP, YTOOLTIP, 1
-                ctrl_click_in_place()
-                sleep_random(sleep_time_min, sleep_time_max)
-                return true
+                if (image_search_and_click(in_game_verification_text1, "top_left") 
+                    && image_search_and_click(in_game_verification_text2, "top_left"))
+                {
+                    ToolTip, %message%`rWaiting %sleep_time_min%ms to %sleep_time_max%ms, XTOOLTIP, YTOOLTIP, 1
+                    ctrl_click_in_place()
+                    sleep_random(sleep_time_min, sleep_time_max)
+                    return true
+                }
             }
-        }
-        ;slow the loop down so you don't lock up the process
-        ;sleep_random(10, 100)
-        MouseGetPos, x_pos, y_pos
-        Random, new_x_pos, %x_pos%, A_ScreenWidth/2
-        Random, new_y_pos, %y_pos%, A_ScreenHeight/2
-        MouseMove, %new_x_pos%, %new_y_pos%
-        tries--
-        ToolTip, tries = %tries%... failed to find the colorz, XTOOLTIP, YTOOLTIP, 1
-    } ;end switch
-    } ;end IfWinActive
+            ;slow the loop down so you don't lock up the process
+            ;sleep_random(10, 100)
+            MouseGetPos, x_pos, y_pos
+            Random, new_x_pos, %x_pos%, A_ScreenWidth/2
+            Random, new_y_pos, %y_pos%, A_ScreenHeight/2
+            MouseMove, %new_x_pos%, %new_y_pos%
+            tries--
+            ToolTip, tries = %tries%... failed to find the colorz, XTOOLTIP, YTOOLTIP, 1
+        } ;end IfWinActive
+    } ;end while
     return false        
 }
 
