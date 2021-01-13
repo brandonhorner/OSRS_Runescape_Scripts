@@ -105,7 +105,7 @@ on_ground(world_tile_color)
 */ 
 click_obstacle(obstacle)
 {
-    tries := 5
+    tries := 4
     
     while (tries > 0)
     {
@@ -113,7 +113,7 @@ click_obstacle(obstacle)
         {
             switch obstacle 
             {   
-                case "climb_bank_wall":
+                case "climb bank wall":
                     x1 := 800, y1 := 75, x2 := 1375, y2 := 600
                     Random, offset_x, 5, 12
                     Random, offset_y, 5, 12
@@ -123,7 +123,7 @@ click_obstacle(obstacle)
                     in_game_verification_text2 := "image_library\agility_course\climb_bank_text2.png"
                     message := "climbing bank wall"
 
-                case "jump_gap_1":
+                case "jump gap 1":
                     x1 := 100, y1 := 100, x2 := 825, y2 := 825
                     Random, offset_x, -5, -3
                     Random, offset_y, -5, 50
@@ -133,7 +133,7 @@ click_obstacle(obstacle)
                     in_game_verification_text2 := "image_library\agility_course\jump_gap_text2.png"
                     message := "jumping first gap"
                     
-                case "cross_tightrope":
+                case "cross tightrope":
                     x1 := 660, y1 := 575, x2 := 1375, y2 := 1025
                     Random, offset_x, -30, 30
                     Random, offset_y, 5, 60
@@ -143,7 +143,7 @@ click_obstacle(obstacle)
                     in_game_verification_text2 := "image_library\agility_course\cross_tightrope_text2.png"
                     message := "crossing tightrope"
                     
-                case "jump_gap_2":
+                case "jump gap 2":
                     x1 := 555, y1 := 550, x2 := 1370, y2 := 990
                     Random, offset_x, -20, 200
                     Random, offset_y, 5, 60
@@ -153,7 +153,7 @@ click_obstacle(obstacle)
                     in_game_verification_text2 := "image_library\agility_course\jump_gap_text2.png"
                     message := "jumping second gap"
                     
-                case "jump_gap_3":
+                case "jump gap 3":
                     x1 := 60, y1 := 610, x2 := 1165, y2 := 930
                     Random, offset_x, -30, 100
                     Random, offset_y, 5, 60
@@ -163,8 +163,8 @@ click_obstacle(obstacle)
                     in_game_verification_text2 := "image_library\agility_course\jump_gap_text2.png"
                     message := "jumping third gap"
                     
-                case "jump_edge":
-                    x1 := 960, y1 := 550, x2 := 1020, y2 := 800
+                case "jump edge":
+                    x1 := 960, y1 := 220, x2 := 1260, y2 := 800
                     Random, offset_x, 10, 75
                     Random, offset_y, 5, 300
                     sleep_time_min = 200
@@ -188,12 +188,14 @@ click_obstacle(obstacle)
                     sleep_random(sleep_time_min, sleep_time_max)
                     return true
                 }
+                sleep_random(200, 400)
             }
             tries--
             ToolTip, tries = %tries%... failed to find the colorz, XTOOLTIP, YTOOLTIP, 1
         } ;end IfWinActive
     } ;end while
     
+    ;did not find the obstacle
     return false        
 }
 

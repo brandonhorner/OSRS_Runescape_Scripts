@@ -49,14 +49,14 @@ main()
             ToolTip, %successful_runs% successful runs completed!, XTOOLTIP, 775, 2
             
             ;click the bank wall
-            click_obstacle("climb_bank_wall")
+            click_obstacle("climb bank wall")
             zoom("in", 30)
             zoom("out", 11)
             ;check for marks of grace and collect them
             click_existing_marks()
             
             ;click to jump gap
-            click_obstacle("jump_gap_1")
+            click_obstacle("jump gap 1")
             
             if(on_ground(pink_tile))
                 continue
@@ -65,7 +65,7 @@ main()
             click_existing_marks()
             
             ;click to cross rope
-            click_obstacle("cross_tightrope")
+            click_obstacle("cross tightrope")
             
             if(on_ground(pink_tile))
                 continue
@@ -74,7 +74,7 @@ main()
             click_existing_marks()
             
             ;click to jump gap 
-            click_obstacle("jump_gap_2")
+            click_obstacle("jump gap 2")
 
             if(on_ground(pink_tile))
                 continue
@@ -85,7 +85,7 @@ main()
             click_existing_marks()
             
             ;click to jump gap
-            click_obstacle("jump_gap_3")
+            click_obstacle("jump gap 3")
             
             if(on_ground(pink_tile))
                 continue
@@ -94,7 +94,7 @@ main()
             click_existing_marks()
             
             ;click to jump edge
-            if (click_obstacle("jump_edge"))
+            if (click_obstacle("jump edge"))
                 successful_runs++
             
             zoom("out", 30)
