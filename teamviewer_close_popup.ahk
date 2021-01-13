@@ -9,6 +9,9 @@ Loop
     {
         Sleep, 2000
         WinClose, Sponsored session
+	Sleep, 1000
+	SetKeyDelay 30,50
+	Send, {Alt down}{Tab}{Alt up}
     }
     Sleep, 2000
 }
