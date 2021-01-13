@@ -23,6 +23,9 @@ Home::
 
 ;Main hotkey to run the script.
 End::
+    MsgBox, starting bot, click continue
+    WinActivate, %runelite_window%
+    sleep_random(2000, 3000)
     main()
     return
 
@@ -94,7 +97,7 @@ main()
             if (click_obstacle("jump_edge"))
                 successful_runs++
             
-            zoom("out", 10)
+            zoom("out", 30)
             click_colored_world_tile(pink_tile)
         }
     }

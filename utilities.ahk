@@ -1,6 +1,4 @@
 
-global TRIES := 5
-
 setup()
 {
     IfWinActive, %runelite_window%
@@ -43,7 +41,7 @@ zoom(zoom_direction, zoom_level:=30)
         Loop, %zoom_level%
         {
             Send, {Wheeldown}
-            sleep_random(35, 55)
+            sleep_random(45, 65)
         }
     }
     else ;zooming in
@@ -367,7 +365,7 @@ set_random_delays()
     Random, delaySpeed, 20, 40
     SetMouseDelay, %delaySpeed%
     
-    Random, key_delay_speed, 10, 12
+    Random, key_delay_speed, 30, 50
     Random, press_duration, 10, 12
     SetKeyDelay, %key_delay_speed%, %press_duration%
     return

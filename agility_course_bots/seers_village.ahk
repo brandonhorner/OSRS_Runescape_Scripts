@@ -14,9 +14,12 @@ global obstacle_color := 0x2190E5    ;cyan/teal
 global obstacle_alternate_color := 0x00FFFF    ;teal
 global world_tile_color := 0xFF00FF ;pink
 
-;constants
-global TRIES := 5   ; how many tries you want the functions to run before giving up.
-global XTOOLTIP := 1300, YTOOLTIP := 800
+                            ;How many tries you want the functions to run before giving up 
+global TRIES := 5  ; increasing will cause long delays but may run more constistently,
+                            ;  the latter would be less delays but some inconsistencies
+
+global XTOOLTIP := 1300 ;These are the x and y of where the debugging info   
+global YTOOLTIP := 800   ; will be displayed. 
 
 
 ;clicks on a pixel of a certain color closest to the center of the screen. searches entire screen.
@@ -26,11 +29,14 @@ click_colored_world_tile(color_of_tile)
     {
         sleep_time_min := 8500
         sleep_time_max := 12000
-        ToolTip, Clicking on the colored world tile. `r    (%sleep_time_min% - %sleep_time_max% second pause), XTOOLTIP, YTOOLTIP, 1
-        Random, offset_x, -50, 70
+        ToolTip, Clicking on the colored world tile. `r(%sleep_time_min% - %sleep_time_max% second pause), XTOOLTIP, YTOOLTIP, 1
+        
+        Random, offset_x, -50, 70   ; always randomize the click area
         Random, offset_y, -50, 5
-        MouseClick, left, offset_x, offset_y,,,, Relative
-        sleep_random(sleep_time_min, sleep_time_max)
+        
+        MouseClick, left, offset_x, offset_y,,,, Relative ; click the pixel (the world tile)
+        
+        sleep_random(sleep_time_min, sleep_time_max)  ;
         return true
     }
     return false
@@ -45,11 +51,12 @@ click_existing_marks()
     mark_of_grace_color := 0x9A8713
     mark_of_grace_text := "image_library\agility_course\mark_of_grace_text.png"
     
+    ; search for the obstacle color to be the alternate color, which only happens when a mark is present
     if (pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, obstacle_alternate_color))
     {
         while (tries > 0)
         {
-            ToolTip, click_existing_marks():`r%tries% tries left. `rtrying to find the mark of grace color, XTOOLTIP, YTOOLTIP, 1
+            ToolTip, trying to find the mark of grace color`r%tries% tries left., XTOOLTIP, YTOOLTIP, 1
             sleep_time_min := 2000
             sleep_time_max := 3000
             Random, offset_x, -5, 5
@@ -147,7 +154,7 @@ click_obstacle(obstacle)
                     message := "jumping second gap"
                     
                 case "jump_gap_3":
-                    x1 := 50, y1 := 610, x2 := 1165, y2 := 930
+                    x1 := 60, y1 := 610, x2 := 1165, y2 := 930
                     Random, offset_x, -30, 100
                     Random, offset_y, 5, 60
                     sleep_time_min = 5500
@@ -194,9 +201,7 @@ click_obstacle(obstacle)
 ctrl_click()
 {
     Send, {Ctrl down}
-    sleep_random(30, 60)
     Click
-    sleep_random(30, 60)
     Send, {Ctrl up}
     return
 }
