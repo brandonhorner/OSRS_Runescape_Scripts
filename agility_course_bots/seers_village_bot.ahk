@@ -15,17 +15,17 @@ Ctrl+r to run the script
 global runelite_window := "RuneLite - BinaryBilly"
 
 ;Hotkey to reload the script.
-F1::
+Home::
 {
     reload
     return
 }
 
 ;Main hotkey to run the script.
-F2::
+End::
     main()
     return
-    
+
 main()
 {
     IfWinActive, %runelite_window%
@@ -47,9 +47,8 @@ main()
             
             ;click the bank wall
             click_obstacle("climb_bank_wall")
-            
-            zoom("in", 19)
-
+            zoom("in", 30)
+            zoom("out", 11)
             ;check for marks of grace and collect them
             click_existing_marks()
             
