@@ -125,7 +125,7 @@ click_obstacle(obstacle)
 
                 case "jump gap 1":
                     x1 := 100, y1 := 100, x2 := 825, y2 := 825
-                    Random, offset_x, -5, -3
+                    Random, offset_x, -2, 25
                     Random, offset_y, -5, 50
                     sleep_time_min = 6500 
                     sleep_time_max = 8500
