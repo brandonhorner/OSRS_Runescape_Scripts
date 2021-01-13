@@ -157,8 +157,8 @@ click_obstacle(obstacle)
                     message := "jumping third gap"
                     
                 case "jump_edge":
-                    x1 := 955, y1 := 115, x2 := 1370, y2 := 900
-                    Random, offset_x, 10, 100
+                    x1 := 960, y1 := 550, x2 := 1020, y2 := 800
+                    Random, offset_x, 10, 75
                     Random, offset_y, 5, 300
                     sleep_time_min = 200
                     sleep_time_max = 300
