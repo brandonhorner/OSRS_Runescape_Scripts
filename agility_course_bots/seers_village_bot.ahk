@@ -15,14 +15,14 @@ Ctrl+r to run the script
 global runelite_window := "RuneLite - BinaryBilly"
 
 ;Hotkey to reload the script.
-Home::
++`::
 {
     reload
     return
 }
 
 ;Main hotkey to run the script.
-End::
+^`::
     MsgBox, starting bot, click continue
     WinActivate, %runelite_window%
     sleep_random(2000, 3000)
@@ -41,17 +41,18 @@ main()
         
         while (successful_runs < 500)
         {
+            ;after 20 runs; sleep every 10 runs for a random amount
             if(successful_runs >= 20 and Mod(successful_runs, 10) = 0)
             {
-                ToolTip, sleeping 10-30 seconds, XTOOLTIP, YTOOLTIP, 1
-                sleep_random(10000, 30000)
+                ToolTip, sleeping 10-90 seconds, XTOOLTIP, YTOOLTIP, 1
+                sleep_random(10000, 90000)
             }
             ToolTip, %successful_runs% successful runs completed!, XTOOLTIP, 775, 2
             
             ;click the bank wall
             click_obstacle("climb bank wall")
-            zoom("in", 30)
-            zoom("out", 11)
+            zoom("in", 19)
+            
             ;check for marks of grace and collect them
             click_existing_marks()
             

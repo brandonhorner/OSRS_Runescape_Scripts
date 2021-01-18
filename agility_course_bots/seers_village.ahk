@@ -36,7 +36,7 @@ click_colored_world_tile(color_of_tile)
         
         MouseClick, left, offset_x, offset_y,,,, Relative ; click the pixel (the world tile)
         
-        sleep_random(sleep_time_min, sleep_time_max)  ;
+        sleep_random(sleep_time_min, sleep_time_max)  
         return true
     }
     return false
@@ -67,7 +67,7 @@ click_existing_marks()
                 if (image_search_and_click(mark_of_grace_text, "top_left"))
                 {
                     ToolTip, Clicking on the mark of grace! `rWaiting %sleep_time_min%ms to %sleep_time_max%ms, XTOOLTIP, YTOOLTIP, 1
-                    ctrl_click()
+                    pixel_search_and_click(0, 0, A_ScreenWidth - 355, A_ScreenHeight, mark_of_grace_color, "left")
                     sleep_random(sleep_time_min, sleep_time_max)
                     return true
                 }
@@ -105,7 +105,7 @@ on_ground(world_tile_color)
 */ 
 click_obstacle(obstacle)
 {
-    tries := 4
+    tries := 5
     
     while (tries > 0)
     {
@@ -125,7 +125,7 @@ click_obstacle(obstacle)
 
                 case "jump gap 1":
                     x1 := 100, y1 := 100, x2 := 825, y2 := 825
-                    Random, offset_x, -2, 25
+                    Random, offset_x, -25, 25
                     Random, offset_y, -5, 50
                     sleep_time_min = 6500 
                     sleep_time_max = 8500
