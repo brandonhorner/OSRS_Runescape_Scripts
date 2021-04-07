@@ -15,8 +15,8 @@ global obstacle_alternate_color := 0x00FFFF    ;teal
 global world_tile_color := 0xFF00FF ;pink
 
                             ;How many tries you want the functions to run before giving up 
-global TRIES := 5  ; increasing will cause long delays but may run more constistently,
-                            ;  the latter would be less delays but some inconsistencies
+global TRIES := 5           ; increasing will cause long delays but may run more constistently,
+                            ; the latter would be less delays but some inconsistencies
 
 global XTOOLTIP := 1300 ;These are the x and y of where the debugging info   
 global YTOOLTIP := 800   ; will be displayed. 
@@ -97,10 +97,10 @@ on_ground(world_tile_color)
 
 /* 
    Depending on the obstacle that we are at, we have different areas to search/click on,
-   different sleep times, and different text to be looking for during verification.
+        different sleep times, and different text to be looking for during verification.
    Parameter
-   obstacle - the current obstacle should input in the correct order as they appear
-    (the obstacles of seers village are seen below in the switch cases).
+        obstacle - the current obstacle should input in the correct order as they appear
+            (the obstacles of seers village are seen below in the switch cases).
    
 */ 
 click_obstacle(obstacle)
