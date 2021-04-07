@@ -21,6 +21,13 @@ global runelite_window := "RuneLite - Jormb"
     return
 }
 
+^F1::
+    pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, 0x9A8713, "mouseover")
+
+^F2::
+    pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, 0x89750C, "mouseover")
+
+
 ;Main hotkey to run the script.
 ^`::
     MsgBox, starting bot, click continue
