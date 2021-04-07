@@ -22,10 +22,17 @@ global runelite_window := "RuneLite - Jormb"
 }
 
 ^F1::
-    pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, 0x9A8713, "mouseover")
-
+    if(!pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, 0x9A8713, "mouseover"))
+    {
+       ToolTip, couldn't find 0x9A8713
+    }
+    return
 ^F2::
-    pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, 0x89750C, "mouseover")
+    if(!pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, 0x89750C, "mouseover"))
+    {
+        ToolTip, couldn't find 0x89750C
+    }
+    return
 
 
 ;Main hotkey to run the script.
