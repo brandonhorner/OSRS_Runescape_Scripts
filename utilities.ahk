@@ -81,27 +81,23 @@ click_compass()
     }
 }
 
-;returns true if menu is open, false otherwise
+; returns true if menu is open, false otherwise
 menu_is_open()
 {
-    closed_runelite_menu := "image_library\closed_runelite_menu.bmp"
-    ImageSearch, dummy_x, dummy_y, 0, 0, %A_ScreenWidth%, %A_ScreenHeight%, %closed_runelite_menu%
-    if (ErrorLevel = 2)
+    menu_bg_color := 0x282828
+    PixelSearch, found_x, found_y, 1867, 849, 1874, 867, menu_bg_color, 0, RGB fast
+    PixelSearch, found_x2, found_y2, 1641, 472, 1650, 530, menu_bg_color, 0, RGB fast
+    
+       ;deprecated: closed_runelite_menu := "image_library\closed_runelite_menu.bmp"
+    ; if either variable is populated then the pixel color was found
+    if (found_x or found_x2)
     {
-        ToolTip, Error: In menu_is_open() -- Could not conduct the search., 100, 400, 20
-        return false
-    }
-    else if (ErrorLevel = 1)
-    {
-        ; menu was open
-        TrayTip,, Please close the RuneLite menu.
+        ; menu is open so return true
+        MsgBox, Please close the RuneLite menu.
         return true
     }
-    else
-    {
-        ;menu is closed
-        return false
-    }
+    ; menu was not open (pixel color of menu background was not found)
+    return false
 }
 
 click_closest(image_url)
@@ -111,6 +107,7 @@ click_closest(image_url)
         ;how many pixels to expand the search area each iteration
         expansion_x = 40
         expansion_y = 22
+        
         ;center of screen, only character is enclosed
         x1 := 925
         y1 := 515
@@ -174,10 +171,13 @@ click_closest_pixel(pixel_color, click_type:="left", offset_x:=0, offset_y:=0)
     return false
 }
 
-;Search for an image and click on it. If screen area is omitted, then coordinates must be provided. Offset should
-;   be "option" if you are clicking on a '"right"-click "option"' and "item" if you are clicking around an "item" image.
-;   If click_type = "right", "right" click, "left" = "left" click, "mouseover" will move the mouse but doesn't click,
-;   "doubleclick" clicks twice, "in_place" to click in place.
+;Search for an image (and maybe click on it). 
+;   If screen_area is omitted, then coordinates must be provided. Offset should
+;   be "option" if you are clicking on a 'right-click option' and "item" if you are clicking an items image. These are
+;   preset areas the size of the image and the size of the options (when you right click in game).
+;   If click_type = "right", right-click, "left" = left-click, "mouseover" will move the mouse but doesn't click,
+;   "doubleclick" clicks twice, "in_place" to click in place. If you omit click_type, then it will not click but still
+;   returns true
 image_search_and_click(image_url, scan_area:=0, click_type:=0, offset:=0, x1:=0, y1:=0, x2:=0, y2:=0)
 {
     attempts = 5
@@ -321,7 +321,9 @@ RetryImageSearch:
 
 
 ;Set the color of a tile in game and use that as the pixel color. if modifier = "right", "right" click,
-;    "mouseover" will move the mouse but doesn't click, otherwise "left" click.
+;   "mouseover" will move the mouse but doesn't click, otherwise "left" click. Optionally can input
+;   an offset x and y to offset where the function will click (in case you are searching for an image
+;   but want to click something in an area nearby it.
 pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier:=0, offset_x:=0, offset_y:=0)
 {
     IfWinActive, %runelite_window%
@@ -361,7 +363,7 @@ pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier:=0, offset_x:=0, of
 }
 set_random_delays()
 {   
-    ;set the dalay of your mouse movement between 20ms and 40ms
+    ;set the delay of your mouse movement between 20ms and 40ms
     Random, delaySpeed, 20, 40
     SetMouseDelay, %delaySpeed%
     

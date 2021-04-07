@@ -61,19 +61,30 @@ click_existing_marks()
             sleep_time_max := 3000
             Random, offset_x, -5, 5
             Random, offset_y,-5, 5
-            if (pixel_search_and_click(0, 0, A_ScreenWidth - 355, A_ScreenHeight, mark_of_grace_color, "mouseover"))
+            if (pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, mark_of_grace_color, "mouseover"))
             {
                 sleep_random(50, 75)
+                            sleep_random(500,1000)
                 if (image_search_and_click(mark_of_grace_text, "top_left"))
                 {
-                    ToolTip, Clicking on the mark of grace! `rWaiting %sleep_time_min%ms to %sleep_time_max%ms, XTOOLTIP, YTOOLTIP, 1
+                    ToolTip, Clicking on the mark of grace! `rWaiting %sleep_time_min%ms to %sleep_time_max%ms, XTOOLTIP-300, YTOOLTIP-300, 8
                     pixel_search_and_click(0, 0, A_ScreenWidth - 355, A_ScreenHeight, mark_of_grace_color, "left")
+                    
                     sleep_random(sleep_time_min, sleep_time_max)
                     return true
                 }
+                else
+                {
+                    ToolTip, obstacle color was not found - at 0x0 - %A_ScreenWidth%x%A_ScreenHeight% - the color was %mark_of_grace_color%, 0, 700, 6
+                }
             }
+            ToolTip, %tries%. could not find the mark - at 0x0 - %A_ScreenWidth%x%A_ScreenHeight% - the color was %mark_of_grace_color%, 0, 600, 5
             tries --
         }
+    }
+    else
+    {
+        ToolTip, obstacle color was not found - at 0x0 - %A_ScreenWidth%x%A_ScreenHeight% - the color was %mark_of_grace_color%, 0, 700, 6
     }
     return false
 }

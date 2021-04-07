@@ -12,7 +12,7 @@ Driver file for Seer's Village agility course bot.
 Ctrl+g to reload the script
 Ctrl+r to run the script
 */
-global runelite_window := "RuneLite - BinaryBilly"
+global runelite_window := "RuneLite - Jormb"
 
 ;Hotkey to reload the script.
 +`::
