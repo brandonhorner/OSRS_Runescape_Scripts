@@ -331,7 +331,7 @@ pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier:=0, offset_x:=0, of
         Random, delaySpeed, 60, 110
         SetMouseDelay, %delaySpeed%
 
-        PixelSearch, found_x, found_y, x1, y1, x2, y2, pixel_color, 20, RGB fast ;search region for color
+        PixelSearch, found_x, found_y, x1, y1, x2, y2, pixel_color, 0, RGB fast ;search region for color
         if ErrorLevel
         {
             ;ToolTip, The color %pixel_color% was not found in %x1%x%y1% %x2%x%y2%, 100, 400, 17
