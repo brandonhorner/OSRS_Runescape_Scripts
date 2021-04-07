@@ -21,20 +21,43 @@ global runelite_window := "RuneLite - Jormb"
     return
 }
 
-^F1::
+^NUMPAD1::
     if(!pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, 0x9A8713, "mouseover"))
     {
        ToolTip, couldn't find 0x9A8713
     }
     return
-^F2::
+^NUMPAD2::
     if(!pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, 0x89750C, "mouseover"))
     {
         ToolTip, couldn't find 0x89750C
     }
     return
-
-
+^NUMPAD3::
+    if(!pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, 0x8E7A0D, "mouseover"))
+    {
+        ToolTip, couldn't find 0x8E7A0D
+    }
+    return
+^NUMPAD4::
+    if(!pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, 0x8E7A0D, "mouseover"))
+    {
+        ToolTip, couldn't find 0x85720D
+    }
+    return
+^NUMPAD5::
+    if(!pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, 0x927D0D, "mouseover"))
+    {
+        ToolTip, couldn't find 0x927D0D
+    }
+    return
+^NUMPAD6::
+    if(!pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, 0x8D790D, "mouseover"))
+    {
+        ToolTip, couldn't find 0x8D790D
+    }
+    return  
+    
 ;Main hotkey to run the script.
 ^`::
     MsgBox, starting bot, click continue
