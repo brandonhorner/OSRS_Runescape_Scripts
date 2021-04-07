@@ -48,7 +48,7 @@ click_colored_world_tile(color_of_tile)
 click_existing_marks()
 {
     tries := 5
-    mark_of_grace_color := 0x9A8713
+    mark_of_grace_color := 0x89750C
     mark_of_grace_text := "image_library\agility_course\mark_of_grace_text.png"
     
     ; search for the obstacle color to be the alternate color, which only happens when a mark is present
