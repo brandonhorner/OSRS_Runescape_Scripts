@@ -36,25 +36,25 @@ global runelite_window := "RuneLite - Jormb"
 ^NUMPAD3::
     if(!pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, 0x8E7A0D, "mouseover"))
     {
-        ToolTip, couldn't find 0x8E7A0D
+        ToolTip, couldn't find 0x69120A
     }
     return
 ^NUMPAD4::
     if(!pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, 0x8E7A0D, "mouseover"))
     {
-        ToolTip, couldn't find 0x85720D
+        ToolTip, couldn't find 0x85170C
     }
     return
 ^NUMPAD5::
     if(!pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, 0x927D0D, "mouseover"))
     {
-        ToolTip, couldn't find 0x927D0D
+        ToolTip, couldn't find 0x7C150B
     }
     return
-^NUMPAD6::
+^F6::
     if(!pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, 0x8D790D, "mouseover"))
     {
-        ToolTip, couldn't find 0x8D790D
+        ToolTip, couldn't find 0x96810E
     }
     return  
     
