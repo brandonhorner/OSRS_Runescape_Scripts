@@ -12,7 +12,7 @@ Driver file for Seer's Village agility course bot.
 Ctrl+g to reload the script
 Ctrl+r to run the script
 */
-global runelite_window := "RuneLite - Jormb"
+global runelite_window := "RuneLite - BinaryBilly"
 
 ;Hotkey to reload the script.
 +`::
@@ -21,42 +21,6 @@ global runelite_window := "RuneLite - Jormb"
     return
 }
 
-^NUMPAD1::
-    if(!pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, 0x9A8713, "mouseover"))
-    {
-       ToolTip, couldn't find 0x9A8713
-    }
-    return
-^NUMPAD2::
-    if(!pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, 0x89750C, "mouseover"))
-    {
-        ToolTip, couldn't find 0x89750C
-    }
-    return
-^NUMPAD3::
-    if(!pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, 0x8E7A0D, "mouseover"))
-    {
-        ToolTip, couldn't find 0x69120A
-    }
-    return
-^NUMPAD4::
-    if(!pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, 0x8E7A0D, "mouseover"))
-    {
-        ToolTip, couldn't find 0x85170C
-    }
-    return
-^NUMPAD5::
-    if(!pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, 0x927D0D, "mouseover"))
-    {
-        ToolTip, couldn't find 0x7C150B
-    }
-    return
-^F6::
-    if(!pixel_search_and_click(0, 0, A_ScreenWidth, A_ScreenHeight, 0x8D790D, "mouseover"))
-    {
-        ToolTip, couldn't find 0x96810E
-    }
-    return  
     
 ;Main hotkey to run the script.
 ^`::
@@ -70,6 +34,10 @@ main()
 {
     IfWinActive, %runelite_window%
     {
+    WinGet, activeWindow, ID, A
+  WinMaximize, A
+  Sleep 1000 ; Wait for a second (adjust the delay if necessary)
+  WinRestore, ahk_id %activeWindow%
         successful_runs := 0
         pink_tile := 0xFF00FF
         

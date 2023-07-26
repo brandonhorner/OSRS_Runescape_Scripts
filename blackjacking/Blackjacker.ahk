@@ -7,91 +7,182 @@
 ; You must have 'Status Bars' in RuneLite on so that your health bar is shown on the left of your "bag".
 ; You must have 'NPC Indicators' highlight color the same as in the script (0xA4FF00).
 ;OPTIONAL:
-; Have your chat turned to "Game" Chat, this would help because we search for phrases in chat box.
+; Have your chat turned to "Game" Chat, this would help because we search for phrases in the chat box.
 #SingleInstance
+#Include ..\utilities.ahk
+SetWorkingDir A_MyDocuments "\AutoHotkey_Scripts\runescape"
+CoordMode("Pixel", "Screen")
+CoordMode("Mouse", "Screen")
 
-SetWorkingDir %A_ScriptDir%\..
+SetMouseDelay(80)
 
-CoordMode, Pixel, Screen    ; Starts pixel search at top left of ACTUAL SCREEN, delete if you want to search from top left of WINDOW
-CoordMode, Mouse, Screen
 
-SetMouseDelay, 80
+global enemy_color := 0xA4FF00 ; Menaphite - 666317 ; Bandit - CAD0B6 ; - all of them (inaccurate) A4FF00 ; some green color
+global enemy_color_dark := 0x84CD00
+; Object that holds all of the screen area coordinates
+global coord := {
+    chat: {
+        x1: 7, y1: 965,
+        x2: 515, y2: 1015 
+    },
+    bag: {
+        x1:1385, y1:700,
+        x2:1855, y2:1000
+    },
+    top_left: {
+        x1:0, y1:22,
+        x2:190, y2:75
+    },
+    middle: {
+        x1:0, y1:200,
+        x2:1650, y2:970
+    }
+}
 
-global bag_x1 = 1385
-global bag_y1 = 700
-global bag_x2 = 1855
-global bag_y2 = 1000
-
-global chat_x1 = 0
-global chat_y1 = 975
-global chat_x2 = 515
-global chat_y2 = 1015
-
-global top_left_x1 = 0
-global top_left_y1 = 22
-global top_left_x2 = 190
-global top_left_y2 = 75
-
-global"middle"_x1 = 0
-global"middle"_y1 = 200
-global"middle"_x2 = 1650
-global"middle"_y2 = 970
-
-global num_of_tries = 7
-
-global enemy_color := 0xA4FF00 ;Menaphite - 666317 ;Bandit - CAD0B6 ;- all of them (inaccurate) A4FF00  ;some green color
-
-global attack := "image_library\attack_top_left.bmp"
-global failed_pickpocket := "image_library\failed_pickpocket.bmp"
-global glancing_blow := "image_library\glancing_blow.bmp"
-global knockout_option := "image_library\knockout_option.bmp"
-global pickpocket_option := "image_library\pickpocket_option.bmp"
-global cooked_lobster := "image_library\cooked_lobster.bmp"
-global open_bag := "image_library\open_bag.bmp"
-global unconscious := "image_library\unconscious.bmp"
-global cannot_knockout := "image_library\cannot_do_that.bmp"
-global healthbar := "image_library\healthbar.bmp"
-global stunned := "image_library\stunned.bmp"
-global missed_right_click := "image_library\missed_right_click.bmp"
-global combat := "image_library\combat.bmp"
-global money_bag := "image_library\money_bag.bmp"
-
+global num_of_tries := 7
+global attack_menaphite_hovering_text := A_WorkingDir "\image_library\attack_menaphite_hovering_text.png"
+global lobster_cooked := A_WorkingDir "\image_library\lobster_cooked.png"
+global attack := A_WorkingDir "\image_library\attack_top_left.bmp"
+global failed_pickpocket := A_WorkingDir "\image_library\failed_pickpocket.bmp"
+global glancing_blow := A_WorkingDir "\image_library\glancing_blow.bmp"
+global knockout_option := A_WorkingDir "\image_library\knockout_option.bmp"
+global pickpocket_option := A_WorkingDir "\image_library\pickpocket_option.bmp"
+global right_click_options := A_WorkingDir "\image_library\right_click_options.png"
+global unconscious := A_WorkingDir "\image_library\unconscious.bmp"
+global cannot_knockout := A_WorkingDir "\image_library\cannot_do_that.bmp"
+global healthbar := A_WorkingDir "\image_library\healthbar.bmp"
+global stunned := A_WorkingDir "\image_library\stunned.bmp"
+global missed_right_click := A_WorkingDir "\image_library\missed_right_click.bmp"
+global combat := A_WorkingDir "\image_library\combat.bmp"
+global money_bag := A_WorkingDir "\image_library\money_bag.bmp"
 global runelite_window := "RuneLite - BinaryBilly"
-global tooltip_x = 600
-global tooltip_y = 550
+
+global tooltip_x := 600
+global tooltip_y := 550
+
+global target_coord := {
+    laying_left: {
+        x:670, y:325
+    },
+    laying_middle: {
+        x:840, y:225
+    },
+    laying_right: {
+        x:980, y:380
+    },
+    laying_bottom: {
+        x:805, y:585
+    },
+    standing_top_left: {
+        x:875, y:235
+    },
+    standing_top_right: {
+        x:1055, y:245
+    },
+    standing_bottom_left: {
+        x:890, y:600
+    },
+    standing_bottom_right: {
+        x:1015, y:540
+    }
+}
+if WinActive(runelite_window)
+    Tooltip("Blackjacking On", 0, 0, 9)
+
+target_is_standing_up()
+{
+    if ((pixel_search_and_click(target_coord.standing_top_left.x, target_coord.standing_top_left.y, target_coord.standing_top_left.x + 30, target_coord.standing_top_left.y + 30, enemy_color)
+        || pixel_search_and_click(target_coord.standing_top_left.x, target_coord.standing_top_left.y, target_coord.standing_top_left.x + 30, target_coord.standing_top_left.y + 30, enemy_color_dark))
+        && (pixel_search_and_click(target_coord.standing_top_right.x, target_coord.standing_top_right.y, target_coord.standing_top_right.x + 30, target_coord.standing_top_right.y + 30, enemy_color)
+        || pixel_search_and_click(target_coord.standing_top_right.x, target_coord.standing_top_right.y, target_coord.standing_top_right.x + 30, target_coord.standing_top_right.y + 30, enemy_color_dark))
+        && (pixel_search_and_click(target_coord.standing_bottom_left.x, target_coord.standing_bottom_left.y, target_coord.standing_bottom_left.x + 30, target_coord.standing_bottom_left.y + 30, enemy_color)
+        || pixel_search_and_click(target_coord.standing_bottom_left.x, target_coord.standing_bottom_left.y, target_coord.standing_bottom_left.x + 30, target_coord.standing_bottom_left.y + 30, enemy_color_dark))
+        && (pixel_search_and_click(target_coord.standing_bottom_right.x, target_coord.standing_bottom_right.y, target_coord.standing_bottom_right.x + 30, target_coord.standing_bottom_right.y + 30, enemy_color)
+        || pixel_search_and_click(target_coord.standing_bottom_right.x, target_coord.standing_bottom_right.y, target_coord.standing_bottom_right.x + 30, target_coord.standing_bottom_right.y + 30, enemy_color_dark)))
+        return true
+    ; Otherwise the target is not standing up or is in another area of the screen
+    return false
+}
+
+
+target_is_laying_down()
+{
+    ; If the bottom 4 searches result in true, true, true, false
+    if ((pixel_search_and_click(target_coord.laying_left.x, target_coord.laying_left.y, target_coord.laying_left.x + 30, target_coord.laying_left.y + 30, enemy_color)
+        || pixel_search_and_click(target_coord.laying_left.x, target_coord.laying_left.y, target_coord.laying_left.x + 30, target_coord.laying_left.y + 30, enemy_color_dark))
+        && (pixel_search_and_click(target_coord.laying_middle.x, target_coord.laying_middle.y, target_coord.laying_middle.x + 30, target_coord.laying_middle.y + 30, enemy_color)
+        || pixel_search_and_click(target_coord.laying_middle.x, target_coord.laying_middle.y, target_coord.laying_middle.x + 30, target_coord.laying_middle.y + 30, enemy_color_dark))
+        && (pixel_search_and_click(target_coord.laying_right.x, target_coord.laying_right.y, target_coord.laying_right.x + 30, target_coord.laying_right.y + 30, enemy_color)
+        || pixel_search_and_click(target_coord.laying_right.x, target_coord.laying_right.y, target_coord.laying_right.x + 30, target_coord.laying_right.y + 30, enemy_color_dark))
+        && (pixel_search_and_click(target_coord.laying_bottom.x, target_coord.laying_bottom.y, target_coord.laying_bottom.x + 30, target_coord.laying_bottom.y + 30, enemy_color)
+        || pixel_search_and_click(target_coord.laying_bottom.x, target_coord.laying_bottom.y, target_coord.laying_bottom.x + 30, target_coord.laying_bottom.y + 30, enemy_color_dark)))
+    {
+        ; The target is laying down
+        return true
+    }
+    ; Otherwise the target is not laying down or is in another area of the screen
+    return false
+}
+
+main()
+{
+    ;While we have lobsters
+    {
+        ;if health_is_okay()
+        {
+            
+            
+            
+        }
+        ;else
+        {
+            ; Try to eat a lobster
+            ;if eat_lobster()
+            
+        }
+    }
+}
+
 
 
 F1::
-iteration = 0
+{  
+iteration := 0
 Start:
 iteration++
-IfWinActive, %runelite_window%
+if WinActive(runelite_window)
 {
     ;1. Check if health is okay
-    if (health_is_okay() = false)
+    if (!health_is_okay())
     {
-        ToolTip, Health is not okay...!, %tooltip_x%, 500, 2
+        ToolTip("Health is not okay...!", tooltip_x, 500, 2)
         if (eat_lobster())
         {
-            ToolTip, Eating lobster..., %tooltip_x%, 500, 2
-            click_money_bag()
-;TODO: clarify why we are sleeping
+            ToolTip("Eating lobster...", tooltip_x, 500, 2)
+            ;click_money_bag()
+            ;TODO: clarify why we are sleeping
             sleep_random(1800, 8500) 
-            Goto, Start
+            ;TODO: HERE we need to check if we are in combat
+            Goto("Start")
         }
         else
         {
-            MsgBox, Reload your inventory with lobsters!
+            MsgBox("Reload your inventory with lobsters!")
             return
         }
     }
-    Tooltip, You are healthy..., %tooltip_x%, 500, 2
+    ToolTip("You are healthy...", tooltip_x, 500, 2)
 
     ;2. Initial knockout of bandit
 Knockout:
-    right_click_bandit()
-    sleep_random(250, 255)
-    click_knockout()
+    if(right_click_bandit())
+    {
+        sleep_random(200, 255)
+        click_knockout()
+    }
+    else{
+        Goto("Knockout")
+    }
     right_click_bandit()
     sleep_random(205, 215)
     click_pickpocket()
@@ -99,40 +190,41 @@ Knockout:
     ;3a. If the knockout resulted in a glancing blow.
     if(was_glancing_blow())
     {   ;4a. Retaliate with another knockout + pickpocket.
-        Tooltip, Glancing blow - retaliate!, %tooltip_x%, %tooltip_y%, 1
-        Goto, Knockout
+        ToolTip("Glancing blow - retaliate!", tooltip_x, tooltip_y, 1)
+        Goto Knockout
     }
     ;3b. If the knockout was a success, the bandit is now unconscious.
     else if(is_unconscious())
     {   ;4b. Pickpocket twice.
-        Tooltip, Is unconscious - pickpocket twice, %tooltip_x%, %tooltip_y%, 1
+        ToolTip("Is unconscious - pickpocket twice", tooltip_x, tooltip_y, 1)
         right_click_bandit()
         click_pickpocket()
     }
     else
     {
-        ToolTip, Not unconscious or glancing blow`rwaiting 5 seconds, %tooltip_x%, %tooltip_y%, 1
+        ToolTip("Not unconscious or glancing blow`rwaiting 5 seconds", tooltip_x, tooltip_y, 1)
         sleep_random(4000, 6000)
     }
-    ToolTip, %iteration%. Finished--starting over, %tooltip_x%, 600, 3
-    Goto, Start
+    ToolTip(iteration ". Finished--starting over", tooltip_x, 600, 3)
+    Goto("Start")
 }
 return
+}  
 
-+F1::Reload
++F1::Reload()
 
-^F2::ExitApp
+^F2::ExitApp()
 
 
 click_knockout()
 {
-    MouseGetPos, x, y
+    MouseGetPos(&x, &y)
     search_x1 := x - 130
     search_y1 := y
     search_x2 := x + 120
     search_y2 := y + 255
     
-    counter = %num_of_tries%
+    counter := num_of_tries
     while (counter > 0)
     {
         if (!exists("menu", knockout_option))
@@ -141,10 +233,10 @@ click_knockout()
         }
         else
         {
-            image_search_and_click(search_x1, search_y1, search_x2, search_y2, knockout_option, left, option)
+            image_search_and_click_v2(search_x1, search_y1, search_x2, search_y2, knockout_option, "left", "option")
             return true
         }
-        counter --
+        counter--
     }
     ;ToolTip, clicking knockout was false, 300, 300, 5
     return false
@@ -152,13 +244,13 @@ click_knockout()
 
 click_pickpocket()
 {
-    MouseGetPos, x, y
+    MouseGetPos(&x, &y)
     search_x1 := x - 130
     search_y1 := y
     search_x2 := x + 120
     search_y2 := y + 255
     
-    counter = %num_of_tries%
+    counter := num_of_tries
     while (counter > 0)
     {
         if (!exists("menu", pickpocket_option))
@@ -167,10 +259,10 @@ click_pickpocket()
         }
         else
         {
-            image_search_and_click(search_x1, search_y1, search_x2, search_y2, pickpocket_option, left, option)
+            image_search_and_click_v2(search_x1, search_y1, search_x2, search_y2, pickpocket_option, "left", "option")
             return true
         }
-        counter --
+        counter--
     }
     return false
 }
@@ -178,146 +270,136 @@ click_pickpocket()
 ;searches in a square area around the player and expands the search area until an image is found or we are off screen.
 right_click_bandit()
 {
-    IfWinActive, %runelite_window%
+    Loop 10
     {
-        ;how many pixels to expand the search area each iteration
-        expansion_integer = 100
-        menu_offset = 140
-        ;Random, offset_x, 200, 700
-        ;Random, offset_y, 200, 700
-        ;center of screen, only character is enclosed
-        x1 = 925
-        y1 = 515
-        x2 = 950
-        y2 = 540
-        
-        while (x2 < A_ScreenWidth and y2 < A_ScreenHeight)
+        if WinActive(runelite_window)
         {
-            ;ToolTip, in while %count%: `r%x1%x%y1%'r%x2%x%y2% `rPixel:%enemy_color%, %tooltip_x%, %tooltip_y%, 2
-            if (pixel_search_and_click(x1, y1, x2, y2, enemy_color, "right"))
-                return true
-            else    ;grow search area
+            ; First check if the right click option is already active
+            if (ImageExists(knockout_option) || ImageExists(pickpocket_option))
             {
-                x1 -= %expansion_integer%
-                y1 -= %expansion_integer%
-                x2 += %expansion_integer%
-                y2 += %expansion_integer%
+                return true
+            }
+            ;how many pixels to expand the search area each iteration
+            expansion_integer := 50
+            menu_offset := 140
+            ;Random, offset_x, 200, 700
+            ;Random, offset_y, 200, 700
+            ;center of screen, only character is enclosed
+            x1 := 925
+            y1 := 515
+            x2 := 950
+            y2 := 540
+            
+            while (x2 <= A_ScreenWidth and y2 <= A_ScreenHeight)
+            {
+                ;ToolTip, in while %count%: `r%x1%x%y1%'r%x2%x%y2% `rPixel:%enemy_color%, %tooltip_x%, %tooltip_y%, 2
+                if pixel_search_and_click(x1, y1, x2, y2, enemy_color, "mouseover")
+                {
+                    if ImageExists(attack_menaphite_hovering_text)
+                    {
+                        sleep_random(30,50)
+                        Click("Right Down")
+                        sleep_random(160,250)
+                        Click("Right Up")
+                        return true
+                    }
+                }
+                else    ;grow search area
+                {
+                    x1 -= expansion_integer
+                    y1 -= expansion_integer
+                    x2 += expansion_integer
+                    y2 += expansion_integer
+                }
+                sleep_random(190,280)
             }
         }
     }
     return false
+
+
 }
 
 ;TODO: NOT TESTED WITH MENU OPEN
 click_money_bag()
 {
-    IfWinActive, %runelite_window%
-    {
-        ;offset_because_menu = 240
-        ;if (menu_is_open())
-        ;{
-        ;    bag_x1 -= %offset_because_menu%
-        ;    bag_x2 -= %offset_because_menu%
-        ;}
-        
-        image_search_and_click(bag_x1, bag_y1, bag_x2, bag_y2, money_bag, left, item)
-    }
-    return true
+    ;ensure bag is open
+    open_bag(coord.bag.x1,coord.bag.y1,coord.bag.x2,coord.bag.y2)
+    sleep_random(10, 100)
+    if(image_search_and_click_v2(coord.bag.x1, coord.bag.y1, coord.bag.x2, coord.bag.y2, money_bag, "left", "item"))
+        return true
+    return false
 }
 
 eat_lobster()
 {        
-    open_bag()
-    if (image_search_and_click(bag_x1, bag_y1, bag_x2, bag_y2, cooked_lobster, left, item))
-       ;TrayTip,, returning true to eat lobster
+    open_bag(coord.bag.x1,coord.bag.y1,coord.bag.x2,coord.bag.y2)
+    sleep_random(100, 1000)
+    if(image_search_and_click_v2(coord.bag.x1, coord.bag.y1, coord.bag.x2, coord.bag.y2, lobster_cooked, "left", "item"))
        return true
-    
-    ;TrayTip,, returning false to eat lobster
     return false
 }
 
 health_is_okay()
 {
-    ImageSearch, x, y, 1400, 820, 1850, 850, %healthbar%
-    if (ErrorLevel = 2)
-    {
-        ToolTip, health_is_okay() - could not conduct the search., 100, 500, 19
-        return false
-    }
-    else if (ErrorLevel = 1)
-        return false
-    else
+    if ImageExists(healthbar, 1400, 820, 1700, 850)
         return true
+    return false
 }
 
 was_glancing_blow()
 {
-    if (exists("chat", "glancing_blow"))
+    if (exists("chat", glancing_blow))
         return true
     return false
 }
 
 is_unconscious()
 {
-    if(exists("chat", "unconscious"))
+    if(exists("chat", unconscious))
         return true
     return false
 }
+
 exists(image_area, image_url)
 {
     ;options in the top left are good for verification before an action.  
     switch image_area
     {
         case "top_left":
-        {
-            x1 = %top_left_x1%
-            y1 = %top_left_y1%
-            x2 = %top_left_x2%
-            y2 = %top_left_y2%
-        }
-        ;change coordiantes to chat window area
-        case "chat":
-        {
-            x1 = %chat_x1%
-            y1 = %chat_y1%
-            x2 = %chat_x2%
-            y2 = %chat_y2%
-        }
-        ;default to"middle" of screen coordiantes
-        default:
-        {
-            x1 = %middle_x1%
-            y1 = %middle_y1%
-            x2 = %middle_x2%
-            y2 = %middle_y2%
-        }
+            return image_search_and_click_v2(coord.top_left.x1, coord.top_left.y1, coord.top_left.x2, coord.top_left.y2, image_url, 0, 0)
+
+        case "chat":    ; use coordinates relative to chat window area
+            return image_search_and_click_v2(coord.bag.x1, coord.bag.y1, coord.bag.x2, coord.bag.y2, image_url, 0, 0)
+        
+        default:    ; default to "middle" of screen coordinates 
+            return image_search_and_click_v2(coord.middle.x1, coord.middle.y1, coord.middle.x2, coord.middle.y2, image_url, 0, 0)
     }
     
-    if (image_search_and_click(x1, y1, x2, y2, image_url, 0, 0))
-        return true
-    return false
+    return image_search_and_click_v2(0, 0, A_ScreenWidth, A_ScreenHeight, image_url, 0, 0)
+
 }  
     
 
 
 ;Search for an image and click on it. If modifier = "right", "right" click,
 ;    "mouseover" will move the mouse but doesn't click, otherwise left click.
-image_search_and_click(x1, y1, x2, y2, image_url, modifier, offset)
+image_search_and_click_v2(x1, y1, x2, y2, image_url, modifier, offset)
 {
-    abort_counter = 5
-    n = 0
+    abort_counter := 5
+    n := 1
 
 Retry:
-    IfWinActive, %runelite_window%
+    if WinActive(runelite_window)
     {
         ; delays should be randomized often
         set_random_delays()
 
         ; search for the image                         *40 means 40 shades away from the picture's color
-        ImageSearch, found_x, found_y, x1, y1, x2, y2, *%n% %image_url%
+        ErrorLevel := !ImageSearch(&found_x, &found_y, x1, y1, x2, y2, "*n " image_url)
         if (ErrorLevel = 2)
         {
-            ToolTip, Could not conduct the search using: %x1%x%y1% | %x2%x%y2% | %image_url%, 0, 100, 6
+            ToolTip("Could not conduct the search using: " x1 "x" y1 " | " x2 "x" y2 " | " image_url, 0, 100, 6)
             return false
         }
         else if (ErrorLevel = 1)
@@ -327,45 +409,45 @@ Retry:
             if (abort_counter > 0)
             {
                 n += 20
-                Goto, Retry
+                Goto("Retry")
             }
             else
             {
-                ;ToolTip, Retried 5 times- bot failed to find: `r%image_url%`rCoords:%x1%x%y1%  |  %x2%x%y2% `rn=%n% `rIt must be off screen or blocked., 0, 100, 6
+                ToolTip("Retried 5 times- bot failed to find: `r" image_url "`rCoords:" x1 "x" y1 "  |  " x2 "x" y2 " `rn=" n " `rIt must be off screen or blocked.", 0, 100, 6)
                 return false
             }
         }
         else
         {
             ;option refer to when you "right" click in-game, the top left of the image is 0,0
-            if (offset = option)
+            if (offset = "option")
             {
                 ;we want to move mouse to the "right" 52 to 92 pixels to click more in the center of the image
-                Random, offset_horizontal, 72, 98
+                offset_horizontal := Random(72, 98)
                 ;we want to move mouse down 2 to 11 pixels to click randomly within the image
-                Random, offset_vertical, 3, 10
+                offset_vertical := Random(3, 10)
             }
-            else if (offset = item)
+            else if (offset = "item")
             {
-                Random, offset_horizontal, -10, 10
-                Random, offset_vertical, -10, 10
+                offset_horizontal := Random(-10, 10)
+                offset_vertical := Random(-10, 10)
             }
             else
             {
-                Random, offset_horizontal, 0, 0
-                Random, offset_vertical, -0, 0
+                offset_horizontal := Random(0, 0)
+                offset_vertical := Random(-0, 0)
             }
             ;TrayTip,, Found: `r%image_url%`rCoords Searched:%x1%x%y1%  |  %x2%x%y2% `r Found at %found_x%x%found_y%
             offset_x := found_x + offset_horizontal
             offset_y := found_y + offset_vertical
             if (modifier = "right")
-                Click, right, %offset_x%, %offset_y%
+                Click(offset_x, offset_y, "Right")
             if (modifier = "mouseover")
-                MouseMove, %offset_x%, %offset_y%
+                MouseMove(offset_x, offset_y)
             if (modifier = "doubleclick")
-                Click, %offset_x%, %offset_y%, 2
-            if (modifier = left)
-                Click, %offset_x%, %offset_y%
+                Click(offset_x, offset_y, 2)
+            if (modifier = "left")
+                Click(offset_x, offset_y)
             ;otherwise we do not click and simply return
             return true
         }
@@ -373,102 +455,3 @@ Retry:
     return false
 }
 
-;Set the color of a tile in game and use that as the pixel color. if modifier = "right", "right" click,
-;    "mouseover" will move the mouse but doesn't click, "doubleclick" clicks twice in the same spot.
-;     Otherwise left click.
-pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier)
-{
-    IfWinActive, %runelite_window%
-    {     
-        ;delays should be randomized frequently
-        set_random_delays()
-        
-        PixelSearch, found_x, found_y, x1, y1, x2, y2, pixel_color, 0, RGB fast ;search region for color
-        if ErrorLevel
-        {
-            ;TrayTip,, The color %pixel_color% was not found in region.,1 
-            return
-        }
-        else
-        {
-            ;TrayTip,, The color %pixel_color% was found at x%found_x% and y%found_y%
-            ;these magic numbers are about the size of the tile to be clicked into, they might need to be adjusted
-            ;  depending on how small the object inside of the tile is.
-            Random, offset_tile_x, 0, 5
-            Random, offset_tile_y, -10, -20 
-            offset_x := found_x + offset_tile_x
-            offset_y := found_y + offset_tile_y
-            
-            if (modifier = "right")
-                Click, right, %offset_x%, %offset_y%
-            else if (modifier = "mouseover")
-                MouseMove, %offset_x%, %offset_y%
-            else if (modifier = "doubleclick")
-                Click, %offset_x%, %offset_y%, 2
-            if (modifier = left)
-                Click, %offset_x%, %offset_y%
-            ;otherwise we do not click and simply return
-            return true
-        }
-    }
-    return false
-}
-
-menu_is_open()
-{
-    runelite_menu_test_pixel_x := 1643 
-    runelite_menu_test_pixel_y := 25
-    runelite_menu_color := 0x282828
-    
-    IfWinActive, %runelite_window%
-    {
-        PixelGetColor, color, %runelite_menu_test_pixel_x%, %runelite_menu_test_pixel_y%
-        if (color = runelite_menu_color)  ;runelite window is open
-            return true
-        else
-            return false
-    }
-    return false
-}
-
-;check to see if "bag" is open
-open_bag()
-{
-    IfWinActive, %runelite_window%
-    {
-        ImageSearch, found_x, found_y, top_of_bag_x1, top_of_bag_y1, top_of_bag_x2, top_of_bag_y2, %open_bag%
-        if (ErrorLevel = 2)
-        {
-            ToolTip, Error: In open_bag() -- Could not conduct the search., 100, 400, 20
-            return false
-        }
-        if (ErrorLevel = 1)
-        {
-            ; open "bag" was not found, open the "bag" with F3 by default
-            SendInput, {F3} 
-        }
-        return true
-    }
-    return false
-}
-
-; ---------------------- Utilities --------------------------------------------
-set_random_delays()
-{   
-    ;set the dalay of your mouse movement between 20ms and 40ms
-    Random, delaySpeed, 40, 43
-    SetMouseDelay, %delaySpeed%
-    
-    Random, key_delay_speed, 80, 190
-    Random, press_duration, 40, 75
-    SetKeyDelay, %key_delay_speed%, %press_duration%
-    
-}
-
-sleep_random( sleep_time_low, sleep_time_high )
-{
-    Random, sleep_time, sleep_time_low, sleep_time_high
-    Sleep, %sleep_time%
-    
-    return
-}
