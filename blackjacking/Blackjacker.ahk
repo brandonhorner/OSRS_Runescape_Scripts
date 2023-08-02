@@ -81,75 +81,80 @@ global tick_color := 0x00DFDF
 global tick_color2 := 0x1580AD
 global tick_color3 := 0x01E0E1
 
-F1::main()
+F1::Main()
 
 +F1::Reload()
 
 ^F2::ExitApp()
 
 
-main()
+Main()
 {
-    if ImageExists(images.money_bag)
-         ClickMoneyBag()
+    ;if ImageExists(images.money_bag)
+    ;     ClickMoneyBag()
 
     tick_time := 600
 
-    short_sleep_min := 400
-    short_sleep_max := 500
+    short_sleep_min := 300
+    short_sleep_max := 450
     successful_runs := 0
-    setup_in()
-    while true
-    {   ; Main loop
+    ;setup_in()
 
-        if !HealthIsOkay() {   ; Preliminary health check
-            ate_lobster := EatLobster()
-            if ate_lobster
-                sleep_random(1000, 3000)
-            else
-                MsgBox("You are out of lobsters!`rYou need to exchange lobster notes at the dude.`rThen click OK!", "Lobster Reloading Time!")
-        }
-        unconscious := false
-        
-        ; Knockout NPC
-        if RightClickNPC()
+    state := "check_health"
+    WaitForTick()
+    
+    SetTimer Tick, 600
+    return
+
+    Tick()
+    {
+        if state == "check_health" 
         {
-            if WaitForTick() ; TODO: The timer should start here
-            {
-                                                                    ToolTip("Not unconscious..", 100, 300, 5)
-                ClickKnockout()
-                sleep_random(short_sleep_min, short_sleep_max)
-                RightClickNPC()
-                ; TODO: Pause for tick here                
-                unconscious := IsUnconscious()
+            ; check health
+            if HealthIsOkay()
+                state := "right_click"
+             else 
+                state := "eat_lobster"
+        } 
+        else if state == "eat_lobster" 
+        {
+            ; eat lobster
+            if EatLobster() 
+                state := "check_health"
+            else
+                state := "pause"
+        } 
+        else if state == "pause" 
+        {
+            MsgBox ("Refill lobsters...`rYou filthy mongrel..!`r (Then press OK)")
+            
+        } else if state == "knockout" {
+            RightClickNPC()
+            sleep_random(short_sleep_min, short_sleep_max)
+            ClickKnockout()
+            state := "wait_tick"
 
-                ; Pickpocket NPC
-                ClickPickpocket()
+        } else if state == "wait_tick" {
+            RightClickNPC()
+            state := "pickpocket"
 
-                if (IAmStunned())
-                {
-                    ; We pause for a few seconds to become unstunned.
-                    sleep_random(3000, 5000) 
-                    continue
-                }
+        } else if state == "pickpocket" {
+            ClickPickpocket()
+            state := "wait_tick2"
 
-                ; We're not stunned, Unconscious NPC check
-                if (unconscious) {
-                                                                    ToolTip("Unconscious...", 100, 300, 5)
-                    RightClickNPC()
-                    ; TODO: Pause for tick here
-                    ClickPickpocket()
-                    ; TODO: Pause for 3 ticks here
-                } else {
-                    ; TODO: Pause for 5 ticks here
-                    continue
-                }
-            }
+        } else if state == "wait_tick2" {
+            state := "wait_tick3"
 
-        }
-        else {
-            ; random pause if we miss the right click
-            sleep_random(500, 1400)            
+        } else if state == "wait_tick3" {
+            state := "pickpocket_dos"
+
+        } else if state == "pickpocket_dos" {
+            RightClickNPC()
+            sleep_random(short_sleep_min, short_sleep_max)
+            ClickPickpocket()
+            state := "check_health"
+
+        return
         }
     }
 }

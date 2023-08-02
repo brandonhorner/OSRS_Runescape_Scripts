@@ -687,6 +687,6 @@ WaitForPixel(x1, y1, x2, y2, color, color2 := 0, color3 := 0)
         ;Sleep RandomSeconds(.01, .01)
         ToolTip(A_Index ": Can't find the color...", 900, 300, 6)
     }
-    ToolTip(A_Index ": Found color...", 900, 300, 6)
+    ;ToolTip(A_Index ": Found color...", 900, 300, 6)
     return true
 }
