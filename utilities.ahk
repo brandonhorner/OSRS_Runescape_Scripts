@@ -390,37 +390,42 @@ mouse_move_random_offset(lower_x:=-100, upper_x:=100, lower_y:=-90, upper_y:=90)
 ImageExists(image_url, x1:=0,y1:=0, x2:=A_ScreenWidth,y2:=A_ScreenHeight) {
     CoordMode "ToolTip", "Screen"
     CoordMode "Pixel"
-
     shade_variation := 90
-    found_image := false
 
     ;Sleep RandomSeconds(.2 , 1.5)
     try {
         ; Search for the image on the entire screen with variation tolerance of 50
-        if ImageSearch(&FoundX, &FoundY, x1, y1, x2, y2, "*50 *TransBlack " image_url) {
-            ;ToolTip image_url " WAS found!", XTOOLTIP+70, YTOOLTIP+100, 1
-            found_image := { x:FoundX, y:FoundY }
-            return found_image
+        if ImageSearch(&FoundX, &FoundY, x1, y1, x2, y2, "*20 *TransBlack " image_url) {
+            ToolTip image_url " WAS found! @" FoundX " & " FoundY , XTOOLTIP+70, YTOOLTIP+100, 7
+            return true
         } else {
-            ;ToolTip image_url " was NOT found!", XTOOLTIP+70, YTOOLTIP+100, 1
+            ToolTip image_url " was NOT found!", XTOOLTIP+70, YTOOLTIP+100, 7
         }
     } catch as exc {
-        ToolTip "Could not conduct the search due to the following error:`n" exc.Message, XTOOLTIP+80, YTOOLTIP+90, 9
+        ToolTip "Could not conduct the search due to the following error:`n" exc.Message "`n" image_url, XTOOLTIP+80, YTOOLTIP+90, 9
         Sleep 5000
     }
 
-    return found_image
+    return false
 }
 
-; this function waits for a
-WaitForImage(image_url) {
-    while (!ImageExists(image_url)) {
-        if (A_Index > 10){
-            return false
+; this function waits for an image, and an optional timeout (default is 10s)
+WaitForImage(image_url, timeout := 10000) {
+
+    ; Store the current tick count
+    startTime := A_TickCount
+
+    ; Keep checking until timeout have passed
+    while (A_TickCount - startTime) < timeout {
+        ; Check for the image
+        if ImageExists(image_url) {
+            return true
         }
-        Sleep RandomSeconds(.5, 1)
+        ; Sleep for a short period to not hog the CPU
+        Sleep 10
     }
-    return true
+    ; If we've reached here, timeout has hit without detecting the image
+    return false
 }
 
 ; Function to simulate pressing and holding a key and display a tooltip
@@ -689,4 +694,19 @@ WaitForPixel(x1, y1, x2, y2, color, color2 := 0, color3 := 0)
     }
     ToolTip(A_Index ": Found color...", 900, 300, 6)
     return true
+}
+
+; Get the offsets from the current mouse position.
+;     This is specifically for the right click menu items.
+GetMousePosOffsets()
+{
+    MouseGetPos(&x, &y)
+    offset := {
+        x1 : x - 130, 
+        y1 : y, 
+        x2 : x+120, 
+        y2 : y+255
+    }
+    return offset
+
 }

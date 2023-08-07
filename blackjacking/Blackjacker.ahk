@@ -19,22 +19,22 @@ CoordMode("Mouse", "Screen")
 
 ; these are image files used for image searching
 global images := {
-    attack_menaphite_hovering_text : A_WorkingDir "\image_library\attack_menaphite_hovering_text.png",
+    attack_menaphite_hovering_text : A_WorkingDir "\image_library\blackjacking\attack_menaphite_hovering_text.png",
     lobster_cooked : A_WorkingDir "\image_library\lobster_cooked.png",
-    attack : A_WorkingDir "\image_library\attack_top_left.bmp",
-    failed_pickpocket : A_WorkingDir "\image_library\failed_pickpocket.bmp",
-    glancing_blow : A_WorkingDir "\image_library\glancing_blow.bmp",
-    knockout_option : A_WorkingDir "\image_library\knockout_option.bmp",
-    pickpocket_option : A_WorkingDir "\image_library\pickpocket_option.bmp",
-    ; not used right_click_options : A_WorkingDir "\image_library\right_click_options.png",
-    unconscious : A_WorkingDir "\image_library\unconscious.png",
-    cannot_knockout : A_WorkingDir "\image_library\cannot_do_that.bmp",
-    healthbar : A_WorkingDir "\image_library\healthbar.bmp",
-    stunned : A_WorkingDir "\image_library\stunned.bmp",
-    imstunned : A_WorkingDir "\image_library\imstunned.png",
-    missed_right_click : A_WorkingDir "\image_library\missed_right_click.bmp",
-    combat : A_WorkingDir "\image_library\combat.bmp",
-    money_bag : A_WorkingDir "\image_library\money_bag.png",
+    attack : A_WorkingDir "\image_library\blackjacking\attack_top_left.bmp",
+    failed_pickpocket : A_WorkingDir "\image_library\blackjacking\failed_pickpocket.bmp",
+    glancing_blow : A_WorkingDir "\image_library\blackjacking\glancing_blow.bmp",
+    knockout_option : A_WorkingDir "\image_library\blackjacking\knockout_option.bmp",
+    pickpocket_option : A_WorkingDir "\image_library\blackjacking\pickpocket_option.bmp",
+    right_click_options : A_WorkingDir "\image_library\blackjacking\right_click_options.png",
+    unconscious : A_WorkingDir "\image_library\blackjacking\unconscious.png",
+    cannot_knockout : A_WorkingDir "\image_library\blackjacking\cannot_do_that.bmp",
+    healthbar : A_WorkingDir "\image_library\blackjacking\healthbar.bmp",
+    stunned : A_WorkingDir "\image_library\blackjacking\stunned.bmp",
+    imstunned : A_WorkingDir "\image_library\blackjacking\imstunned.png",
+    missed_right_click : A_WorkingDir "\image_library\blackjacking\missed_right_click.bmp",
+    combat : A_WorkingDir "\image_library\blackjacking\combat.bmp",
+    money_bag : A_WorkingDir "\image_library\blackjacking\money_bag.png",
     open_bag : A_WorkingDir "\image_library\open_bag.bmp"
 }
 
@@ -47,10 +47,11 @@ global tooltip_y := 550
 
 ; object that holds all of the screen area coordinates
 global coord := {
-    chat:       { x1: 7, y1: 965, x2: 515, y2: 1015 },
+    chat:       { x1: 3, y1: 969, x2: 494, y2: 986 },
     bag:        { x1:1385, y1:700, x2:1855, y2:1000 },
     top_left:   { x1:0, y1:22, x2:190, y2:75 },
-    middle:     { x1:0, y1:200, x2:1650, y2:970 }
+    middle:     { x1:0, y1:200, x2:1650, y2:970 },
+    health:     { x1:1400, y1:820, x2:1700, y2:850 }
 }
 
 ; coords to ensure an NPC's orientation
@@ -86,79 +87,190 @@ F1::main()
 +F1::Reload()
 
 ^F2::ExitApp()
-
-
-main()
+Main()
 {
-    if ImageExists(images.money_bag)
-         ClickMoneyBag()
-
-    tick_time := 600
-
-    short_sleep_min := 400
-    short_sleep_max := 500
-    successful_runs := 0
-    setup_in()
-    while true
-    {   ; Main loop
-
-        if !HealthIsOkay() {   ; Preliminary health check
-            ate_lobster := EatLobster()
-            if ate_lobster
-                sleep_random(1000, 3000)
-            else
-                MsgBox("You are out of lobsters!`rYou need to exchange lobster notes at the dude.`rThen click OK!", "Lobster Reloading Time!")
-        }
-        unconscious := false
+    while (true)
+    {
         
-        ; Knockout NPC
-        if RightClickNPC()
+    }  
+}
+Main_old()
+{
+    while (true)
+    {
+        ; Set all states to inactive
+        for state, data in states {
+            data.active := false
+        }
+        
+        ; Get the current states from chat image
+        currentActiveStates := GetActiveStates()
+        if !currentActiveStates
         {
-            if WaitForTick() ; TODO: The timer should start here
-            {
-                                                                    ToolTip("Not unconscious..", 100, 300, 5)
-                ClickKnockout()
-                sleep_random(short_sleep_min, short_sleep_max)
-                RightClickNPC()
-                ; TODO: Pause for tick here                
-                unconscious := IsUnconscious()
+            ToolTip "Continuing..." 900, 100, 6
+            continue
+        }
+        ; Update state data based on current states
+        for state in currentActiveStates {
+            states[state]["active"] := true
+        }
 
-                ; Pickpocket NPC
-                ClickPickpocket()
-
-                if (IAmStunned())
-                {
-                    ; We pause for a few seconds to become unstunned.
-                    sleep_random(3000, 5000) 
-                    continue
-                }
-
-                ; We're not stunned, Unconscious NPC check
-                if (unconscious) {
-                                                                    ToolTip("Unconscious...", 100, 300, 5)
-                    RightClickNPC()
-                    ; TODO: Pause for tick here
-                    ClickPickpocket()
-                    ; TODO: Pause for 3 ticks here
-                } else {
-                    ; TODO: Pause for 5 ticks here
-                    continue
-                }
+        nextState := "None"
+        ; Find the highest-priority active state
+        highestPriority := 100 ; Start with a high number
+        for state in states {
+            data := states[state]
+            if (data["active"] && data["priority"] < highestPriority) {
+                ToolTip ("highest priority state: " state, 100, 300, 9)
+                highestPriority := data["priority"]
+                nextState := state
             }
+        }
+        if (nextState = "None")
+        {
+            sleep_random(10, 20)
+            continue
+        }
+        ; Perform action for the highest-priority active state
+        if (nextState = "stunned") 
+        {
+            ; Perform action for stunned state
+            sleep_random(4000,6000)
+        }
+        else if (nextState = "low_health")
+        {
+            if (!EatLobster())
+            {
+                MsgBox "Restock your lobsters - punkass"
+            }
+        }
+        else if (nextState = "pickpocket_attempt") 
+        {
+            ; Perform action for pickpocket_attempt state
+            PickpocketAttempt()
+        } 
+        else if (nextState = "pickpocket_success") 
+        {
+            ; Perform action for pickpocket_success state
+            PickpocketSuccess()
+        } 
+        else if (nextState = "pickpocket_failure") 
+        {
+            ; Perform action for pickpocket_failure state
+            PickpocketFailure()
+        } 
+        else if (nextState = "knockout_success") 
+        {
+            ; Perform action for knockout_success state
+            KnockoutSuccess()
+        } 
+        else if (nextState = "knockout_failure") 
+        {
+            ; Perform action for knockout_failure state
+            KnockoutFailure()
+        }
 
-        }
-        else {
-            ; random pause if we miss the right click
-            sleep_random(500, 1400)            
-        }
+
+        Sleep 10 ; Wait 10 ms before checking chat again
     }
 }
 
+; Define an object to store state data (this needs to be an associative + Map array because objects aren't iterable :\)
+; Ex: isactive := states["stunned"]["active"]
+global states := Map(
+    "stunned", Map("active", false, "priority", 7, "image_url", A_WorkingDir "\image_library\been_stunned.bmp"),
+    "low_health", Map("active", false, "priority", 6, "image_url", A_WorkingDir "\image_library\healthbar.bmp"),
+    "pickpocket_attempt", Map("active", false, "priority", 5, "image_url", A_WorkingDir "\image_library\pickpocket_attempt.bmp"),
+    "pickpocket_success", Map("active", false, "priority", 4, "image_url", A_WorkingDir "\image_library\pickpocket_success.bmp"),
+    "pickpocket_failure", Map("active", false, "priority", 3, "image_url", A_WorkingDir "\image_library\pickpocket_failure.bmp"),
+    "knockout_success", Map("active", false, "priority", 2, "image_url", A_WorkingDir "\image_library\knockout_success.bmp"),
+    "knockout_failure", Map("active", false, "priority", 1, "image_url", A_WorkingDir "\image_library\knockout_failure.bmp")
+)
+
+GetActiveStates()
+{
+    ; Define an array to store the active states
+    activeStates := []
+
+    ; Iterate over the states
+    for state, data in states {
+        ToolTip "State: " state " priority " data["priority"], 100, 800, 4
+        if (state = "low_health")
+        {
+            if ImageExists(data["image_url"], coord.health.x1, coord.health.y1, coord.health.x2, coord.health.y2)
+                ToolTip "Health wasn't missing: image_url: " data["image_url"], 100, 200, 2
+            else
+            {
+                activeStates.push(state)
+                ToolTip "Found image_url: " data["image_url"], 100, 100, 1
+                sleep_random(500,1500)
+            }
+        }
+        else
+        {
+            ; If the image for the current state is found, add the state to the activeStates array
+            if ImageExists(data["image_url"], coord.chat.x1, coord.chat.y1, coord.chat.x2, coord.chat.y2)
+            {
+                activeStates.push(state)
+                ToolTip "Found image_url: " data["image_url"], 100, 100, 1
+                sleep_random(500,1500)
+            }
+            else
+                ToolTip "Didn't Find: image_url: " data["image_url"], 100, 200, 2
+        }
+    }
+    
+    ; Return the array of active states
+    return activeStates
+}
+; ToolTip "Found image_url: " data["image_url"], 100, 100, 1
 IAmStunned()
 {
-    if ImageExists(images.imstunned)
-        return true
-    return false
+    ToolTip "Stunned: Waiting.. ", 1200, 900, 5
+    while(!ImageExists(images.imstunned))
+    {
+        sleep_random(10, 10)
+    }
+    ToolTip "Stunned", 1200, 900, 5
+}
+
+; If the pickpocket attempt is still on the screen, we just want to wait a little before pick pocketing
+PickpocketAttempt()
+{
+    ToolTip "Pickpocket Attempt: Waiting.. ", 1200, 900, 5
+
+    RightClickNPC() ; ensure right click menu is open
+
+    while(ImageExists(states["pickpocket_attempt"]["image_url"]))
+    {
+        sleep_random(10, 10)
+    }
+}
+
+PickpocketSuccess()
+{
+    ToolTip "Pickpocket Success: Waiting.. ", 1200, 900, 5
+    while(ImageExists(states["pickpocket_success"]["image_url"]))
+    {
+        sleep_random(10, 10)
+    }
+}
+
+PickpocketFailure()
+{
+    KnockoutSuccess()
+}
+
+KnockoutSuccess()
+{
+    RightClickNPC()
+    sleep_random(30, 50)
+    ClickPickpocket()
+}
+
+KnockoutFailure()
+{
+    KnockoutSuccess()
 }
 
 WaitForTick()
@@ -171,13 +283,9 @@ WaitForTick()
 ; the right click menu in the game is open, now we left click the knockout option
 ClickKnockout()
 {
-    MouseGetPos(&x, &y)
-    search_x1 := x - 130
-    search_y1 := y
-    search_x2 := x + 120
-    search_y2 := y + 255
+    offset := GetMousePosOffsets()
 
-    if image_search_and_click(images.knockout_option, 0, "left", "option", search_x1, search_y1, search_x2, search_y2)
+    if image_search_and_click(images.knockout_option, 0, "left", "option", offset.x1, offset.y1, offset.x2, offset.y2)
        return true
     return false
 }
@@ -186,14 +294,44 @@ ClickKnockout()
 ;   about to attack. To counteract their attack, we can click pickpocket on them.
 ClickPickpocket()
 {
-    MouseGetPos(&x, &y)
-    search_x1 := x - 130
-    search_y1 := y
-    search_x2 := x + 120
-    search_y2 := y + 255
+    offset := GetMousePosOffsets()
 
-    if image_search_and_click(images.pickpocket_option, 0, "left", "option", search_x1, search_y1, search_x2, search_y2)
-       return true
+    if image_search_and_click(images.pickpocket_option, 0, "left", "option", offset.x1, offset.y1, offset.x2, offset.y2) {
+        ; Store the current tick count
+        startTime := A_TickCount
+
+        ; Keep checking until 400ms have passed
+        while (A_TickCount - startTime) < 400 {
+            ; Check for the image
+            if ImageExists(states["pickpocket_attempt"]["image_url"]) {
+                return true
+            }
+            ; Sleep for a short period to not hog the CPU
+            Sleep 10
+        }
+
+        ; If we've reached here, 400ms have passed without detecting the image
+        return false
+    }
+    return false
+}
+
+CheckForKnockoutToDoublePickpocket()
+{
+    ; Store the current tick count
+    startTime := A_TickCount
+
+    ; Keep checking until 400ms have passed
+    while (A_TickCount - startTime) < 400 {
+        ; Check for the image
+        if ImageExists(images.["pickpocket_attempt"]["image_url"]) {
+            return true
+        }
+        ; Sleep for a short period to not hog the CPU
+        Sleep 10
+    }
+
+    ; If we've reached here, 400ms have passed without detecting the image
     return false
 }
 
@@ -225,6 +363,8 @@ RightClickNPC_old()
 ; right clicks around the chest area of the NPC
 RightClickNPC()
 {
+    if (ImageExists(images.right_click_options))
+        return true
     ; clicks need to be fast (but not instant), we'll add sleeps when necessary
     SetDefaultMouseSpeed(1)
 

@@ -8,10 +8,7 @@
 
 F3::
 {
-    if EatLobster()
-        ToolTip("EatLobster succeeded!", tooltip_x, 500, 2)
-    else
-        ToolTip("eat_Lobster failed...", tooltip_x, 500, 2)
+    test_ImageExists()
 }
 
 F4::
@@ -24,6 +21,22 @@ F5::
     setup_in()
 }
 
+test_ImageExists()
+{
+    if (ImageExists(states["pickpocket_success"]["image_url"], coord.chat.x1, coord.chat.y1, coord.chat.x2, coord.chat.y2 ))
+        ToolTip "Found it!", 500, 500, 9
+    else
+        ToolTip "Didn't find it!", 500, 500, 9
+
+}
+
+test_EatLobster()
+{
+    if EatLobster()
+        ToolTip("EatLobster succeeded!", tooltip_x, 500, 2)
+    else
+        ToolTip("eat_Lobster failed...", tooltip_x, 500, 2)
+}
 test_RightClickNPC()
 {
     ; clicks need to be fast (but not instant), we'll add sleeps when necessary
