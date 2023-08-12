@@ -8,54 +8,72 @@
 
 F3::
 {
-    test_ImageExists()
+    if ImageSearchAndClick(images.knockout_success, "chat_bottom", "don't click", "no offset")
+        ToolTip "Found it!", 0, 500, 9
+    else
+        ToolTip "Didn't find it!", 0, 500, 9
 }
 
 F4::
 {
-    test_RightClickNPC()
+    RightClickNPC()
 }
 
 F5::
 {
-    setup_in()
+    ClickKnockout(&knockout_success, &knockout_failure)
+    ToolTip "knockout success: " knockout_success, 100, 100, 1
+}
+
+F6::
+{
+    ClickPickpocket()
 }
 
 test_ImageExists()
 {
-    if (ImageExists(states["pickpocket_success"]["image_url"], coord.chat.x1, coord.chat.y1, coord.chat.x2, coord.chat.y2 ))
-        ToolTip "Found it!", 500, 500, 9
+    if ( ImageExists(images.pickpocket_success), coord.chat.x1, coord.chat.y1, coord.chat.x2, coord.chat.y2 )
+        ToolTip "Found it!", 100, 500, 9
     else
-        ToolTip "Didn't find it!", 500, 500, 9
+        ToolTip "Didn't find it!", 100, 500, 9
+}
 
+test_ImageExistsRightClick()
+{
+    if (ImageExists(images.right_click_options))
+        ToolTip "Found it!", 100, 500, 9
+    else
+        ToolTip "Didn't find it!", 100, 500, 9
 }
 
 test_EatLobster()
 {
     if EatLobster()
-        ToolTip("EatLobster succeeded!", tooltip_x, 500, 2)
+        ToolTip("EatLobster succeeded!", 0, 500, 2)
     else
-        ToolTip("eat_Lobster failed...", tooltip_x, 500, 2)
+        ToolTip("eat_Lobster failed...", 0, 500, 2)
 }
+
 test_RightClickNPC()
 {
+    if (ImageExists(images.right_click_options))
+        return true
     ; clicks need to be fast (but not instant), we'll add sleeps when necessary
     SetDefaultMouseSpeed(1)
 
-    if WinActive(runelite_window)
-    {
-        ; First check if the right click option is already active
-        if (ImageExists(images.knockout_option) || ImageExists(images.pickpocket_option))
-            return true
-        
-        target_click_area := GetTargetClickArea()
-        offset_x := Random(-50, 50)
-        offset_y := Random(-50, 50)
-        target_x := target_click_area.x + offset_x
-        target_y := target_click_area.y + offset_y
-        
-        Click(target_x, target_y, "Right")
-        ;ToolTip, in while %count%: `r%x1%x%y1%'r%x2%x%y2% `rPixel:%enemy_color%, %tooltip_x%, %tooltip_y%, 2
+    ; Get the target click area
+    click_area := GetTargetClickArea()
+    offset_x := Random(-70, 70)
+    offset_y := Random(-70, 120)
+
+    ; Randomize within the area and right click
+    ToolTip("Right Clicking:`roffset x:" offset_x ", y:" offset_y "`rx:" click_area.x ", y:" click_area.y, 100, 600, 8)
+    x := click_area.x + offset_x
+    y := click_area.y + offset_y
+    MouseMove(x, y)
+    ; If target is in sight
+    if WaitForImage(images.menaphite_hovering_text, 700) {
+        Click("Right")
         return true
     }
     return false
@@ -87,31 +105,31 @@ test_target_is_standing_up()
 {
     offset := 30
     top_left_found := False
-    if pixel_search_and_click(target_coord.standing_top_left.x, target_coord.standing_top_left.y, target_coord.standing_top_left.x + offset, target_coord.standing_top_left.y + offset, enemy_color) ||
-        pixel_search_and_click(target_coord.standing_top_left.x, target_coord.standing_top_left.y, target_coord.standing_top_left.x + offset, target_coord.standing_top_left.y + offset, enemy_color_dark) ||
-        pixel_search_and_click(target_coord.standing_top_left_2.x, target_coord.standing_top_left_2.y, target_coord.standing_top_left_2.x + offset, target_coord.standing_top_left_2.y + offset, enemy_color) ||
-        pixel_search_and_click(target_coord.standing_top_left_2.x, target_coord.standing_top_left_2.y, target_coord.standing_top_left_2.x + offset, target_coord.standing_top_left_2.y + offset, enemy_color_dark)
+    if pixel_search_and_click(target_coord.standing_top_left.x, target_coord.standing_top_left.y, target_coord.standing_top_left.x + offset, target_coord.standing_top_left.y + offset, pixel_color.enemy) ||
+        pixel_search_and_click(target_coord.standing_top_left.x, target_coord.standing_top_left.y, target_coord.standing_top_left.x + offset, target_coord.standing_top_left.y + offset, pixel_color.enemy_dark) ||
+        pixel_search_and_click(target_coord.standing_top_left_2.x, target_coord.standing_top_left_2.y, target_coord.standing_top_left_2.x + offset, target_coord.standing_top_left_2.y + offset, pixel_color.enemy) ||
+        pixel_search_and_click(target_coord.standing_top_left_2.x, target_coord.standing_top_left_2.y, target_coord.standing_top_left_2.x + offset, target_coord.standing_top_left_2.y + offset, pixel_color.enemy_dark)
         top_left_found := True
     
     top_right_found := false
-    if pixel_search_and_click(target_coord.standing_top_right.x, target_coord.standing_top_right.y, target_coord.standing_top_right.x + offset, target_coord.standing_top_right.y + offset, enemy_color) ||
-        pixel_search_and_click(target_coord.standing_top_right.x, target_coord.standing_top_right.y, target_coord.standing_top_right.x + offset, target_coord.standing_top_right.y + offset, enemy_color_dark) ||
-        pixel_search_and_click(target_coord.standing_top_right_2.x, target_coord.standing_top_right_2.y, target_coord.standing_top_right_2.x + offset, target_coord.standing_top_right_2.y + offset, enemy_color) ||
-        pixel_search_and_click(target_coord.standing_top_right_2.x, target_coord.standing_top_right_2.y, target_coord.standing_top_right_2.x + offset, target_coord.standing_top_right_2.y + offset, enemy_color_dark)
+    if pixel_search_and_click(target_coord.standing_top_right.x, target_coord.standing_top_right.y, target_coord.standing_top_right.x + offset, target_coord.standing_top_right.y + offset, pixel_color.enemy) ||
+        pixel_search_and_click(target_coord.standing_top_right.x, target_coord.standing_top_right.y, target_coord.standing_top_right.x + offset, target_coord.standing_top_right.y + offset, pixel_color.enemy_dark) ||
+        pixel_search_and_click(target_coord.standing_top_right_2.x, target_coord.standing_top_right_2.y, target_coord.standing_top_right_2.x + offset, target_coord.standing_top_right_2.y + offset, pixel_color.enemy) ||
+        pixel_search_and_click(target_coord.standing_top_right_2.x, target_coord.standing_top_right_2.y, target_coord.standing_top_right_2.x + offset, target_coord.standing_top_right_2.y + offset, pixel_color.enemy_dark)
         top_right_found := true
     
     bottom_left_found := false
-    if pixel_search_and_click(target_coord.standing_bottom_left.x, target_coord.standing_bottom_left.y, target_coord.standing_bottom_left.x + offset, target_coord.standing_bottom_left.y + offset, enemy_color) ||
-        pixel_search_and_click(target_coord.standing_bottom_left.x, target_coord.standing_bottom_left.y, target_coord.standing_bottom_left.x + offset, target_coord.standing_bottom_left.y + offset, enemy_color_dark) ||
-        pixel_search_and_click(target_coord.standing_bottom_left_2.x, target_coord.standing_bottom_left_2.y, target_coord.standing_bottom_left_2.x + offset, target_coord.standing_bottom_left_2.y + offset, enemy_color) ||
-        pixel_search_and_click(target_coord.standing_bottom_left_2.x, target_coord.standing_bottom_left_2.y, target_coord.standing_bottom_left_2.x + offset, target_coord.standing_bottom_left_2.y + offset, enemy_color_dark)
+    if pixel_search_and_click(target_coord.standing_bottom_left.x, target_coord.standing_bottom_left.y, target_coord.standing_bottom_left.x + offset, target_coord.standing_bottom_left.y + offset, pixel_color.enemy) ||
+        pixel_search_and_click(target_coord.standing_bottom_left.x, target_coord.standing_bottom_left.y, target_coord.standing_bottom_left.x + offset, target_coord.standing_bottom_left.y + offset, pixel_color.enemy_dark) ||
+        pixel_search_and_click(target_coord.standing_bottom_left_2.x, target_coord.standing_bottom_left_2.y, target_coord.standing_bottom_left_2.x + offset, target_coord.standing_bottom_left_2.y + offset, pixel_color.enemy) ||
+        pixel_search_and_click(target_coord.standing_bottom_left_2.x, target_coord.standing_bottom_left_2.y, target_coord.standing_bottom_left_2.x + offset, target_coord.standing_bottom_left_2.y + offset, pixel_color.enemy_dark)
         bottom_left_found := true
     
     bottom_right_found := false
-    if pixel_search_and_click(target_coord.standing_bottom_right.x, target_coord.standing_bottom_right.y, target_coord.standing_bottom_right.x + offset, target_coord.standing_bottom_right.y + offset, enemy_color) ||
-        pixel_search_and_click(target_coord.standing_bottom_right.x, target_coord.standing_bottom_right.y, target_coord.standing_bottom_right.x + offset, target_coord.standing_bottom_right.y + offset, enemy_color_dark) ||
-        pixel_search_and_click(target_coord.standing_bottom_right_2.x, target_coord.standing_bottom_right_2.y, target_coord.standing_bottom_right_2.x + offset, target_coord.standing_bottom_right_2.y + offset, enemy_color) ||
-        pixel_search_and_click(target_coord.standing_bottom_right_2.x, target_coord.standing_bottom_right_2.y, target_coord.standing_bottom_right_2.x + offset, target_coord.standing_bottom_right_2.y + offset, enemy_color_dark)
+    if pixel_search_and_click(target_coord.standing_bottom_right.x, target_coord.standing_bottom_right.y, target_coord.standing_bottom_right.x + offset, target_coord.standing_bottom_right.y + offset, pixel_color.enemy) ||
+        pixel_search_and_click(target_coord.standing_bottom_right.x, target_coord.standing_bottom_right.y, target_coord.standing_bottom_right.x + offset, target_coord.standing_bottom_right.y + offset, pixel_color.enemy_dark) ||
+        pixel_search_and_click(target_coord.standing_bottom_right_2.x, target_coord.standing_bottom_right_2.y, target_coord.standing_bottom_right_2.x + offset, target_coord.standing_bottom_right_2.y + offset, pixel_color.enemy) ||
+        pixel_search_and_click(target_coord.standing_bottom_right_2.x, target_coord.standing_bottom_right_2.y, target_coord.standing_bottom_right_2.x + offset, target_coord.standing_bottom_right_2.y + offset, pixel_color.enemy_dark)
         bottom_right_found := true
     
     
@@ -121,21 +139,21 @@ test_target_is_standing_up()
 test_target_is_laying_down()
 {
     left_found := False
-    if (pixel_search_and_click(target_coord.laying_left.x, target_coord.laying_left.y, target_coord.laying_left.x + 30, target_coord.laying_left.y + 30, enemy_color)
-        || pixel_search_and_click(target_coord.laying_left.x, target_coord.laying_left.y, target_coord.laying_left.x + 30, target_coord.laying_left.y + 30, enemy_color_dark))
+    if (pixel_search_and_click(target_coord.laying_left.x, target_coord.laying_left.y, target_coord.laying_left.x + 30, target_coord.laying_left.y + 30, pixel_color.enemy)
+        || pixel_search_and_click(target_coord.laying_left.x, target_coord.laying_left.y, target_coord.laying_left.x + 30, target_coord.laying_left.y + 30, pixel_color.enemy_dark))
         left_found := True
     middle_found := false
-    if (pixel_search_and_click(target_coord.laying_middle.x, target_coord.laying_middle.y, target_coord.laying_middle.x + 30, target_coord.laying_middle.y + 30, enemy_color)
-        || pixel_search_and_click(target_coord.laying_middle.x, target_coord.laying_middle.y, target_coord.laying_middle.x + 30, target_coord.laying_middle.y + 30, enemy_color_dark))
+    if (pixel_search_and_click(target_coord.laying_middle.x, target_coord.laying_middle.y, target_coord.laying_middle.x + 30, target_coord.laying_middle.y + 30, pixel_color.enemy)
+        || pixel_search_and_click(target_coord.laying_middle.x, target_coord.laying_middle.y, target_coord.laying_middle.x + 30, target_coord.laying_middle.y + 30, pixel_color.enemy_dark))
         middle_found := true
     right_found := false
-    if (pixel_search_and_click(target_coord.laying_right.x, target_coord.laying_right.y, target_coord.laying_right.x + 30, target_coord.laying_right.y + 30, enemy_color)
-        || pixel_search_and_click(target_coord.laying_right.x, target_coord.laying_right.y, target_coord.laying_right.x + 30, target_coord.laying_right.y + 30, enemy_color_dark))
+    if (pixel_search_and_click(target_coord.laying_right.x, target_coord.laying_right.y, target_coord.laying_right.x + 30, target_coord.laying_right.y + 30, pixel_color.enemy)
+        || pixel_search_and_click(target_coord.laying_right.x, target_coord.laying_right.y, target_coord.laying_right.x + 30, target_coord.laying_right.y + 30, pixel_color.enemy_dark))
         right_found := true
 
     bottom_found := false
-    if (pixel_search_and_click(target_coord.laying_bottom.x, target_coord.laying_bottom.y, target_coord.laying_bottom.x + 30, target_coord.laying_bottom.y + 30, enemy_color)
-        || pixel_search_and_click(target_coord.laying_bottom.x, target_coord.laying_bottom.y, target_coord.laying_bottom.x + 30, target_coord.laying_bottom.y + 30, enemy_color_dark))
+    if (pixel_search_and_click(target_coord.laying_bottom.x, target_coord.laying_bottom.y, target_coord.laying_bottom.x + 30, target_coord.laying_bottom.y + 30, pixel_color.enemy)
+        || pixel_search_and_click(target_coord.laying_bottom.x, target_coord.laying_bottom.y, target_coord.laying_bottom.x + 30, target_coord.laying_bottom.y + 30, pixel_color.enemy_dark))
         bottom_found := true
     
     ToolTip("Laying Down?`n     Top: " middle_found " `nLeft: " left_found " Right: " right_found "`n    Bottom: " bottom_found, 100, 660, 6)
@@ -144,9 +162,9 @@ test_target_is_laying_down()
 testing_RightClickNPC()
 {
     if(RightClickNPC())
-        ToolTip("Right click achieved!...", tooltip_x, 500, 2)
+        ToolTip("Right click achieved!...", 0, 500, 2)
     else
-        ToolTip("Right click failed...", tooltip_x, 500, 2)
+        ToolTip("Right click failed...", 0, 500, 2)
 }
 
 test_standing_and_laying()
@@ -163,4 +181,10 @@ test_standing_and_laying()
     {
         ToolTip("Error: Target is.., NOT standing OR laying down.", 100, 550, 5)
     }  
+}
+
+test_waitforpixel()
+{
+    if (WaitForPixel(pixel_color.tick,1700, 121, 1701, 121))
+        ToolTip("Found ze pixel!...", 0, 500, 2)
 }
