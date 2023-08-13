@@ -36,7 +36,8 @@ global images := {
     imstunned : A_WorkingDir "\image_library\blackjacking\imstunned.png",
     missed_right_click : A_WorkingDir "\image_library\blackjacking\missed_right_click.bmp",
     combat : A_WorkingDir "\image_library\blackjacking\combat.bmp",
-    money_bag : A_WorkingDir "\image_library\blackjacking\money_bag_full.png",
+    money_bag : A_WorkingDir "\image_library\blackjacking\money_bag.png",
+    money_bag_full : A_WorkingDir "\image_library\blackjacking\money_bag_full.png",
     open_bag : A_WorkingDir "\image_library\open_bag.bmp",
     stunned : A_WorkingDir "\image_library\been_stunned.bmp",
     pickpocket_attempt : A_WorkingDir "\image_library\blackjacking\pickpocket_attempt.bmp",
@@ -64,16 +65,16 @@ global X_TOOLTIP := {
 }
 
 global Y_TOOLTIP := {
-    1: 50,  ; <-| main functions
-    2: 75,  ; <-|
-    3: 100, ; <-|
-    4: 155, ; <-|
+    1: 100,  ; <-| main functions
+    2: 125,  ; <-|
+    3: 150, ; <-|
+    4: 205, ; <-|
 
-    5: 155, ; <-| image search / support functions
-    6: 180, ; <-|
-    7: 220, ; <-|
-    8: 260, ; <-|
-    9: 295  ; <-|
+    5: 205, ; <-| image search / support functions
+    6: 230, ; <-|
+    7: 285, ; <-|
+    8: 325, ; <-|
+    9: 375  ; <-|
 }
 
 ; object that holds all of the screen area coordinates
@@ -129,79 +130,102 @@ F1::
 
 Main()
 {
+    setup_in()
+    
+    dbl_pickpockets := 0
+    sngl_pickpockets := 0
+
     while (true)
     {
+        knockout_failure := false
+        pickpocket_failure := false
         ;1. Preliminaries
-        CheckIfStunned()                                                    ; check if we are stunned, wait it out if we are
-        if HealthIsLow()                                                    ; check if health is low
-            try
-                EatLobster()                                                ; try to eat a lobster if it is
-            catch
+        if CheckIfStunned()
+            continue                                                        ; check if we are stunned, wait it out if we are
+        
+        CheckIfFullOnMoneyBags()
+        
+        if HealthIsLow() {                                                   ; check if health is low
+            ClickMoneyBag()
+            if (!EatLobster())                                              ; try to eat a lobster if it is
                 MsgBox "You ugly mug -- reload your lobsters!"              ; pause for player to reload inventory if you're out of lobbies
-
-        if !TargetIsStandingUpFacingMe() {                                  ; ensure we are facing the NPC
-            sleep_random(2500, 4000)                                        ; if we aren't, then pause
-            Reload
         }
 
-        ;2. Knockout
-        WaitForTick()                                                       ; once the tick starts, we can start
-        RightClickNPC()                                                     ; start by right clicking the NPC if the menu isn't open
-        sleep_random(100,200)
-        
-        if (!ClickKnockout(&knockout_success, 1200)){    ; attempt to knockout, if it fails we'll continue back to the start 
-            sleep_random(1000, 1500)
+        if !TargetIsStandingUpFacingMe() and !TargetIsLayingDownFacingMe() {                                  ; ensure we are facing the NPC
+                                                                            ToolTip "Target isn't facing me.. Restarting...", X_TOOLTIP.2, Y_TOOLTIP.2, 2
+            sleep_random(100, 300)                                        ; if we aren't, then pause
             continue
         }
+                                                                            ToolTip "Right click (1 of 3).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
+        ;2. Knockout
+        RightClickNPC()                                                     ; start by right clicking the NPC if the menu isn't open
+        WaitForTick()                                                       ; once the tick starts, we can start
         
-        sleep_random(100,200)
-        RightClickNPC()                                                 ; prime another right click menu
-        sleep_random(100,200)
-
-        ;3. Knockout Check
-        if (knockout_success)                                           ; if the knockout was a success
-        {   ;4a. Knockout Success
-            if !ClickPickpocket(&pickpocket_failure)                    ; if it fails to click pickpocket
-                continue                                                ; start the loop over
-            if (pickpocket_failure) {                                   ; if the pickpocket failed,
-                sleep_random(500, 1500)  
-                continue                                                ; start the loop over
-            }
-
-            RightClickNPC()                                             ; right click the NPC again
-            sleep_random(100,200)
-            if !ClickPickpocket(&pickpocket_failure)                    ; try to pickpocket                      
-                continue                                                ; start the loop over
-            
-            WaitForImage(images.knockout_success_pick_double_success, 1800, coord.chat_all)    ; wait for the final message for double pickpocket (or 2 ticks)   
+        if CheckIfStunned()
+            continue                                                        ; check if we are stunned, wait it out if we are
+                                                                    ToolTip "Knockout    (1 of 1).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
+        if (!ClickKnockout()){                                              ; attempt to knockout, if it fails we'll continue back to the start 
+            continue
         }
-        else
-        {   ;4b. Knockout Failure
-            if (!ClickPickpocket(&pickpocket_failure)) {                    ; if the pickpocket fails                                                             
-                Reload                                                      ; we are in combat... stop script
-            }
-            if (pickpocket_failure) {
-                sleep_random(500, 1500)
-                continue
-            }
-            else {
-                sleep_random(4000, 5000)
-                continue
-            }
+                                                                            ToolTip "Right click (2 of 3).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
+        RightClickNPC()                                                     ; prime another right click menu
+        sleep_random(1125, 1225)
+        CheckAndUpdateStatus(&knockout_failure, &pickpocket_failure)
+                                                                    ToolTip "Pickpocket  (1 of 2).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
+        if !ClickPickpocket()                                       ; if it fails to click pickpocket
+            continue                                                ; start the loop over
+        
+        sngl_pickpockets++
+                                                                    ToolTip "Counters:`nSingle pickpockets: " sngl_pickpockets "`nDouble pickpockets: " dbl_pickpockets, X_TOOLTIP.9, Y_TOOLTIP.9, 9
+        if CheckIfStunned()
+            continue                                                        ; check if we are stunned, wait it out if we are
+                                                                    ToolTip "Right click (3 of 3).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
+        RightClickNPC()                                             ; right click the NPC again
+        CheckAndUpdateStatus(&knockout_failure, &pickpocket_failure)
+        WaitForPickpocketAttempt()
+        if (knockout_failure and pickpocket_failure) {              ; if the pickpocket failed,
+                                                                    ToolTip "Epic failure, restarting in .5 to 1.5s", X_TOOLTIP.4, Y_TOOLTIP.4, 4
+            sleep_random(500, 1500)
+            MsgBox "We in combat..."
+            Reload                                                 ; we are in combat :\ Reload.
         }
+                                                                    ToolTip "Pickpocket  (2 of 2).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
+        sleep_random(750,850)
+        if !ClickPickpocket()                                       ; try to pickpocket                      
+            continue                                                ; start the loop over
+        
+        dbl_pickpockets++
+                                                                    ToolTip "Counters:`nSingle pickpockets: " sngl_pickpockets "`nDouble pickpockets: " dbl_pickpockets, X_TOOLTIP.9, Y_TOOLTIP.9, 9
+                                                                    ; wait for the final message for double pickpocket (or 2 ticks)   
     }
 }
 
+WaitForPickPocketAttempt()
+{
+    if WaitForImage(images.pickpocket_attempt, 100, coord.chat_bottom)
+        return true
 
+    return false
+}
+
+CheckAndUpdateStatus(&knockout_failure, &pickpocket_failure)
+{
+    if ImageExists(images.knockout_failure, coord.chat_bottom_2.x1, coord.chat_bottom_2.y1, coord.chat_bottom_2.x2, coord.chat_bottom_2.y2,)
+        knockout_failure := true
+    if ImageExists(images.pickpocket_failure, coord.chat_bottom_2.x1, coord.chat_bottom_2.y1, coord.chat_bottom_2.x2, coord.chat_bottom_2.y2,)
+        pickpocket_failure := true
+}
 
 CheckIfStunned()
 {
                                                                             ToolTip "Stunned. Waiting...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-    while !ImageExists(images.imstunned)
+    if ImageSearchAndClick(images.imstunned, "top_left",,,,,,,5)
     {
         sleep_random(10, 10)
+        return true
     }
                                                                             ToolTip "", X_TOOLTIP.1, Y_TOOLTIP.1, 1
+    return false
 }
 
 HealthIsLow()
@@ -219,22 +243,45 @@ EatLobster()
 {
                                                                             ToolTip "Eating lobster...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
     open_bag()
-    sleep_random(300, 1000)
-    if ImageSearchAndClick(images.lobster_cooked, "whole_screen", "left", "item") {
-       return true
+    sleep_random(500, 1500)
+    if ImageSearchAndClick(images.lobster_cooked, "bag", "mouseover", "item") {
+        sleep_random(400, 1500)
+        Click("Left")
+
+        return true
     }
+    WaitForTick()
+    WaitForTick()
                                                                             ToolTip "...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
     return false
 }
 
-; click the money bag in your inventory
+CheckIfFullOnMoneyBags()
+{
+    if ImageSearchAndClick(images.money_bag_full, "bag", "mouseover", "item") {
+                                                                            ToolTip "Clicking the FULL money bag :')...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
+        sleep_random(400, 1500)
+        Click("Left")
+        WaitForTick()
+        return true
+    }
+    return false
+}
+
+; 1 in 4 chance to click the money bag in your inventory
 ClickMoneyBag()
 {
-                                                                            ToolTip "Clicking the money bag...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-    ;ensure bag is open
-    if ImageExists(images.open_bag) {
+    lucky_number := Random(1,5)
+    if !(lucky_number = 4)
+        return false    
+    
+    SendKey(1)
+    if ImageExists(images.open_bag) {                                       ;ensure bag is open
         sleep_random(10, 100)
-        if ImageSearchAndClick(images.money_bag, "bag", "left", "item")
+        if ImageSearchAndClick(images.money_bag, "bag", "mouseover", "item")
+                                                                            ToolTip "Clicking the money bag...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
+            sleep_random(400, 1500)
+            Click("Left")
             return true
     }
                                                                             ToolTip "", X_TOOLTIP.1, Y_TOOLTIP.1, 1
@@ -242,59 +289,40 @@ ClickMoneyBag()
 }
 
 ; at this point, the right click menu in the game is open, now we left click the knockout option
-ClickKnockout(&knockout_success, timeout_ms := 700) {
+ClickKnockout() {
                                                                             ToolTip "Trying to click knockout...", X_TOOLTIP.2, Y_TOOLTIP.2, 2    
     ; if the knockout option isn't visible, wait for a bit
-    WaitForImage(images.knockout_option, timeout_ms)
+    WaitForImage(images.knockout_option, 200)
     if ImageSearchAndClick(images.knockout_option,, "mouseover", "option") {
                                                                             ToolTip "Clicking knockout...", X_TOOLTIP.2, Y_TOOLTIP.2, 2 
-        sleep_random(100, 200)
-        Click("Left")
-        sleep_random(100, 200)
-        if (WaitForImage(images.knockout_success, timeout_ms, coord.chat_bottom))
-        {
-            knockout_success := true
-            return true
-        }
+        Sleep 200
+        Click "Left"
+        return true
     }
     ; If we've reached here, timeout has passed without detecting the image
                                                                             ToolTip "Couldn't click knockout in time... Restarting in 3 to 4 sec", X_TOOLTIP.2, Y_TOOLTIP.2, 2
-    sleep_random(3000, 4000)                                ; failed? give up hombre
-    return false
+    return false    ; failed? give up hombre
 }
 
 ; at this point, the right click menu in the game is open, and we either just knocked them out, or it was a glancing blow and they are
 ;   about to attack. To counteract their attack, we can click pickpocket on them.
-ClickPickpocket(&pickpocket_failure := false, timeout_ms := 650) {
+ClickPickpocket(timeout_ms := 300) {
                                                                             ToolTip "Trying to click pickpocket...", X_TOOLTIP.2, Y_TOOLTIP.2, 2
-    WaitForImage(images.pickpocket_option, timeout_ms)
+    ; WaitForImage(images.pickpocket_option, timeout_ms)
+    ; WaitForAnyImages([images.knockout_failure, images.knockout_success], timeout_ms)
     if ImageSearchAndClick(images.pickpocket_option, "under_mouse", "mouseover", "option") {
-        sleep_random(100,200)
+        Sleep 100
         Click("Left")
-        sleep_random(100,200)
-        if WaitForImage(images.pickpocket_attempt, timeout_ms, coord.chat_bottom) {
-            if WaitForImage(images.pickpocket_success, timeout_ms, coord.chat_bottom)
-            {
-                return true
-            }
-            pickpocket_failure := true
-            return true
-        }
+        return true
     }                                                       ; if we've reached here, timeout_ms has passed without detecting the image
                                                                             ToolTip "Couldn't click pickpocket in time... Restarting in 3 to 4 sec.", X_TOOLTIP.2, Y_TOOLTIP.2, 2
-    sleep_random(3000, 4000)                                ; failed.. give up hombre
-    return false
+    sleep_random(500, 1500)
+    return false                                            ; failed.. give up hombre
 }
 
 ; right clicks around the chest area of the NPC
 RightClickNPC()
 {
-    if ImageExists(images.right_click_options)
-    {
-                                                                            ToolTip("Right click menu`nwas open already..", X_TOOLTIP.3, Y_TOOLTIP.3, 3)
-        return true
-    }
-
     ; clicks need to be fast (but not instant), we'll add sleeps when necessary
     SetDefaultMouseSpeed(1)
 
@@ -314,3 +342,4 @@ RightClickNPC()
     }
     return false
 }
+

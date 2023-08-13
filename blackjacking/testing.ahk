@@ -8,7 +8,7 @@
 
 F3::
 {
-    if ImageSearchAndClick(images.knockout_success, "chat_bottom", "don't click", "no offset")
+    if ImageSearchAndClick(images.money_bag, "bag", "mouseover", "item")
         ToolTip "Found it!", 0, 500, 9
     else
         ToolTip "Didn't find it!", 0, 500, 9
@@ -21,8 +21,8 @@ F4::
 
 F5::
 {
-    ClickKnockout(&knockout_success, &knockout_failure)
-    ToolTip "knockout success: " knockout_success, 100, 100, 1
+    ClickKnockout()
+    ToolTip "knockout success: ", 100, 100, 1
 }
 
 F6::
@@ -187,4 +187,14 @@ test_waitforpixel()
 {
     if (WaitForPixel(pixel_color.tick,1700, 121, 1701, 121))
         ToolTip("Found ze pixel!...", 0, 500, 2)
+}
+
+test_Eat_Lobster()
+{    
+    if ImageSearchAndClick(images.lobster_cooked, "bag", "mouseover", "item") {
+        sleep_random(400, 1500)
+        ToolTip("Found the Lobster!...", X_TOOLTIP.4, Y_TOOLTIP.4, 4)
+        return true
+    }
+    return false
 }

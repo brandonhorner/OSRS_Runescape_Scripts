@@ -409,7 +409,7 @@ PressAndHoldKey(key, duration, times := 1) {
 
 ; Function to display tooltip and send a key
 SendKey(key, presses := 1){
-    ToolTip "Key Presses: " key presses, XTOOLTIP+70, YTOOLTIP-25, 2
+    ToolTip "Key: " key "`nPresses: "  presses " times ", X_TOOLTIP.3, Y_TOOLTIP.3, 3
     set_random_delays(45, 85)
 
     if (presses <= 1){
@@ -548,7 +548,7 @@ WaitForPixel(color, x1, y1, x2, y2)
         if (pixel_search_and_click(x1, y1, x2, y2, color)){
             return true
         }
-        ToolTip("WaitForPixel: " A_Index " tries. Can't find the color...", X_TOOLTIP.5, Y_TOOLTIP.5, 5)
+                                                                                ToolTip("5. WaitForPixel: " A_Index " tries. Can't find the color...", X_TOOLTIP.5, Y_TOOLTIP.5, 5)
     }
     ;ToolTip(A_Index ": Found color...", 900, 300, 6)
     return true
@@ -558,14 +558,13 @@ WaitForPixel(color, x1, y1, x2, y2)
 MenuIsOpen()
 {
     xp_minimap_button := A_WorkingDir "\image_library\xp_minimap_button.png"
-    xp_minimap_button_2 := A_WorkingDir "\image_library\xp_minimap_button.bmp"
     StartTime := A_TickCount
     ; Keep checking until timeout have passed
     while (A_TickCount - StartTime) < 50 {
         if(ImageExists(xp_minimap_button, 1665, 56, 1695, 81))
-            return true
+            return false
     }
-    return false
+    return true
 }
 
 WaitForTick()
@@ -719,6 +718,101 @@ WaitForImage(ImageURL, Timeout := 3000, coord_group := "None") {
     return false
 }
 
+; This function waits for an array of images, and an optional timeout (default is 3s)
+WaitForAnyImages(ImageURLs, Timeout := 3000, coord_group := "None") {
+    if coord_group = "None" {
+        x1:= 0
+        y1:= 0
+        x2:= A_ScreenWidth
+        y2:= A_ScreenHeight
+    }
+    else {
+        x1:= coord_group.x1
+        y1:= coord_group.y1
+        x2:= coord_group.x2
+        y2:= coord_group.y2
+    }
+
+    ; Store the current tick count
+    StartTime := A_TickCount
+
+    ; Concatenate image names for tooltip
+    imageNames := ""
+    for index, imageURL in ImageURLs {
+        SplitPath imageURL, &ImageName
+        imageNames .= ImageName "`n"
+    }
+                                                                ToolTip "6. WaitForAnyImages: waiting on:`n" imageNames, X_TOOLTIP.6, Y_TOOLTIP.6, 6
+
+    ; Keep checking until timeout has passed
+    while (A_TickCount - StartTime) < Timeout {
+        ; Check for the images
+        for index, imageURL in ImageURLs {
+            if ImageExists(imageURL, x1, y1, x2, y2) {
+                return true
+            }
+        }
+
+        ; Sleep for a short period to not hog the CPU
+        Sleep 10
+    }
+
+                                                                ToolTip "6. WaitForAnyImages: Didn't find:`n" imageNames, X_TOOLTIP.6, Y_TOOLTIP.6, 6
+
+    ; If we've reached here, timeout has hit without detecting any of the images
+    return false
+}
+
+; This function waits for an array of images, and an optional timeout (default is 3s)
+WaitForAllImages(ImageURLs, Timeout := 3000, coord_group := "None") {
+    if coord_group = "None" {
+        x1:= 0
+        y1:= 0
+        x2:= A_ScreenWidth
+        y2:= A_ScreenHeight
+    }
+    else {
+        x1:= coord_group.x1
+        y1:= coord_group.y1
+        x2:= coord_group.x2
+        y2:= coord_group.y2
+    }
+
+    ; Store the current tick count
+    StartTime := A_TickCount
+
+    ; Keep checking until timeout has passed
+    while (A_TickCount - StartTime) < Timeout {
+        allImagesFound := true ; Assume all images are found
+
+        ; Concatenate image names for tooltip
+        imageNames := ""
+        ; Check for the images
+        for index, imageURL in ImageURLs {
+            SplitPath imageURL, &ImageName
+            imageNames .= ImageName "`n"
+            if !ImageExists(imageURL, x1, y1, x2, y2) {
+                allImagesFound := false ; If any image is not found, set flag to false
+                break ; No need to check further images
+            }
+        }
+
+        if allImagesFound {
+            ToolTip "6. WaitForAllImages: Found all:`n" imageNames, X_TOOLTIP.6, Y_TOOLTIP.6, 6
+            return true ; If all images are found, return true
+        }
+
+        ; Sleep for a short period to not hog the CPU
+        Sleep 10
+    }
+
+    ToolTip "6. WaitForAllImages: Didn't find all:`n" imageNames, X_TOOLTIP.6, Y_TOOLTIP.6, 6
+
+    ; If we've reached here, timeout has hit without detecting all of the images
+    return false
+}
+
+
 ; Function to check if the ImageURL is present in the window
 ImageExists(ImageURL, x1:=0,y1:=0, x2:=A_ScreenWidth,y2:=A_ScreenHeight) {
     CoordMode "ToolTip", "Screen"
@@ -729,25 +823,25 @@ ImageExists(ImageURL, x1:=0,y1:=0, x2:=A_ScreenWidth,y2:=A_ScreenHeight) {
     
     try {
         ; Search for the image on the entire screen with variation tolerance of 50
-        if ImageSearch(&FoundX, &FoundY, x1, y1, x2, y2, "*20 *TransBlack " ImageURL) { 
-                                                                                            ToolTip "7. ImageExists: checking for: `n" ImageName " WAS found! @" FoundX " & " FoundY , X_TOOLTIP.7, Y_TOOLTIP.7, 7
-            return true
+        if ImageSearch(&FoundX, &FoundY, x1, y1, x2, y2, "*TransBlack " ImageURL) { 
+                                                                                    ToolTip "7. ImageExists: checking for: `n" ImageName " WAS found! @" FoundX " & " FoundY , X_TOOLTIP.7, Y_TOOLTIP.7, 7
+        return true
         } else {
-                                                                                            ToolTip "7. ImageExists: checking for: `n" ImageName " was NOT found!", X_TOOLTIP.7, Y_TOOLTIP.7, 7
+                                                                                    ToolTip "7. ImageExists: checking for: `n" ImageName " was NOT found!", X_TOOLTIP.7, Y_TOOLTIP.7, 7
         }
     } catch as exc {
-                                                                                            ToolTip "7. ImageExists: Could not conduct the search due to the following error:`n" exc.Message " > " ImageURL, X_TOOLTIP.7, Y_TOOLTIP.7, 7
+                                                                                    ToolTip "7. ImageExists: Could not conduct the search due to the following error:`n" exc.Message " > " ImageURL, X_TOOLTIP.7, Y_TOOLTIP.7, 7
     }
 
     return false
 }
 
-ImageSearchAndClick(ImageURL, scan_area:=0, click_type:=0, offset:=0, x1:=0, y1:=0, x2:=0, y2:=0)
+ImageSearchAndClick(ImageURL, scan_area:=0, click_type:=0, offset:=0, x1:=0, y1:=0, x2:=0, y2:=0, shade_variance:=50)
 {
     menu_width := 140
     shade_variation := 15
     scan_area := GetScanArea(scan_area)
-
+    
     SplitPath ImageURL, &ImageName
     
     if WinActive(runelite_window)
@@ -755,12 +849,16 @@ ImageSearchAndClick(ImageURL, scan_area:=0, click_type:=0, offset:=0, x1:=0, y1:
         ; delays should be randomized often
         set_random_delays()
         
-        if ImageSearch(&found_x, &found_y,
+        if (ImageSearch(&found_x, &found_y,
             scan_area.x1, scan_area.y1,
             scan_area.x2, scan_area.y2, 
-            "*50 *TransBlack " ImageURL)
+            ("*" shade_variance " *TransBlack ") ImageURL) 
+        or ImageSearch(&found_x, &found_y,
+            scan_area.x1, scan_area.y1,
+            scan_area.x2, scan_area.y2, 
+            ("*" shade_variance " ") ImageURL))
         {
-                                                                                          ToolTip "8. ImageSearchAndClick: Looking for:`n" ImageName "was found at: (" found_x ", " found_y ")", X_TOOLTIP.8, Y_TOOLTIP.8, 8
+                                                                                          ToolTip "8. ImageSearchAndClick: Looking for:`n" ImageName " was found at: (" found_x ", " found_y ")", X_TOOLTIP.8, Y_TOOLTIP.8, 8
             ;depending on what type of image, the offset will be different
             offset_obj := GetOffset(offset)
             
@@ -776,6 +874,7 @@ ImageSearchAndClick(ImageURL, scan_area:=0, click_type:=0, offset:=0, x1:=0, y1:
 
 GetScanArea(scan_area := 0)
 {
+    menu_width := 0
     switch scan_area
     {
         case "top_left":
@@ -862,8 +961,8 @@ GetOffset(offset_item)
         ;"item" refers to an item in the bag, also works for fishing spot indicators
         case "item":
             ;item pictures are cut so that the"middle" of the image is the starting point
-            horizontal := Random(0, 15)
-            vertical := Random(0, 15)
+            horizontal := Random(5, 15)
+            vertical := Random(5, 15)
 
         ;default is no offset, can be used when searching but not clicking on an image
         default:
