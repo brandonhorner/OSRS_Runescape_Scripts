@@ -1,7 +1,9 @@
-
+/*
+    Utilites for OSRS bots
+*/
 setup()
 {
-    IfWinActive, %runelite_window%
+     If WinActive("ahk_group active_windows")
     {
         ;zoom all the way out
         zoom("out")
@@ -13,10 +15,114 @@ setup()
         
         ;move camera angle to above character
         Send, {up down}
-        sleep_random(1300, 5000)
+        sleep_random(1300, 3000)
         Send, {up up}
         return
     }
+}
+
+restart_runelite_client()
+{
+    close_runelite()
+    open_runelite()
+    return
+}
+
+close_runelite()
+{
+    if (WinExist(runelite_window))
+    {
+        WinKill, %runelite_window%
+        WinWaitClose, %runelite_window%
+    }
+    if (WinExist("RuneLite"))
+    {
+        WinKill, "RuneLite"
+        WinWaitClose, "RuneLite"
+    }
+}
+
+open_runelite()
+{
+    Run, "F:\Users\brand\AppData\Local\RuneLite\RuneLite.exe"
+    ToolTip, waiting for RuneLite to start (20-30sec), XTOOLTIP, YTOOLTIP, 1
+    sleep_random(20000, 30000)
+}
+
+disconnect_check()
+{
+    disconnect_ok_image := "image_library\utilities\disconnected.png"
+    ;if we see the disconnect image, then click okay
+    
+    if (image_search_and_click(disconnect_ok_image, "middle", "left"))
+        return true
+    return false
+}
+
+login()
+{
+    set_random_delays()
+    welcome_page := "image_library\utilities\welcome_page.png"
+    existing_user := "image_library\utilities\existing_user.png"
+    change_server := "image_library\utilities\change_server.png"
+    error_loading := "image_library\utilities\error_loading.png"
+    login_page := "image_library\utilities\login_page.png"
+    click_here_to_play := "image_library\utilities\click_here_to_play.png"
+    
+    wait_attempts = 0
+    ;if (image_search_and_click(xp_minimap_button, "m"))
+    ; if we are passed the log in page already
+    if (image_search_and_click(click_here_to_play, "main_menu", "left"))
+    {
+        ; we have clicked the play button
+        return true
+    }
+    
+    ; or if we are on the welcome page
+    ToolTip, searching for welcome page, XTOOLTIP, YTOOLTIP, 1
+    if (image_search_and_click(welcome_page, "main_menu", "mouseover"))
+    {
+        ; move to the login page
+        image_search_and_click(existing_user, "main_menu", "left")
+    }
+    
+    ; or if we are already on the log in page
+    ToolTip, searching for log in page, XTOOLTIP, YTOOLTIP, 1
+    if (image_search_and_click(login_page, "main_menu", "left"))
+    {
+        sleep_random(800, 1200)
+        Send, 2vwftwi527t
+        sleep_random(200, 600)
+        Send, {Enter}
+        
+        while (!image_search_and_click(click_here_to_play, "main_menu", "left"))
+        {
+            ; if we have waited for over 2 minutes, things likely haven't gone well...
+            if (wait_attempts > 120)
+            {
+                ;rerun the script
+                return main()
+            }
+            if (image_search_and_click(change_server, "main_menu") 
+                or image_search_and_click(error_loading, "main_menu"))
+                restart_runelite_client()
+            
+            ToolTip, %wait_attempts%. waiting for click here to play button, XTOOLTIP, YTOOLTIP, 1
+            sleep_random(1000, 1500)
+            wait_attempts++
+        }
+        return true
+    }
+    return false
+}
+
+check_logged_in()
+{
+    ToolTip, checking if disconnected..., XTOOLTIP, YTOOLTIP, 1
+    if (disconnect_check())
+    ToolTip, trying to log in..., XTOOLTIP, YTOOLTIP, 1
+    if (login())
+        return
 }
 
 ;after each iteration, move the mouse, this can fix what went wrong during the loop, as sometimes the mouse gets in the way.
@@ -55,19 +161,20 @@ zoom(zoom_direction, zoom_level:=30)
     return
 }
 
+
 click_compass()
-{   
-    xp_minimap_button := "image_library\xp_minimap_button.bmp"
+{
+    xp_minimap_button := "image_library\utilities\xp_minimap_button.bmp"
     shade_variation := 50
-    ImageSearch, found_x, found_y, 0, 0, %A_ScreenWidth%, %A_ScreenHeight%, *%shade_variation% %xp_minimap_button%
+    ImageSearch, found_x, found_y, 1670, 450, 1700, 70, *%shade_variation% %xp_minimap_button%
     if (ErrorLevel = 2)
     {
-        Tooltip, Could not conduct the search`rsearch area: 0x0 and %A_ScreenWidth%x%A_ScreenHeight%`rimage = %xp_minimap_button%, 100, 500, 20
+        Tooltip, Could not conduct the search`rsearch area: 1670x45 and 1700x70`rimage = %xp_minimap_button%, 100, 500, 20
         return false
     }
     else if (ErrorLevel = 1)
     {
-        Tooltip, Could not find in the search area: 0x0 and %A_ScreenWidth%x%A_ScreenHeight%`rimage = %xp_minimap_button%, 100, 500, 20
+        ;Tooltip, Could not find in the search area: 1670x45 and 1700x70`rimage = %xp_minimap_button%, 100, 500, 20
         return false
     }
     else
@@ -81,10 +188,11 @@ click_compass()
     }
 }
 
+
 ;returns true if menu is open, false otherwise
 menu_is_open()
 {
-    closed_runelite_menu := "image_library\closed_runelite_menu.bmp"
+    closed_runelite_menu := "image_library\utilities\closed_runelite_menu.bmp"
     ImageSearch, dummy_x, dummy_y, 0, 0, %A_ScreenWidth%, %A_ScreenHeight%, %closed_runelite_menu%
     if (ErrorLevel = 2)
     {
@@ -106,7 +214,7 @@ menu_is_open()
 
 click_closest(image_url)
 {
-    IfWinActive, %runelite_window%
+     If WinActive("ahk_group active_windows")
     {
         ;how many pixels to expand the search area each iteration
         expansion_x = 40
@@ -138,9 +246,13 @@ click_closest(image_url)
     return false
 }
 
+; Check the center of screen before expanding search to a larger section (until the full
+;    screen is being searched). Can help with clicking the closest pixel to the character.
+; Parameters - 
+;   pixel_color - 
 click_closest_pixel(pixel_color, click_type:="left", offset_x:=0, offset_y:=0)
 {
-    IfWinActive, %runelite_window%
+     If WinActive("ahk_group active_windows")
     {
         ;how many pixels to expand the search area each iteration
         expansion_x = 80
@@ -186,52 +298,42 @@ image_search_and_click(image_url, scan_area:=0, click_type:=0, offset:=0, x1:=0,
     
     switch scan_area
     {
+        case "main_menu":
+            x1 := 760, y1 := 200
+            x2 := 1109, y2 := 385
+            
         case "top_left":
-            x1 := 0
-            y1 := 22
-            x2 := 190
-            y2 := 75
+            x1 := 0, y1 := 22
+            x2 := 190, y2 := 75
             menu_width := 0
             
         case "bag":
-            x1 = 1645
-            y1 = 700
-            x2 = 1855
-            y2 = 1000
+            x1 = 1645, y1 = 700
+            x2 = 1855, y2 = 1000
             menu_width += 100
             
         case "chat":
-            x1 := 0
-            y1 := 975
-            x2 := 510
-            y2 := 1015
+            x1 := 0, y1 := 975
+            x2 := 510, y2 := 1015
             menu_width := 0
 
         case "middle":
-            x1 := 0
-            y1 := 200
-            x2 := 1650
-            y2 := 970
+            x1 := 0, y1 := 200
+            x2 := 1650, y2 := 970
             
         case "bank":
-            x1 := 575
-            y1 := 50
-            x2 := 1060
-            y2 := 850
+            x1 := 575, y1 := 50
+            x2 := 1060, y2 := 850
             
         case "under_mouse":
             MouseGetPos, x, y
-            x1 := x - 130
-            y1 := y
-            x2 := x + 120
-            y2 := y + 255
+            x1 := x - 130, y1 := y
+            x2 := x + 120, y2 := y + 255
             menu_width := 0
     
         case "whole_screen":
-            x1 := 0
-            y1 := 0
-            x2 := %A_ScreenWidth%
-            y2 := %A_ScreenHeight%
+            x1 := 0, y1 := 0
+            x2 := %A_ScreenWidth%, y2 := %A_ScreenHeight%
             menu_width := 0
     }   ;default case is to use the parameters 4 through 7
     
@@ -241,7 +343,7 @@ image_search_and_click(image_url, scan_area:=0, click_type:=0, offset:=0, x1:=0,
         x2 -= menu_width
     }
 RetryImageSearch:
-    IfWinActive, %runelite_window%
+    if (WinActive("ahk_group active_windows"))
     {
         ; delays should be randomized often
         set_random_delays()
@@ -324,7 +426,7 @@ RetryImageSearch:
 ;    "mouseover" will move the mouse but doesn't click, otherwise "left" click.
 pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier:=0, offset_x:=0, offset_y:=0)
 {
-    IfWinActive, %runelite_window%
+    if (WinActive("ahk_group active_windows"))
     {
         Random, delaySpeed, 60, 110
         SetMouseDelay, %delaySpeed%
@@ -359,23 +461,28 @@ pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier:=0, offset_x:=0, of
     }
     return false
 }
+
+
 set_random_delays()
 {   
     ;set the dalay of your mouse movement between 20ms and 40ms
     Random, delaySpeed, 20, 40
     SetMouseDelay, %delaySpeed%
     
-    Random, key_delay_speed, 30, 50
-    Random, press_duration, 10, 12
+    Random, key_delay_speed, 30, 130
+    Random, press_duration, 50, 300
     SetKeyDelay, %key_delay_speed%, %press_duration%
     return
 }
-sleep_random(minimum_time, maximum_time)
+
+
+sleep_random(min_time, max_time)
 {
-    Random, sleep_time, minimum_time, maximum_time
+    Random, sleep_time, min_time, max_time
     Sleep, %sleep_time%
     return
 }
+
 
 ;Move the mouse randomly, offset from the current location
 mouse_move_random_offset(lower_x:=-100, upper_x:=100, lower_y:=-90, upper_y:=90)
