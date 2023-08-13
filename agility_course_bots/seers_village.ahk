@@ -15,8 +15,8 @@ global obstacle_alternate_color := 0x00FFFF    ;teal
 global world_tile_color := 0xFF00FF ;pink
 
                             ;How many tries you want the functions to run before giving up 
-global TRIES := 5  ; increasing will cause long delays but may run more constistently,
-                            ;  the latter would be less delays but some inconsistencies
+global TRIES := 5           ; increasing will cause long delays but may run more constistently,
+                            ; the latter would be less delays but some inconsistencies
 
 global XTOOLTIP := 1300 ;These are the x and y of where the debugging info   
 global YTOOLTIP := 800   ; will be displayed. 
@@ -24,8 +24,7 @@ global YTOOLTIP := 800   ; will be displayed.
 
 ;clicks on a pixel of a certain color closest to the center of the screen. searches entire screen.
 click_colored_world_tile(color_of_tile)
-{
-    ;try to mouseover the closest pixel,
+{   
     if (click_closest_pixel(color_of_tile, "mouseover"))
     {
         sleep_time_min := 8500
@@ -58,12 +57,13 @@ click_existing_marks()
         while (tries > 0)
         {
             ToolTip, trying to find the mark of grace color`r%tries% tries left., XTOOLTIP, YTOOLTIP, 1
-            sleep_time_min := 2000
-            sleep_time_max := 3000
+            sleep_time_min := 8000
+            sleep_time_max := 9000
             Random, offset_x, -5, 5
             Random, offset_y,-5, 5
             if (pixel_search_and_click(0, 0, A_ScreenWidth - 355, A_ScreenHeight, mark_of_grace_color, "mouseover"))
             {
+                sleep_random(5000, 7500)
                 if (image_search_and_click(mark_of_grace_text, "top_left"))
                 {
                     ToolTip, Clicking on the mark of grace! `rWaiting %sleep_time_min%ms to %sleep_time_max%ms, XTOOLTIP, YTOOLTIP, 1
@@ -75,6 +75,7 @@ click_existing_marks()
             tries --
         }
     }
+
     return false
 }
 
@@ -97,10 +98,10 @@ on_ground(world_tile_color)
 
 /* 
    Depending on the obstacle that we are at, we have different areas to search/click on,
-   different sleep times, and different text to be looking for during verification.
+        different sleep times, and different text to be looking for during verification.
    Parameter
-   obstacle - the current obstacle should input in the correct order as they appear
-    (the obstacles of seers village are seen below in the switch cases).
+        obstacle - the current obstacle should input in the correct order as they appear
+            (the obstacles of seers village are seen below in the switch cases).
    
 */ 
 click_obstacle(obstacle)
@@ -125,7 +126,7 @@ click_obstacle(obstacle)
 
                 case "jump gap 1":
                     x1 := 100, y1 := 100, x2 := 825, y2 := 825
-                    Random, offset_x, -45, 15
+                    Random, offset_x, -25, 25
                     Random, offset_y, -5, 50
                     sleep_time_min = 6500 
                     sleep_time_max = 8500
@@ -135,7 +136,7 @@ click_obstacle(obstacle)
                     
                 case "cross tightrope":
                     x1 := 660, y1 := 575, x2 := 1375, y2 := 1025
-                    Random, offset_x, -20, 30
+                    Random, offset_x, -30, 30
                     Random, offset_y, 5, 60
                     sleep_time_min = 8500
                     sleep_time_max = 9000
@@ -155,7 +156,7 @@ click_obstacle(obstacle)
                     
                 case "jump gap 3":
                     x1 := 60, y1 := 610, x2 := 1165, y2 := 930
-                    Random, offset_x, -30, 120
+                    Random, offset_x, -30, 100
                     Random, offset_y, 5, 60
                     sleep_time_min = 5500
                     sleep_time_max = 7500
@@ -166,7 +167,7 @@ click_obstacle(obstacle)
                 case "jump edge":
                     x1 := 960, y1 := 220, x2 := 1260, y2 := 800
                     Random, offset_x, 10, 75
-                    Random, offset_y, 5, 200
+                    Random, offset_y, 5, 300
                     sleep_time_min = 200
                     sleep_time_max = 300
                     in_game_verification_text1 := "image_library\agility_course\jump_edge_text1.png"

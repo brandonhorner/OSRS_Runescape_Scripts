@@ -7,468 +7,339 @@
 ; You must have 'Status Bars' in RuneLite on so that your health bar is shown on the left of your "bag".
 ; You must have 'NPC Indicators' highlight color the same as in the script (0xA4FF00).
 ;OPTIONAL:
-; Have your chat turned to "Game" Chat, this would help because we search for phrases in chat box.
+; Have your chat turned to "Game" Chat, this is required because we search for phrases in the chat box.
+; (You can still split your friend chat)
+
 #SingleInstance
+#Include ..\utilities.ahk
 
-SetWorkingDir %A_ScriptDir%\..
+SetWorkingDir A_MyDocuments "\AutoHotkey_Scripts\runescape"
 
-CoordMode, Pixel, Screen    ; Starts pixel search at top left of ACTUAL SCREEN, delete if you want to search from top left of WINDOW
-CoordMode, Mouse, Screen
+CoordMode("Pixel", "Screen")
+CoordMode("Mouse", "Screen")
 
-SetMouseDelay, 80
+; these are image files used for image searching
+global images := {
+    attack_menaphite_hovering_text : A_WorkingDir "\image_library\blackjacking\attack_menaphite_hovering_text.png",
+    menaphite_hovering_text : A_WorkingDir "\image_library\blackjacking\menaphite_hovering_text.png",
+    lobster_cooked : A_WorkingDir "\image_library\lobster_cooked.png",
+    attack : A_WorkingDir "\image_library\blackjacking\attack_top_left.bmp",
+    failed_pickpocket : A_WorkingDir "\image_library\blackjacking\failed_pickpocket.bmp",
+    glancing_blow : A_WorkingDir "\image_library\blackjacking\glancing_blow.bmp",
+    knockout_option : A_WorkingDir "\image_library\blackjacking\knockout_option.bmp",
+    pickpocket_option : A_WorkingDir "\image_library\blackjacking\pickpocket_option.bmp",
+    right_click_options : A_WorkingDir "\image_library\blackjacking\right_click_options.png",
+    unconscious : A_WorkingDir "\image_library\blackjacking\unconscious.png",
+    cannot_knockout : A_WorkingDir "\image_library\blackjacking\cannot_do_that.bmp",
+    healthbar : A_WorkingDir "\image_library\blackjacking\healthbar.bmp",
+    stunned : A_WorkingDir "\image_library\blackjacking\stunned.bmp",
+    imstunned : A_WorkingDir "\image_library\blackjacking\imstunned.png",
+    missed_right_click : A_WorkingDir "\image_library\blackjacking\missed_right_click.bmp",
+    combat : A_WorkingDir "\image_library\blackjacking\combat.bmp",
+    money_bag : A_WorkingDir "\image_library\blackjacking\money_bag.png",
+    money_bag_full : A_WorkingDir "\image_library\blackjacking\money_bag_full.png",
+    open_bag : A_WorkingDir "\image_library\open_bag.bmp",
+    stunned : A_WorkingDir "\image_library\been_stunned.bmp",
+    pickpocket_attempt : A_WorkingDir "\image_library\blackjacking\pickpocket_attempt.bmp",
+    pickpocket_success : A_WorkingDir "\image_library\blackjacking\pickpocket_success.bmp",
+    pickpocket_failure : A_WorkingDir "\image_library\blackjacking\pickpocket_failure.bmp",
+    knockout_success : A_WorkingDir "\image_library\blackjacking\knockout_success.bmp",
+    knockout_failure : A_WorkingDir "\image_library\blackjacking\knockout_failure.bmp"
+}
 
-global bag_x1 = 1385
-global bag_y1 = 700
-global bag_x2 = 1855
-global bag_y2 = 1000
-
-global chat_x1 = 0
-global chat_y1 = 975
-global chat_x2 = 515
-global chat_y2 = 1015
-
-global top_left_x1 = 0
-global top_left_y1 = 22
-global top_left_x2 = 190
-global top_left_y2 = 75
-
-global"middle"_x1 = 0
-global"middle"_y1 = 200
-global"middle"_x2 = 1650
-global"middle"_y2 = 970
-
-global num_of_tries = 7
-
-global enemy_color := 0xA4FF00 ;Menaphite - 666317 ;Bandit - CAD0B6 ;- all of them (inaccurate) A4FF00  ;some green color
-
-global attack := "image_library\attack_top_left.bmp"
-global failed_pickpocket := "image_library\failed_pickpocket.bmp"
-global glancing_blow := "image_library\glancing_blow.bmp"
-global knockout_option := "image_library\knockout_option.bmp"
-global pickpocket_option := "image_library\pickpocket_option.bmp"
-global cooked_lobster := "image_library\cooked_lobster.bmp"
-global open_bag := "image_library\open_bag.bmp"
-global unconscious := "image_library\unconscious.bmp"
-global cannot_knockout := "image_library\cannot_do_that.bmp"
-global healthbar := "image_library\healthbar.bmp"
-global stunned := "image_library\stunned.bmp"
-global missed_right_click := "image_library\missed_right_click.bmp"
-global combat := "image_library\combat.bmp"
-global money_bag := "image_library\money_bag.bmp"
-
+; this is the name of the window, if the script isn't working it's because you need to change this to your name.
 global runelite_window := "RuneLite - BinaryBilly"
-global tooltip_x = 600
-global tooltip_y = 550
 
+; some tooltip coords
+global X_TOOLTIP := {
+    1: 0,   ; <-| main functions
+    2: 0,   ; <-|
+    3: 0,   ; <-|
+    4: 980, ; <-|
+    
+    5: 0,  ; <-| image search / support functions
+    6: 0,  ; <-|
+    7: 0,  ; <-|
+    8: 0,  ; <-|
+    9: 0   ; <-|
+}
+
+global Y_TOOLTIP := {
+    1: 100,  ; <-| main functions
+    2: 125,  ; <-|
+    3: 150, ; <-|
+    4: 205, ; <-|
+
+    5: 205, ; <-| image search / support functions
+    6: 230, ; <-|
+    7: 285, ; <-|
+    8: 325, ; <-|
+    9: 375  ; <-|
+}
+
+; object that holds all of the screen area coordinates
+global coord := {
+    chat_all:       { x1: 3, y1: 872, x2: 494, y2: 986 },
+    chat_bottom:    { x1: 3, y1: 969, x2: 494, y2: 986 },
+    chat_bottom_2:  { x1: 3, y1: 958, x2: 494, y2: 986 },
+    bag:        { x1:1385, y1:700, x2:1855, y2:1000 },
+    top_left:   { x1:0, y1:22, x2:200, y2:128 },
+    middle:     { x1:0, y1:200, x2:1650, y2:970 },
+    health:     { x1:1400, y1:820, x2:1700, y2:850 }
+}
+
+; coords to ensure an NPC's orientation
+; add more vertices to these :o
+global target_coord := {
+    laying_left:    { x:745, y:330 },
+    laying_middle:  { x:890, y:225 },
+    laying_right:   { x:1030,y:380 },
+    laying_bottom:  { x:805, y:600 },
+    laying_left_2:    { x:824, y:330 },
+    laying_middle_2:  { x:965, y:225 },
+    laying_right_2:   { x:1105,y:375 },
+    laying_bottom_2:  { x:890, y:600 },
+    standing_top_left:      { x:805, y:240 },
+    standing_top_right:     { x:975, y:245 },
+    standing_bottom_left:   { x:805, y:600 },
+    standing_bottom_right:  { x:940, y:535 },
+    standing_top_left_2:        { x:885, y:245 },
+    standing_top_right_2:       { x:1055,y:245 },
+    standing_bottom_left_2:     { x:890, y:600 },
+    standing_bottom_right_2:    { x:1030,y:530 }
+}
+
+; these are the colors of outlines around enemy NPCs and the tick on the compass
+global pixel_color := {
+    enemy : 0xA4FF00,
+    enemy_dark : 0x84CD00,
+    tick : 0x00DFDF,
+    tick_2 : 0x1580AD,
+    tick_3 : 0x01E0E1
+}
 
 F1::
-iteration = 0
-Start:
-iteration++
-IfWinActive, %runelite_window%
 {
-    ;1. Check if health is okay
-    if (health_is_okay() = false)
-    {
-        ToolTip, Health is not okay...!, %tooltip_x%, 500, 2
-        if (eat_lobster())
-        {
-            ToolTip, Eating lobster..., %tooltip_x%, 500, 2
-            click_money_bag()
-;TODO: clarify why we are sleeping
-            sleep_random(1800, 8500) 
-            Goto, Start
-        }
-        else
-        {
-            MsgBox, Reload your inventory with lobsters!
-            return
-        }
-    }
-    Tooltip, You are healthy..., %tooltip_x%, 500, 2
-
-    ;2. Initial knockout of bandit
-Knockout:
-    right_click_bandit()
-    sleep_random(250, 255)
-    click_knockout()
-    right_click_bandit()
-    sleep_random(205, 215)
-    click_pickpocket()
-    sleep_random(45, 50)
-    ;3a. If the knockout resulted in a glancing blow.
-    if(was_glancing_blow())
-    {   ;4a. Retaliate with another knockout + pickpocket.
-        Tooltip, Glancing blow - retaliate!, %tooltip_x%, %tooltip_y%, 1
-        Goto, Knockout
-    }
-    ;3b. If the knockout was a success, the bandit is now unconscious.
-    else if(is_unconscious())
-    {   ;4b. Pickpocket twice.
-        Tooltip, Is unconscious - pickpocket twice, %tooltip_x%, %tooltip_y%, 1
-        right_click_bandit()
-        click_pickpocket()
-    }
-    else
-    {
-        ToolTip, Not unconscious or glancing blow`rwaiting 5 seconds, %tooltip_x%, %tooltip_y%, 1
-        sleep_random(4000, 6000)
-    }
-    ToolTip, %iteration%. Finished--starting over, %tooltip_x%, 600, 3
-    Goto, Start
+    if WinActive(runelite_window)
+        Main()
 }
-return
 
-+F1::Reload
++F1::Reload()
 
-^F2::ExitApp
+^F2::ExitApp()
 
-
-click_knockout()
+Main()
 {
-    MouseGetPos, x, y
-    search_x1 := x - 130
-    search_y1 := y
-    search_x2 := x + 120
-    search_y2 := y + 255
+    setup_in()
     
-    counter = %num_of_tries%
-    while (counter > 0)
-    {
-        if (!exists("menu", knockout_option))
-        {
-            sleep_random(10, 20)
-        }
-        else
-        {
-            image_search_and_click(search_x1, search_y1, search_x2, search_y2, knockout_option, left, option)
-            return true
-        }
-        counter --
-    }
-    ;ToolTip, clicking knockout was false, 300, 300, 5
-    return false
-}
+    dbl_pickpockets := 0
+    sngl_pickpockets := 0
 
-click_pickpocket()
-{
-    MouseGetPos, x, y
-    search_x1 := x - 130
-    search_y1 := y
-    search_x2 := x + 120
-    search_y2 := y + 255
-    
-    counter = %num_of_tries%
-    while (counter > 0)
+    while (true)
     {
-        if (!exists("menu", pickpocket_option))
-        {   
-            sleep_random(10, 20)
-        }
-        else
-        {
-            image_search_and_click(search_x1, search_y1, search_x2, search_y2, pickpocket_option, left, option)
-            return true
-        }
-        counter --
-    }
-    return false
-}
-
-;searches in a square area around the player and expands the search area until an image is found or we are off screen.
-right_click_bandit()
-{
-    IfWinActive, %runelite_window%
-    {
-        ;how many pixels to expand the search area each iteration
-        expansion_integer = 100
-        menu_offset = 140
-        ;Random, offset_x, 200, 700
-        ;Random, offset_y, 200, 700
-        ;center of screen, only character is enclosed
-        x1 = 925
-        y1 = 515
-        x2 = 950
-        y2 = 540
+        knockout_failure := false
+        pickpocket_failure := false
+        ;1. Preliminaries
+        if CheckIfStunned()
+            continue                                                        ; check if we are stunned, wait it out if we are
         
-        while (x2 < A_ScreenWidth and y2 < A_ScreenHeight)
-        {
-            ;ToolTip, in while %count%: `r%x1%x%y1%'r%x2%x%y2% `rPixel:%enemy_color%, %tooltip_x%, %tooltip_y%, 2
-            if (pixel_search_and_click(x1, y1, x2, y2, enemy_color, "right"))
-                return true
-            else    ;grow search area
-            {
-                x1 -= %expansion_integer%
-                y1 -= %expansion_integer%
-                x2 += %expansion_integer%
-                y2 += %expansion_integer%
-            }
+        CheckIfFullOnMoneyBags()
+        
+        if HealthIsLow() {                                                   ; check if health is low
+            ClickMoneyBag()
+            if (!EatLobster())                                              ; try to eat a lobster if it is
+                MsgBox "You ugly mug -- reload your lobsters!"              ; pause for player to reload inventory if you're out of lobbies
         }
+
+        if !TargetIsStandingUpFacingMe() and !TargetIsLayingDownFacingMe() {                                  ; ensure we are facing the NPC
+                                                                            ToolTip "Target isn't facing me.. Restarting...", X_TOOLTIP.2, Y_TOOLTIP.2, 2
+            sleep_random(100, 300)                                        ; if we aren't, then pause
+            continue
+        }
+                                                                            ToolTip "Right click (1 of 3).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
+        ;2. Knockout
+        RightClickNPC()                                                     ; start by right clicking the NPC if the menu isn't open
+        WaitForTick()                                                       ; once the tick starts, we can start
+        
+        if CheckIfStunned()
+            continue                                                        ; check if we are stunned, wait it out if we are
+                                                                    ToolTip "Knockout    (1 of 1).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
+        if (!ClickKnockout()){                                              ; attempt to knockout, if it fails we'll continue back to the start 
+            continue
+        }
+                                                                            ToolTip "Right click (2 of 3).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
+        RightClickNPC()                                                     ; prime another right click menu
+        sleep_random(1125, 1225)
+        CheckAndUpdateStatus(&knockout_failure, &pickpocket_failure)
+                                                                    ToolTip "Pickpocket  (1 of 2).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
+        if !ClickPickpocket()                                       ; if it fails to click pickpocket
+            continue                                                ; start the loop over
+        
+        sngl_pickpockets++
+                                                                    ToolTip "Counters:`nSingle pickpockets: " sngl_pickpockets "`nDouble pickpockets: " dbl_pickpockets, X_TOOLTIP.9, Y_TOOLTIP.9, 9
+        if CheckIfStunned()
+            continue                                                        ; check if we are stunned, wait it out if we are
+                                                                    ToolTip "Right click (3 of 3).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
+        RightClickNPC()                                             ; right click the NPC again
+        CheckAndUpdateStatus(&knockout_failure, &pickpocket_failure)
+        WaitForPickpocketAttempt()
+        if (knockout_failure and pickpocket_failure) {              ; if the pickpocket failed,
+                                                                    ToolTip "Epic failure, restarting in .5 to 1.5s", X_TOOLTIP.4, Y_TOOLTIP.4, 4
+            sleep_random(500, 1500)
+            MsgBox "We in combat..."
+            Reload                                                 ; we are in combat :\ Reload.
+        }
+                                                                    ToolTip "Pickpocket  (2 of 2).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
+        sleep_random(750,850)
+        if !ClickPickpocket()                                       ; try to pickpocket                      
+            continue                                                ; start the loop over
+        
+        dbl_pickpockets++
+                                                                    ToolTip "Counters:`nSingle pickpockets: " sngl_pickpockets "`nDouble pickpockets: " dbl_pickpockets, X_TOOLTIP.9, Y_TOOLTIP.9, 9
+                                                                    ; wait for the final message for double pickpocket (or 2 ticks)   
     }
+}
+
+WaitForPickPocketAttempt()
+{
+    if WaitForImage(images.pickpocket_attempt, 100, coord.chat_bottom)
+        return true
+
     return false
 }
 
-;TODO: NOT TESTED WITH MENU OPEN
-click_money_bag()
+CheckAndUpdateStatus(&knockout_failure, &pickpocket_failure)
 {
-    IfWinActive, %runelite_window%
+    if ImageExists(images.knockout_failure, coord.chat_bottom_2.x1, coord.chat_bottom_2.y1, coord.chat_bottom_2.x2, coord.chat_bottom_2.y2,)
+        knockout_failure := true
+    if ImageExists(images.pickpocket_failure, coord.chat_bottom_2.x1, coord.chat_bottom_2.y1, coord.chat_bottom_2.x2, coord.chat_bottom_2.y2,)
+        pickpocket_failure := true
+}
+
+CheckIfStunned()
+{
+                                                                            ToolTip "Stunned. Waiting...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
+    if ImageSearchAndClick(images.imstunned, "top_left",,,,,,,5)
     {
-        ;offset_because_menu = 240
-        ;if (menu_is_open())
-        ;{
-        ;    bag_x1 -= %offset_because_menu%
-        ;    bag_x2 -= %offset_because_menu%
-        ;}
-        
-        image_search_and_click(bag_x1, bag_y1, bag_x2, bag_y2, money_bag, left, item)
+        sleep_random(10, 10)
+        return true
     }
+                                                                            ToolTip "", X_TOOLTIP.1, Y_TOOLTIP.1, 1
+    return false
+}
+
+HealthIsLow()
+{
+    if ImageExists(images.healthbar, 1400, 820, 1700, 850)
+    {
+        return false
+    }
+                                                                            ToolTip "Health is low...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
     return true
 }
 
-eat_lobster()
-{        
+; click the first availableb lobster in your inventory
+EatLobster()
+{
+                                                                            ToolTip "Eating lobster...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
     open_bag()
-    if (image_search_and_click(bag_x1, bag_y1, bag_x2, bag_y2, cooked_lobster, left, item))
-       ;TrayTip,, returning true to eat lobster
-       return true
-    
-    ;TrayTip,, returning false to eat lobster
-    return false
-}
+    sleep_random(500, 1500)
+    if ImageSearchAndClick(images.lobster_cooked, "bag", "mouseover", "item") {
+        sleep_random(400, 1500)
+        Click("Left")
 
-health_is_okay()
-{
-    ImageSearch, x, y, 1400, 820, 1850, 850, %healthbar%
-    if (ErrorLevel = 2)
-    {
-        ToolTip, health_is_okay() - could not conduct the search., 100, 500, 19
-        return false
+        return true
     }
-    else if (ErrorLevel = 1)
-        return false
-    else
-        return true
-}
-
-was_glancing_blow()
-{
-    if (exists("chat", "glancing_blow"))
-        return true
+    WaitForTick()
+    WaitForTick()
+                                                                            ToolTip "...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
     return false
 }
 
-is_unconscious()
+CheckIfFullOnMoneyBags()
 {
-    if(exists("chat", "unconscious"))
+    if ImageSearchAndClick(images.money_bag_full, "bag", "mouseover", "item") {
+                                                                            ToolTip "Clicking the FULL money bag :')...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
+        sleep_random(400, 1500)
+        Click("Left")
+        WaitForTick()
         return true
-    return false
-}
-exists(image_area, image_url)
-{
-    ;options in the top left are good for verification before an action.  
-    switch image_area
-    {
-        case "top_left":
-        {
-            x1 = %top_left_x1%
-            y1 = %top_left_y1%
-            x2 = %top_left_x2%
-            y2 = %top_left_y2%
-        }
-        ;change coordiantes to chat window area
-        case "chat":
-        {
-            x1 = %chat_x1%
-            y1 = %chat_y1%
-            x2 = %chat_x2%
-            y2 = %chat_y2%
-        }
-        ;default to"middle" of screen coordiantes
-        default:
-        {
-            x1 = %middle_x1%
-            y1 = %middle_y1%
-            x2 = %middle_x2%
-            y2 = %middle_y2%
-        }
     }
-    
-    if (image_search_and_click(x1, y1, x2, y2, image_url, 0, 0))
-        return true
     return false
-}  
-    
+}
 
-
-;Search for an image and click on it. If modifier = "right", "right" click,
-;    "mouseover" will move the mouse but doesn't click, otherwise left click.
-image_search_and_click(x1, y1, x2, y2, image_url, modifier, offset)
+; 1 in 4 chance to click the money bag in your inventory
+ClickMoneyBag()
 {
-    abort_counter = 5
-    n = 0
-
-Retry:
-    IfWinActive, %runelite_window%
-    {
-        ; delays should be randomized often
-        set_random_delays()
-
-        ; search for the image                         *40 means 40 shades away from the picture's color
-        ImageSearch, found_x, found_y, x1, y1, x2, y2, *%n% %image_url%
-        if (ErrorLevel = 2)
-        {
-            ToolTip, Could not conduct the search using: %x1%x%y1% | %x2%x%y2% | %image_url%, 0, 100, 6
-            return false
-        }
-        else if (ErrorLevel = 1)
-        {
-            ;mouse_move_random_offset()
-            abort_counter--
-            if (abort_counter > 0)
-            {
-                n += 20
-                Goto, Retry
-            }
-            else
-            {
-                ;ToolTip, Retried 5 times- bot failed to find: `r%image_url%`rCoords:%x1%x%y1%  |  %x2%x%y2% `rn=%n% `rIt must be off screen or blocked., 0, 100, 6
-                return false
-            }
-        }
-        else
-        {
-            ;option refer to when you "right" click in-game, the top left of the image is 0,0
-            if (offset = option)
-            {
-                ;we want to move mouse to the "right" 52 to 92 pixels to click more in the center of the image
-                Random, offset_horizontal, 72, 98
-                ;we want to move mouse down 2 to 11 pixels to click randomly within the image
-                Random, offset_vertical, 3, 10
-            }
-            else if (offset = item)
-            {
-                Random, offset_horizontal, -10, 10
-                Random, offset_vertical, -10, 10
-            }
-            else
-            {
-                Random, offset_horizontal, 0, 0
-                Random, offset_vertical, -0, 0
-            }
-            ;TrayTip,, Found: `r%image_url%`rCoords Searched:%x1%x%y1%  |  %x2%x%y2% `r Found at %found_x%x%found_y%
-            offset_x := found_x + offset_horizontal
-            offset_y := found_y + offset_vertical
-            if (modifier = "right")
-                Click, right, %offset_x%, %offset_y%
-            if (modifier = "mouseover")
-                MouseMove, %offset_x%, %offset_y%
-            if (modifier = "doubleclick")
-                Click, %offset_x%, %offset_y%, 2
-            if (modifier = left)
-                Click, %offset_x%, %offset_y%
-            ;otherwise we do not click and simply return
+    lucky_number := Random(1,5)
+    if !(lucky_number = 4)
+        return false    
+    
+    SendKey(1)
+    if ImageExists(images.open_bag) {                                       ;ensure bag is open
+        sleep_random(10, 100)
+        if ImageSearchAndClick(images.money_bag, "bag", "mouseover", "item")
+                                                                            ToolTip "Clicking the money bag...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
+            sleep_random(400, 1500)
+            Click("Left")
             return true
-        }
     }
+                                                                            ToolTip "", X_TOOLTIP.1, Y_TOOLTIP.1, 1
     return false
 }
 
-;Set the color of a tile in game and use that as the pixel color. if modifier = "right", "right" click,
-;    "mouseover" will move the mouse but doesn't click, "doubleclick" clicks twice in the same spot.
-;     Otherwise left click.
-pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier)
-{
-    IfWinActive, %runelite_window%
-    {     
-        ;delays should be randomized frequently
-        set_random_delays()
-        
-        PixelSearch, found_x, found_y, x1, y1, x2, y2, pixel_color, 0, RGB fast ;search region for color
-        if ErrorLevel
-        {
-            ;TrayTip,, The color %pixel_color% was not found in region.,1 
-            return
-        }
-        else
-        {
-            ;TrayTip,, The color %pixel_color% was found at x%found_x% and y%found_y%
-            ;these magic numbers are about the size of the tile to be clicked into, they might need to be adjusted
-            ;  depending on how small the object inside of the tile is.
-            Random, offset_tile_x, 0, 5
-            Random, offset_tile_y, -10, -20 
-            offset_x := found_x + offset_tile_x
-            offset_y := found_y + offset_tile_y
-            
-            if (modifier = "right")
-                Click, right, %offset_x%, %offset_y%
-            else if (modifier = "mouseover")
-                MouseMove, %offset_x%, %offset_y%
-            else if (modifier = "doubleclick")
-                Click, %offset_x%, %offset_y%, 2
-            if (modifier = left)
-                Click, %offset_x%, %offset_y%
-            ;otherwise we do not click and simply return
-            return true
-        }
+; at this point, the right click menu in the game is open, now we left click the knockout option
+ClickKnockout() {
+                                                                            ToolTip "Trying to click knockout...", X_TOOLTIP.2, Y_TOOLTIP.2, 2    
+    ; if the knockout option isn't visible, wait for a bit
+    WaitForImage(images.knockout_option, 200)
+    if ImageSearchAndClick(images.knockout_option,, "mouseover", "option") {
+                                                                            ToolTip "Clicking knockout...", X_TOOLTIP.2, Y_TOOLTIP.2, 2 
+        Sleep 200
+        Click "Left"
+        return true
     }
-    return false
+    ; If we've reached here, timeout has passed without detecting the image
+                                                                            ToolTip "Couldn't click knockout in time... Restarting in 3 to 4 sec", X_TOOLTIP.2, Y_TOOLTIP.2, 2
+    return false    ; failed? give up hombre
 }
 
-menu_is_open()
-{
-    runelite_menu_test_pixel_x := 1643 
-    runelite_menu_test_pixel_y := 25
-    runelite_menu_color := 0x282828
-    
-    IfWinActive, %runelite_window%
-    {
-        PixelGetColor, color, %runelite_menu_test_pixel_x%, %runelite_menu_test_pixel_y%
-        if (color = runelite_menu_color)  ;runelite window is open
-            return true
-        else
-            return false
-    }
-    return false
+; at this point, the right click menu in the game is open, and we either just knocked them out, or it was a glancing blow and they are
+;   about to attack. To counteract their attack, we can click pickpocket on them.
+ClickPickpocket(timeout_ms := 300) {
+                                                                            ToolTip "Trying to click pickpocket...", X_TOOLTIP.2, Y_TOOLTIP.2, 2
+    ; WaitForImage(images.pickpocket_option, timeout_ms)
+    ; WaitForAnyImages([images.knockout_failure, images.knockout_success], timeout_ms)
+    if ImageSearchAndClick(images.pickpocket_option, "under_mouse", "mouseover", "option") {
+        Sleep 100
+        Click("Left")
+        return true
+    }                                                       ; if we've reached here, timeout_ms has passed without detecting the image
+                                                                            ToolTip "Couldn't click pickpocket in time... Restarting in 3 to 4 sec.", X_TOOLTIP.2, Y_TOOLTIP.2, 2
+    sleep_random(500, 1500)
+    return false                                            ; failed.. give up hombre
 }
 
-;check to see if "bag" is open
-open_bag()
+; right clicks around the chest area of the NPC
+RightClickNPC()
 {
-    IfWinActive, %runelite_window%
-    {
-        ImageSearch, found_x, found_y, top_of_bag_x1, top_of_bag_y1, top_of_bag_x2, top_of_bag_y2, %open_bag%
-        if (ErrorLevel = 2)
-        {
-            ToolTip, Error: In open_bag() -- Could not conduct the search., 100, 400, 20
-            return false
-        }
-        if (ErrorLevel = 1)
-        {
-            ; open "bag" was not found, open the "bag" with F3 by default
-            SendInput, {F3} 
-        }
+    ; clicks need to be fast (but not instant), we'll add sleeps when necessary
+    SetDefaultMouseSpeed(1)
+
+    ; Get the target click area
+    click_area := GetTargetClickArea()
+    offset_x := Random(-50, 50)
+    offset_y := Random(-70, 70)
+
+    x := click_area.x + offset_x                            ; randomize within the area and right click
+    y := click_area.y + offset_y
+    MouseMove(x, y)
+
+    if WaitForImage(images.menaphite_hovering_text, 700) {  ; if target is in sight
+        Click("Right")                                      ; right click
+                                                                            ToolTip("Right Clicking:`roffset x:" offset_x ", y:" offset_y "`rx:" click_area.x ", y:" click_area.y, X_TOOLTIP.3, Y_TOOLTIP.3, 3)
         return true
     }
     return false
 }
 
-; ---------------------- Utilities --------------------------------------------
-set_random_delays()
-{   
-    ;set the dalay of your mouse movement between 20ms and 40ms
-    Random, delaySpeed, 40, 43
-    SetMouseDelay, %delaySpeed%
-    
-    Random, key_delay_speed, 80, 190
-    Random, press_duration, 40, 75
-    SetKeyDelay, %key_delay_speed%, %press_duration%
-    
-}
-
-sleep_random( sleep_time_low, sleep_time_high )
-{
-    Random, sleep_time, sleep_time_low, sleep_time_high
-    Sleep, %sleep_time%
-    
-    return
-}

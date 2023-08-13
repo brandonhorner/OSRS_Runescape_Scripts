@@ -6,21 +6,13 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
 #Include seers_village.ahk
 
-/*  Created by Brandon Horner 12/29/2020
+/*Created by Brandon Horner 12/29/2020
 
-    Driver file for Seer's Village agility course bot.
-    Ctrl+g to reload the script
-    Ctrl+r to run the script
+Driver file for Seer's Village agility course bot.
+Ctrl+g to reload the script
+Ctrl+r to run the script
 */
-
 global runelite_window := "RuneLite - BinaryBilly"
-global runelite_unlogged := "RuneLite"
-
-global successful_runs := 0 
-
-GroupAdd, active_windows, %runelite_window% ;create a group of windows
-GroupAdd, active_windows, "RuneLite"
-
 
 ;Hotkey to reload the script.
 +`::
@@ -29,41 +21,33 @@ GroupAdd, active_windows, "RuneLite"
     return
 }
 
-^1::
-{   
-    login()
-    return
- }
-
+    
 ;Main hotkey to run the script.
 ^`::
-{
     MsgBox, starting bot, click continue
-    GroupActivate, active_windows
+    WinActivate, %runelite_window%
     sleep_random(2000, 3000)
     main()
     return
-}
 
 main()
 {
-    If WinActive("ahk_group active_windows")
+    IfWinActive, %runelite_window%
     {
+    WinGet, activeWindow, ID, A
+  WinMaximize, A
+  Sleep 1000 ; Wait for a second (adjust the delay if necessary)
+  WinRestore, ahk_id %activeWindow%
+        successful_runs := 0
         pink_tile := 0xFF00FF
-        MouseMove, 0, 0
-        check_logged_in()
         
         ;setup character
         setup()
         
-        while (successful_runs <= 1000)
+        while (successful_runs < 500)
         {
-            ; every 15 runs, check again if logged in.
-            if (Mod(A_Index, 15) = 0)
-                check_logged_in()
-                
             ;after 20 runs; sleep every 10 runs for a random amount
-            if (successful_runs >= 20 and Mod(successful_runs, 10) = 0)
+            if(successful_runs >= 20 and Mod(successful_runs, 10) = 0)
             {
                 ToolTip, sleeping 10-90 seconds, XTOOLTIP, YTOOLTIP, 1
                 sleep_random(10000, 90000)
@@ -74,7 +58,7 @@ main()
             click_obstacle("climb bank wall")
             zoom("in", 19)
             
-            ;check for marks of grace and collect them every time there is an obstacle
+            ;check for marks of grace and collect them
             click_existing_marks()
             
             ;click to jump gap
@@ -83,6 +67,7 @@ main()
             if(on_ground(pink_tile))
                 continue
             
+            ;check for marks
             click_existing_marks()
             
             ;click to cross rope
@@ -91,6 +76,7 @@ main()
             if(on_ground(pink_tile))
                 continue
             
+            ;check for marks
             click_existing_marks()
             
             ;click to jump gap 
