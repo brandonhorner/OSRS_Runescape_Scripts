@@ -98,11 +98,6 @@ click_compass()
     }
 }
 
-ClickCompass()
-{
-    xp_minimap_button := A_WorkingDir "\image_library\xp_minimap_button.bmp"
-}
-
 ;check to see if "bag" is open
 open_bag()
 {
@@ -275,7 +270,7 @@ image_search_and_click(ImageURL, scan_area:=0, click_type:=0, offset:=0, x1:=0, 
             menu_width := 0
     }   ;default case is to use the parameters 4 through 7
     
-    if MenuIsOpen()
+    if (MenuIsOpen())
     {
         x1 -= menu_width
         x2 -= menu_width

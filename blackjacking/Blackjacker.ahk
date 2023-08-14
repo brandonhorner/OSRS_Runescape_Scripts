@@ -244,27 +244,25 @@ EatLobster()
                                                                             ToolTip "Eating lobster...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
     open_bag()
     sleep_random(500, 1500)
-
     if ImageSearchAndClick(images.lobster_cooked, "bag", "mouseover", "item") {
         sleep_random(400, 1500)
         Click("Left")
 
-        sleep_random(500, 1500)
         return true
     }
+    WaitForTick()
+    WaitForTick()
                                                                             ToolTip "...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
     return false
 }
 
 CheckIfFullOnMoneyBags()
 {
-    open_bag()
     if ImageSearchAndClick(images.money_bag_full, "bag", "mouseover", "item") {
                                                                             ToolTip "Clicking the FULL money bag :')...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-        sleep_random(500, 1500)
+        sleep_random(400, 1500)
         Click("Left")
         WaitForTick()
-        sleep_random(500, 1500)
         return true
     }
     return false
@@ -274,17 +272,17 @@ CheckIfFullOnMoneyBags()
 ClickMoneyBag()
 {
     lucky_number := Random(1,5)
-    if (lucky_number = 4)
-    {
-        open_bag()
-        if ImageExists(images.open_bag) {                                       ;ensure bag is open
-            sleep_random(10, 100)
-            if ImageSearchAndClick(images.money_bag, "bag", "mouseover", "item")
-                                                                                ToolTip "Clicking the money bag...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-                sleep_random(400, 1500)
-                Click("Left")
-                return true
-        }
+    if !(lucky_number = 4)
+        return false    
+    
+    SendKey(1)
+    if ImageExists(images.open_bag) {                                       ;ensure bag is open
+        sleep_random(10, 100)
+        if ImageSearchAndClick(images.money_bag, "bag", "mouseover", "item")
+                                                                            ToolTip "Clicking the money bag...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
+            sleep_random(400, 1500)
+            Click("Left")
+            return true
     }
                                                                             ToolTip "", X_TOOLTIP.1, Y_TOOLTIP.1, 1
     return false
