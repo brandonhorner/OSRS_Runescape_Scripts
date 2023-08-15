@@ -169,7 +169,7 @@ Main()
         }
                                                                             ToolTip "Right click (2 of 3).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
         RightClickNPC()                                                     ; prime another right click menu
-        sleep_random(1125, 1225)
+        sleep_random(925, 925)
         CheckAndUpdateStatus(&knockout_failure, &pickpocket_failure)
                                                                     ToolTip "Pickpocket  (1 of 2).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
         if !ClickPickpocket()                                       ; if it fails to click pickpocket
@@ -245,13 +245,11 @@ EatLobster()
     open_bag()
     sleep_random(500, 1500)
     if ImageSearchAndClick(images.lobster_cooked, "bag", "mouseover", "item") {
-        sleep_random(400, 1500)
+        sleep_random(500, 1500)
         Click("Left")
-
+        sleep_random(500, 1500)
         return true
     }
-    WaitForTick()
-    WaitForTick()
                                                                             ToolTip "...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
     return false
 }
@@ -262,7 +260,7 @@ CheckIfFullOnMoneyBags()
                                                                             ToolTip "Clicking the FULL money bag :')...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
         sleep_random(400, 1500)
         Click("Left")
-        WaitForTick()
+        sleep_random(500, 1500)
         return true
     }
     return false
@@ -280,8 +278,9 @@ ClickMoneyBag()
         sleep_random(10, 100)
         if ImageSearchAndClick(images.money_bag, "bag", "mouseover", "item")
                                                                             ToolTip "Clicking the money bag...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-            sleep_random(400, 1500)
+            sleep_random(500, 1500)
             Click("Left")
+            sleep_random(500, 1500)
             return true
     }
                                                                             ToolTip "", X_TOOLTIP.1, Y_TOOLTIP.1, 1
@@ -295,8 +294,9 @@ ClickKnockout() {
     WaitForImage(images.knockout_option, 200)
     if ImageSearchAndClick(images.knockout_option,, "mouseover", "option") {
                                                                             ToolTip "Clicking knockout...", X_TOOLTIP.2, Y_TOOLTIP.2, 2 
-        Sleep 200
+        Sleep 300
         Click "Left"
+        Sleep 100
         return true
     }
     ; If we've reached here, timeout has passed without detecting the image
