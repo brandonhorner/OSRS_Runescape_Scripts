@@ -198,7 +198,7 @@ Main()
         }
                                                                             ToolTip "Right click (2 of 3).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
         RightClickNPC()                                                     ; prime another right click menu
-        sleep_random(725, 725)
+        sleep_random(0, 0) ; WAS 725
         CheckAndUpdateStatus(&knockout_failure, &pickpocket_failure)
                                                                     ToolTip "Pickpocket  (1 of 2).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
         if !ClickPickpocket()                                       ; if it fails to click pickpocket
@@ -381,10 +381,13 @@ ClickCurtain(sleepTime := 1500)
 {
     if pixel_search_and_click(0, 20, A_ScreenWidth-20, A_ScreenHeight, pixel_color.object_green, "right",,,0)
     {
+        sleep_random(300, 500)
         if ImageSearchAndClick(images.open_curtain_option, "under_mouse", "left", "option_short") or
             ImageSearchAndClick(images.close_curtain_option, "under_mouse", "left", "option_short") 
-            sleep_random(sleepTime, sleepTime + 1500)
-            return true
+            {
+                sleep_random(sleepTime, sleepTime + 1500)
+                return true
+            }
     }
     return false
 }
@@ -411,15 +414,15 @@ LeftClickNPC()
 
 ReloadLobsters() ;TODO randomize the times
 {
-    while(!ClickCurtain(2500))
+    while(!ClickCurtain(1000))
         sleep_random(500, 1500)
-    PixelSearchAndClick(pixel_color.tile_teal, "p6", "left")
-    sleep_random(2500, 2500)
-    ClickCurtain(500)
+    PixelSearchAndClick(pixel_color.tile_teal, "p6", "left", "tile_sw")
+    sleep_random(1500, 1500)
+    while(!ClickCurtain(500))
+        sleep_random(500, 1500)
 
     zoom("out")
-    PressAndHoldKey("W", 1700)
-    sleep_random(500, 1500)
+    PressAndHoldKey("W", 1500)
     PixelSearchAndClick(pixel_color.tile_pink, "p2", "left", "tile")
     sleep_random(6000,7500)
     PixelSearchAndClick(pixel_color.tile_teal, "p2", "left")
@@ -439,7 +442,7 @@ ReloadLobsters() ;TODO randomize the times
     zoom("in")
     sleep_random(4500, 4500)
     PixelSearchAndClick(pixel_color.tile_pink, "p5", "left", "tile_sw")
-    sleep_random(1500, 1500)
+    sleep_random(3500, 3500)
     ClickCurtain(500)
     sleep_random(700, 700)
     PixelSearchAndClick(pixel_color.tile_pink, "p5", "left")
