@@ -941,6 +941,13 @@ GetScanArea(scan_area := 0)
                 x2: 1650, y2: 970
             }
             menu_width := 0
+
+        case "center":
+            scan_area_obj := {
+                x1: A_ScreenWidth / 4, y1: A_ScreenHeight /4,
+                x2: A_ScreenWidth * 3 / 4, y2: A_ScreenHeight * 3 / 4
+            }
+            menu_width := 0
             
         case "bank":
             scan_area_obj := {
@@ -1044,6 +1051,9 @@ GetOffset(offset_item)
             horizontal := Random(-50, 0)
             vertical := Random(0, 50)
 
+        case "south":
+            horizontal := Random(-10, 10)
+            vertical := Random(0, 100)
         ;default is no offset, can be used when searching but not clicking on an image
         default:
             horizontal := 0

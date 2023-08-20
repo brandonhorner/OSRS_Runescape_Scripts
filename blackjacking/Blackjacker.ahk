@@ -377,15 +377,15 @@ ClickPixel(color, coord_obj:="None", offsetInput:="None")
 }
 
 ; ClickCurtain() assumes you've zoomed in and are facing north and are in the small building by curtain.
-ClickCurtain(sleepTime := 1500)
+ClickCurtain()
 {
-    if pixel_search_and_click(0, 20, A_ScreenWidth-20, A_ScreenHeight, pixel_color.object_green, "right",,,0)
+    if PixelSearchAndClick(pixel_color.object_green, "center", "right", "south")
     {
         sleep_random(300, 500)
         if ImageSearchAndClick(images.open_curtain_option, "under_mouse", "left", "option_short") or
             ImageSearchAndClick(images.close_curtain_option, "under_mouse", "left", "option_short") 
             {
-                sleep_random(sleepTime, sleepTime + 1500)
+                
                 return true
             }
     }
@@ -414,12 +414,15 @@ LeftClickNPC()
 
 ReloadLobsters() ;TODO randomize the times
 {
-    while(!ClickCurtain(1000))
+    while(!ClickCurtain())
         sleep_random(500, 1500)
+    sleep_random(1000, 1000)
+
     PixelSearchAndClick(pixel_color.tile_teal, "p6", "left", "tile_sw")
     sleep_random(1500, 1500)
-    while(!ClickCurtain(500))
+    while(!ClickCurtain())
         sleep_random(500, 1500)
+    sleep_random(500, 500)
 
     zoom("out")
     PressAndHoldKey("W", 1500)
@@ -437,15 +440,21 @@ ReloadLobsters() ;TODO randomize the times
     zoom("out")
     PixelSearchAndClick(pixel_color.tile_pink, "p5", "left", "tile")
     sleep_random(8500, 8500)
-    while(!ClickCurtain(7500))
+    
+    while(!ClickCurtain())
         sleep_random(500, 1500)
+    sleep_random(7500, 7500)
+
     zoom("in")
     sleep_random(4500, 4500)
     PixelSearchAndClick(pixel_color.tile_pink, "p5", "left", "tile_sw")
     sleep_random(3500, 3500)
-    ClickCurtain(500)
+
+    while(!ClickCurtain())
+        sleep_random(500, 1500)
+    sleep_random(500, 500)
+    
     sleep_random(700, 700)
     PixelSearchAndClick(pixel_color.tile_pink, "p5", "left")
-
 }
 
