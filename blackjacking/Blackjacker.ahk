@@ -21,6 +21,7 @@ global runelite_window := "RuneLite - BinaryBilly"
 CoordMode("Pixel", "Screen")
 CoordMode("Mouse", "Screen")
 
+
 ; these are image files used for image searching
 global images := {
     menaphite_hovering_text : A_WorkingDir "\image_library\blackjacking\menaphite_hovering_text.png",
@@ -367,5 +368,81 @@ RightClickNPC()
         return true
     }
     return false
+}
+
+ClickPixel(color, coord_obj:="None", offsetInput:="None")
+{
+    offset := GetOffset(offsetInput)
+    pixel_search_and_click(coord_obj.x1, coord_obj.y1, coord_obj.x2, coord_obj.y2, color, "left", offset.x, offset.y)
+}
+
+; ClickCurtain() assumes you've zoomed in and are facing north and are in the small building by curtain.
+ClickCurtain(sleepTime := 1500)
+{
+    if pixel_search_and_click(0, 20, A_ScreenWidth-20, A_ScreenHeight, pixel_color.object_green, "right",,,0)
+    {
+        if ImageSearchAndClick(images.open_curtain_option, "under_mouse", "left", "option_short") or
+            ImageSearchAndClick(images.close_curtain_option, "under_mouse", "left", "option_short") 
+            sleep_random(sleepTime, sleepTime + 1500)
+            return true
+    }
+    return false
+}
+
+ClickNotedLobsters()
+{
+    if ImageSearchAndClick(images.lobster_cooked_noted, coord.bag, "left", "item2")
+        return true
+    return false
+}
+
+LeftClickNPC()
+{
+    if PixelSearchAndClick(pixel_color.npc, "p1", "mouseover") or PixelSearchAndClick(pixel_color.npc, "p2", "mouseover")
+        or PixelSearchAndClick(pixel_color.npc, "p4", "mouseover") or PixelSearchAndClick(pixel_color.npc, "p5", "mouseover")
+        or PixelSearchAndClick(pixel_color.npc_dark, "p1", "mouseover") or PixelSearchAndClick(pixel_color.npc_dark, "p2", "mouseover")
+        or PixelSearchAndClick(pixel_color.npc_dark, "p4", "mouseover") or PixelSearchAndClick(pixel_color.npc_dark, "p5", "mouseover")
+    {
+        Click("Left")
+        return true
+    }
+    return false
+}
+
+ReloadLobsters() ;TODO randomize the times
+{
+    while(!ClickCurtain(2500))
+        sleep_random(500, 1500)
+    PixelSearchAndClick(pixel_color.tile_teal, "p6", "left")
+    sleep_random(2500, 2500)
+    ClickCurtain(500)
+
+    zoom("out")
+    PressAndHoldKey("W", 1700)
+    sleep_random(500, 1500)
+    PixelSearchAndClick(pixel_color.tile_pink, "p2", "left", "tile")
+    sleep_random(6000,7500)
+    PixelSearchAndClick(pixel_color.tile_teal, "p2", "left")
+    zoom("in")
+    ClickNotedLobsters()
+    sleep_random(7500,7500)
+    LeftClickNPC()
+    sleep_random(2500,2500)
+    randNum := Random(300, 300)
+    PressAndHoldKey("3", randNum)
+    sleep_random(1500,1500)
+    zoom("out")
+    PixelSearchAndClick(pixel_color.tile_pink, "p5", "left", "tile")
+    sleep_random(8500, 8500)
+    while(!ClickCurtain(7500))
+        sleep_random(500, 1500)
+    zoom("in")
+    sleep_random(4500, 4500)
+    PixelSearchAndClick(pixel_color.tile_pink, "p5", "left", "tile_sw")
+    sleep_random(1500, 1500)
+    ClickCurtain(500)
+    sleep_random(700, 700)
+    PixelSearchAndClick(pixel_color.tile_pink, "p5", "left")
+
 }
 
