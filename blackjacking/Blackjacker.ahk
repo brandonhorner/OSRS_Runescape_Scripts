@@ -12,24 +12,28 @@
 
 #SingleInstance
 #Include ..\utilities.ahk
-
+#Include testing.ahk
 SetWorkingDir A_MyDocuments "\AutoHotkey_Scripts\runescape"
+
+; this is the name of the window, if the script isn't working it's because you need to change this to your name.
+global runelite_window := "RuneLite - BinaryBilly"
 
 CoordMode("Pixel", "Screen")
 CoordMode("Mouse", "Screen")
 
 ; these are image files used for image searching
 global images := {
-    attack_menaphite_hovering_text : A_WorkingDir "\image_library\blackjacking\attack_menaphite_hovering_text.png",
     menaphite_hovering_text : A_WorkingDir "\image_library\blackjacking\menaphite_hovering_text.png",
     lobster_cooked : A_WorkingDir "\image_library\lobster_cooked.png",
-    attack : A_WorkingDir "\image_library\blackjacking\attack_top_left.bmp",
-    failed_pickpocket : A_WorkingDir "\image_library\blackjacking\failed_pickpocket.bmp",
-    glancing_blow : A_WorkingDir "\image_library\blackjacking\glancing_blow.bmp",
+    lobster_cooked_noted : A_WorkingDir "\image_library\blackjacking\lobster_cooked_noted.png",
     knockout_option : A_WorkingDir "\image_library\blackjacking\knockout_option.bmp",
+    knockout_success : A_WorkingDir "\image_library\blackjacking\knockout_success.bmp",
+    knockout_failure : A_WorkingDir "\image_library\blackjacking\knockout_failure.bmp",
     pickpocket_option : A_WorkingDir "\image_library\blackjacking\pickpocket_option.bmp",
+    pickpocket_attempt : A_WorkingDir "\image_library\blackjacking\pickpocket_attempt.bmp",
+    pickpocket_success : A_WorkingDir "\image_library\blackjacking\pickpocket_success.bmp",
+    pickpocket_failure : A_WorkingDir "\image_library\blackjacking\pickpocket_failure.bmp",
     right_click_options : A_WorkingDir "\image_library\blackjacking\right_click_options.png",
-    unconscious : A_WorkingDir "\image_library\blackjacking\unconscious.png",
     cannot_knockout : A_WorkingDir "\image_library\blackjacking\cannot_do_that.bmp",
     healthbar : A_WorkingDir "\image_library\blackjacking\healthbar.bmp",
     stunned : A_WorkingDir "\image_library\blackjacking\stunned.bmp",
@@ -39,16 +43,12 @@ global images := {
     money_bag : A_WorkingDir "\image_library\blackjacking\money_bag.png",
     money_bag_full : A_WorkingDir "\image_library\blackjacking\money_bag_full.png",
     open_bag : A_WorkingDir "\image_library\open_bag.bmp",
-    stunned : A_WorkingDir "\image_library\been_stunned.bmp",
-    pickpocket_attempt : A_WorkingDir "\image_library\blackjacking\pickpocket_attempt.bmp",
-    pickpocket_success : A_WorkingDir "\image_library\blackjacking\pickpocket_success.bmp",
-    pickpocket_failure : A_WorkingDir "\image_library\blackjacking\pickpocket_failure.bmp",
-    knockout_success : A_WorkingDir "\image_library\blackjacking\knockout_success.bmp",
-    knockout_failure : A_WorkingDir "\image_library\blackjacking\knockout_failure.bmp"
+    open_curtain_option : A_WorkingDir "\image_library\blackjacking\open_curtain.png",
+    close_curtain_option : A_WorkingDir "\image_library\blackjacking\close_curtain.png",
+    stunned : A_WorkingDir "\image_library\been_stunned.bmp"
 }
 
-; this is the name of the window, if the script isn't working it's because you need to change this to your name.
-global runelite_window := "RuneLite - BinaryBilly"
+
 
 ; some tooltip coords
 global X_TOOLTIP := {
@@ -65,8 +65,8 @@ global X_TOOLTIP := {
 }
 
 global Y_TOOLTIP := {
-    1: 100,  ; <-| main functions
-    2: 125,  ; <-|
+    1: 100, ; <-| main functions
+    2: 125, ; <-|
     3: 150, ; <-|
     4: 205, ; <-|
 
@@ -77,6 +77,8 @@ global Y_TOOLTIP := {
     9: 375  ; <-|
 }
 
+
+gameWindowWidth := A_ScreenWidth - 20
 ; object that holds all of the screen area coordinates
 global coord := {
     chat_all:       { x1: 3, y1: 872, x2: 494, y2: 986 },
@@ -85,11 +87,27 @@ global coord := {
     bag:        { x1:1385, y1:700, x2:1855, y2:1000 },
     top_left:   { x1:0, y1:22, x2:200, y2:128 },
     middle:     { x1:0, y1:200, x2:1650, y2:970 },
-    health:     { x1:1400, y1:820, x2:1700, y2:850 }
+    health:     { x1:1400, y1:820, x2:1700, y2:850 },
+    
+    ; Screen below is split up like this:
+    ;       p1       ;       p2       ;       p3      ;
+    ;       p1       ;       p2       ;       p3      ;
+    ;_______p1_______;_______p2_______;_______p3______;
+    ;       p4       ;       p5       ;       p6      ;
+    ;       p4       ;       p5       ;       p6      ;
+    ;       p4       ;       p5       ;       p6      ;
+    p1 : { x1:0, y1:20, x2:gameWindowWidth / 3, y2:A_ScreenHeight / 2 },
+    p2 : { x1:gameWindowWidth / 3, y1:20, x2:gameWindowWidth * 2 / 3, y2:A_ScreenHeight / 2 },
+    p3 : { x1:gameWindowWidth * 2 / 3, y1:20, x2:gameWindowWidth, y2:A_ScreenHeight / 2 },
+    p4 : { x1:0, y1:A_ScreenHeight / 2, x2:gameWindowWidth / 3, y2:A_ScreenHeight},
+    p5 : { x1:gameWindowWidth / 3, y1:A_ScreenHeight / 2, x2:gameWindowWidth * 2 / 3, y2:A_ScreenHeight},
+    p6 : { x1:gameWindowWidth * 2 / 3, y1:A_ScreenHeight / 2, x2:gameWindowWidth, y2:A_ScreenHeight}
 }
 
-; coords to ensure an NPC's orientation
-; add more vertices to these :o
+/**
+ * coords to ensure an NPC's orientation
+ * add more vertices to these :o
+ */
 global target_coord := {
     laying_left:    { x:745, y:330 },
     laying_middle:  { x:890, y:225 },
@@ -109,10 +127,14 @@ global target_coord := {
     standing_bottom_right_2:    { x:1030,y:530 }
 }
 
-; these are the colors of outlines around enemy NPCs and the tick on the compass
+; these are the colors of outlines around NPCs and the tick on the compass
 global pixel_color := {
-    enemy : 0xA4FF00,
-    enemy_dark : 0x84CD00,
+    tile_teal : 0x00FAFF,
+    tile_purple : 0x6655FF,
+    tile_pink : 0xD769E8,
+    object_green: 0xAAFF00,
+    npc : 0xA4FF00,
+    npc_dark : 0x84CD00,
     tick : 0x00DFDF,
     tick_2 : 0x1580AD,
     tick_3 : 0x01E0E1
@@ -137,6 +159,10 @@ Main()
 
     while (true)
     {
+        if(menu_is_open()) {
+            MsgBox "Close the menu in Runelite to continue."
+            continue
+        }
         knockout_failure := false
         pickpocket_failure := false
         ;1. Preliminaries
@@ -147,8 +173,10 @@ Main()
         
         if HealthIsLow() {                                                   ; check if health is low
             ClickMoneyBag()
-            if (!EatLobster())                                              ; try to eat a lobster if it is
+            if (!EatLobster()) {                                             ; try to eat a lobster if it is
+                ReloadLobsters()
                 MsgBox "You ugly mug -- reload your lobsters!"              ; pause for player to reload inventory if you're out of lobbies
+            }
         }
 
         if !TargetIsStandingUpFacingMe() and !TargetIsLayingDownFacingMe() {                                  ; ensure we are facing the NPC
@@ -169,7 +197,7 @@ Main()
         }
                                                                             ToolTip "Right click (2 of 3).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
         RightClickNPC()                                                     ; prime another right click menu
-        sleep_random(925, 925)
+        sleep_random(725, 725)
         CheckAndUpdateStatus(&knockout_failure, &pickpocket_failure)
                                                                     ToolTip "Pickpocket  (1 of 2).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
         if !ClickPickpocket()                                       ; if it fails to click pickpocket
@@ -190,7 +218,7 @@ Main()
             Reload                                                 ; we are in combat :\ Reload.
         }
                                                                     ToolTip "Pickpocket  (2 of 2).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
-        sleep_random(750,850)
+        sleep_random(550,550)
         if !ClickPickpocket()                                       ; try to pickpocket                      
             continue                                                ; start the loop over
         
@@ -308,8 +336,6 @@ ClickKnockout() {
 ;   about to attack. To counteract their attack, we can click pickpocket on them.
 ClickPickpocket(timeout_ms := 300) {
                                                                             ToolTip "Trying to click pickpocket...", X_TOOLTIP.2, Y_TOOLTIP.2, 2
-    ; WaitForImage(images.pickpocket_option, timeout_ms)
-    ; WaitForAnyImages([images.knockout_failure, images.knockout_success], timeout_ms)
     if ImageSearchAndClick(images.pickpocket_option, "under_mouse", "mouseover", "option") {
         Sleep 100
         Click("Left")

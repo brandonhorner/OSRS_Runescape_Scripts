@@ -73,28 +73,23 @@ zoom(zoom_direction, zoom_level:=30)
 }
 
 click_compass()
-{   
+{
     xp_minimap_button := A_WorkingDir "\image_library\xp_minimap_button.bmp"
     shade_variation := 50
-    ErrorLevel := !ImageSearch(&found_x, &found_y, 0, 0, A_ScreenWidth, A_ScreenHeight, "*" shade_variation " " xp_minimap_button)
-    if (ErrorLevel = 2)
-    {
-        ToolTip("Could not conduct the search`rsearch area: 0x0 and " A_ScreenWidth "x" A_ScreenHeight "`rimage = " xp_minimap_button, 100, 500, 20)
-        return false
-    }
-    else if (ErrorLevel = 1)
-    {
-        ToolTip("Could not find in the search area: 0x0 and " A_ScreenWidth "x" A_ScreenHeight "`rimage = " xp_minimap_button, 100, 500, 20)
-        return false
-    }
-    else
+    if ImageSearch(&foundX, &foundY, 0, 0, A_ScreenWidth, A_ScreenHeight, "*" shade_variation " " xp_minimap_button)
     {
         x_offset := Random(30, 60)
         y_offset := Random(-23, 0)
-        x_offset += found_x
-        y_offset += found_y
+        x_offset += foundX
+        y_offset += foundY
         Click("left, " x_offset ", " y_offset)
-        return
+        return true
+    }
+    else
+    {
+        ToolTip("Could not conduct the search`rsearch area: 0x0 and " A_ScreenWidth "x" A_ScreenHeight "`rimage = " xp_minimap_button, 100, 500, 20)
+        return false
+
     }
 }
 
@@ -120,16 +115,11 @@ open_bag()
 menu_is_open()
 {
     menu_bg_color := 0x282828
-    ErrorLevel := !PixelSearch(&found_x, &found_y, 1867, 849, 1874, 867, menu_bg_color)
-    ErrorLevel := !PixelSearch(&found_x2, &found_y2, 1641, 472, 1650, 530, menu_bg_color)
-    
-       ;deprecated: closed_runelite_menu := A_WorkingDir "\image_library\closed_runelite_menu.bmp"
-    ; if either variable is populated then the pixel color was found
-    if (found_x or found_x2)
+
+    if(pixel_search_and_click(1867, 450, 1874, 600, menu_bg_color,,,,0))
     {
-        ; menu is open so return true
         MsgBox("Please close the RuneLite menu.")
-        return true
+        menu_is_open()
     }
     ; menu was not open (pixel color of menu background was not found)
     return false
@@ -281,7 +271,7 @@ image_search_and_click(ImageURL, scan_area:=0, click_type:=0, offset:=0, x1:=0, 
         ; delays should be randomized often
         set_random_delays()
         
-        if ImageSearch(&found_x, &found_y, x1, y1, x2, y2, "*50 *TransBlack " ImageURL)
+        if ImageSearch(&foundX, &foundY, x1, y1, x2, y2, "*50 *TransBlack " ImageURL)
         {
             ;depending on what type of image, the offset will be different
             switch offset
@@ -310,9 +300,9 @@ image_search_and_click(ImageURL, scan_area:=0, click_type:=0, offset:=0, x1:=0, 
                     offset_vertical := 0
             }
             
-            ;Tooltip, Found: `r%ImageURL%`rCoords Searched:%x1%x%y1%  |  %x2%x%y2% `r Found at %found_x%x%found_y%, 100, 100, 5
-            offset_x := found_x + offset_horizontal
-            offset_y := found_y + offset_vertical
+            ;Tooltip, Found: `r%ImageURL%`rCoords Searched:%x1%x%y1%  |  %x2%x%y2% `r Found at %foundX%x%foundY%, 100, 100, 5
+            offset_x := foundX + offset_horizontal
+            offset_y := foundY + offset_vertical
 
             switch click_type
             {
@@ -334,7 +324,7 @@ image_search_and_click(ImageURL, scan_area:=0, click_type:=0, offset:=0, x1:=0, 
             ;otherwise we do not click and simply return
             return true
         }
-        ;ToolTip, Inside: image_search_and_click() @ImageSearch `r%ImageURL% was found at %found_x%x%found_y%`r%x1%x%y1% and %x2%x%y2% was the search area, 100, 200, 19
+        ;ToolTip, Inside: image_search_and_click() @ImageSearch `r%ImageURL% was found at %foundX%x%foundY%`r%x1%x%y1% and %x2%x%y2% was the search area, 100, 200, 19
     }
     return false
 }
@@ -344,19 +334,19 @@ image_search_and_click(ImageURL, scan_area:=0, click_type:=0, offset:=0, x1:=0, 
 ;   "mouseover" will move the mouse but doesn't click, otherwise "left" click. Optionally can input
 ;   an offset x and y to offset where the function will click (in case you are searching for an image
 ;   but want to click something in an area nearby it.
-pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier:=0, offset_x:=0, offset_y:=0)
+pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier:=0, offset_x:=0, offset_y:=0, shade_variance := 50)
 {
     if WinActive(runelite_window)
     {
         ;delaySpeed := Random(20, 80)
         ;SetMouseDelay(delaySpeed)
 
-        if PixelSearch(&found_x, &found_y, x1, y1, x2, y2, pixel_color, 50) ;search region for color
+        if PixelSearch(&foundX, &foundY, x1, y1, x2, y2, pixel_color, shade_variance) ;search region for color
         {
-            ;ToolTip, The color %pixel_color% was found at %found_x%x%found_y% `rmodifier= %modifier%, 100, 300, 18
+            ;ToolTip, The color %pixel_color% was found at %foundX%x%foundY% `rmodifier= %modifier%, 100, 300, 18
             ;these offsets should be determined on a case by case basis
-            offset_x += found_x
-            offset_y += found_y
+            offset_x += foundX
+            offset_y += foundY
             
             switch modifier
             {
@@ -404,6 +394,7 @@ PressAndHoldKey(key, duration, times := 1) {
             duration := duration + RandomSeconds(0, .05)
         }
     }
+    ToolTip "", XTOOLTIP+70, YTOOLTIP-25, 2
     Return
 }
 
@@ -489,7 +480,7 @@ Retry:
         set_random_delays()
 
         ; search for the image                         *40 means 40 shades away from the picture's color
-        ErrorLevel := !ImageSearch(&found_x, &found_y, x1, y1, x2, y2, "*50 *TransBlack " ImageURL)
+        ErrorLevel := !ImageSearch(&foundX, &foundY, x1, y1, x2, y2, "*50 *TransBlack " ImageURL)
         if (ErrorLevel = 2){
             ToolTip("Could not conduct the search using: " x1 "x" y1 " | " x2 "x" y2 " | " ImageURL, 0, 100, 6)
             return false
@@ -522,9 +513,9 @@ Retry:
                 offset_horizontal := Random(0, 0)
                 offset_vertical := Random(-0, 0)
             }
-            ;TrayTip,, Found: `r%ImageURL%`rCoords Searched:%x1%x%y1%  |  %x2%x%y2% `r Found at %found_x%x%found_y%
-            offset_x := found_x + offset_horizontal
-            offset_y := found_y + offset_vertical
+            ;TrayTip,, Found: `r%ImageURL%`rCoords Searched:%x1%x%y1%  |  %x2%x%y2% `r Found at %foundX%x%foundY%
+            offset_x := foundX + offset_horizontal
+            offset_y := foundY + offset_vertical
             if (modifier = "right")
                 Click(offset_x, offset_y, "Right")
             if (modifier = "mouseover")
@@ -582,28 +573,28 @@ TargetIsStandingUpFacingMe()
     offset := 30
     count := 0
     ; search for the top left, and the top left + offset for light and dark color
-    if pixel_search_and_click(target_coord.standing_top_left.x, target_coord.standing_top_left.y, target_coord.standing_top_left.x + offset, target_coord.standing_top_left.y + offset, pixel_color.enemy) ||
-        pixel_search_and_click(target_coord.standing_top_left.x, target_coord.standing_top_left.y, target_coord.standing_top_left.x + offset, target_coord.standing_top_left.y + offset, pixel_color.enemy_dark) ||
-        pixel_search_and_click(target_coord.standing_top_left_2.x, target_coord.standing_top_left_2.y, target_coord.standing_top_left_2.x + offset, target_coord.standing_top_left_2.y + offset, pixel_color.enemy) ||
-        pixel_search_and_click(target_coord.standing_top_left_2.x, target_coord.standing_top_left_2.y, target_coord.standing_top_left_2.x + offset, target_coord.standing_top_left_2.y + offset, pixel_color.enemy_dark)
+    if pixel_search_and_click(target_coord.standing_top_left.x, target_coord.standing_top_left.y, target_coord.standing_top_left.x + offset, target_coord.standing_top_left.y + offset, pixel_color.npc) ||
+        pixel_search_and_click(target_coord.standing_top_left.x, target_coord.standing_top_left.y, target_coord.standing_top_left.x + offset, target_coord.standing_top_left.y + offset, pixel_color.npc_dark) ||
+        pixel_search_and_click(target_coord.standing_top_left_2.x, target_coord.standing_top_left_2.y, target_coord.standing_top_left_2.x + offset, target_coord.standing_top_left_2.y + offset, pixel_color.npc) ||
+        pixel_search_and_click(target_coord.standing_top_left_2.x, target_coord.standing_top_left_2.y, target_coord.standing_top_left_2.x + offset, target_coord.standing_top_left_2.y + offset, pixel_color.npc_dark)
         count += 1
 
-    if pixel_search_and_click(target_coord.standing_top_right.x, target_coord.standing_top_right.y, target_coord.standing_top_right.x + offset, target_coord.standing_top_right.y + offset, pixel_color.enemy) ||
-        pixel_search_and_click(target_coord.standing_top_right.x, target_coord.standing_top_right.y, target_coord.standing_top_right.x + offset, target_coord.standing_top_right.y + offset, pixel_color.enemy_dark) ||
-        pixel_search_and_click(target_coord.standing_top_right_2.x, target_coord.standing_top_right_2.y, target_coord.standing_top_right_2.x + offset, target_coord.standing_top_right_2.y + offset, pixel_color.enemy) ||
-        pixel_search_and_click(target_coord.standing_top_right_2.x, target_coord.standing_top_right_2.y, target_coord.standing_top_right_2.x + offset, target_coord.standing_top_right_2.y + offset, pixel_color.enemy_dark)
+    if pixel_search_and_click(target_coord.standing_top_right.x, target_coord.standing_top_right.y, target_coord.standing_top_right.x + offset, target_coord.standing_top_right.y + offset, pixel_color.npc) ||
+        pixel_search_and_click(target_coord.standing_top_right.x, target_coord.standing_top_right.y, target_coord.standing_top_right.x + offset, target_coord.standing_top_right.y + offset, pixel_color.npc_dark) ||
+        pixel_search_and_click(target_coord.standing_top_right_2.x, target_coord.standing_top_right_2.y, target_coord.standing_top_right_2.x + offset, target_coord.standing_top_right_2.y + offset, pixel_color.npc) ||
+        pixel_search_and_click(target_coord.standing_top_right_2.x, target_coord.standing_top_right_2.y, target_coord.standing_top_right_2.x + offset, target_coord.standing_top_right_2.y + offset, pixel_color.npc_dark)
         count += 1
         
-    if pixel_search_and_click(target_coord.standing_bottom_left.x, target_coord.standing_bottom_left.y, target_coord.standing_bottom_left.x + offset, target_coord.standing_bottom_left.y + offset, pixel_color.enemy) ||
-        pixel_search_and_click(target_coord.standing_bottom_left.x, target_coord.standing_bottom_left.y, target_coord.standing_bottom_left.x + offset, target_coord.standing_bottom_left.y + offset, pixel_color.enemy_dark) ||
-        pixel_search_and_click(target_coord.standing_bottom_left_2.x, target_coord.standing_bottom_left_2.y, target_coord.standing_bottom_left_2.x + offset, target_coord.standing_bottom_left_2.y + offset, pixel_color.enemy) ||
-        pixel_search_and_click(target_coord.standing_bottom_left_2.x, target_coord.standing_bottom_left_2.y, target_coord.standing_bottom_left_2.x + offset, target_coord.standing_bottom_left_2.y + offset, pixel_color.enemy_dark)
+    if pixel_search_and_click(target_coord.standing_bottom_left.x, target_coord.standing_bottom_left.y, target_coord.standing_bottom_left.x + offset, target_coord.standing_bottom_left.y + offset, pixel_color.npc) ||
+        pixel_search_and_click(target_coord.standing_bottom_left.x, target_coord.standing_bottom_left.y, target_coord.standing_bottom_left.x + offset, target_coord.standing_bottom_left.y + offset, pixel_color.npc_dark) ||
+        pixel_search_and_click(target_coord.standing_bottom_left_2.x, target_coord.standing_bottom_left_2.y, target_coord.standing_bottom_left_2.x + offset, target_coord.standing_bottom_left_2.y + offset, pixel_color.npc) ||
+        pixel_search_and_click(target_coord.standing_bottom_left_2.x, target_coord.standing_bottom_left_2.y, target_coord.standing_bottom_left_2.x + offset, target_coord.standing_bottom_left_2.y + offset, pixel_color.npc_dark)
         count += 1
         
-    if pixel_search_and_click(target_coord.standing_bottom_right.x, target_coord.standing_bottom_right.y, target_coord.standing_bottom_right.x + offset, target_coord.standing_bottom_right.y + offset, pixel_color.enemy) ||
-        pixel_search_and_click(target_coord.standing_bottom_right.x, target_coord.standing_bottom_right.y, target_coord.standing_bottom_right.x + offset, target_coord.standing_bottom_right.y + offset, pixel_color.enemy_dark) ||
-        pixel_search_and_click(target_coord.standing_bottom_right_2.x, target_coord.standing_bottom_right_2.y, target_coord.standing_bottom_right_2.x + offset, target_coord.standing_bottom_right_2.y + offset, pixel_color.enemy) ||
-        pixel_search_and_click(target_coord.standing_bottom_right_2.x, target_coord.standing_bottom_right_2.y, target_coord.standing_bottom_right_2.x + offset, target_coord.standing_bottom_right_2.y + offset, pixel_color.enemy_dark)
+    if pixel_search_and_click(target_coord.standing_bottom_right.x, target_coord.standing_bottom_right.y, target_coord.standing_bottom_right.x + offset, target_coord.standing_bottom_right.y + offset, pixel_color.npc) ||
+        pixel_search_and_click(target_coord.standing_bottom_right.x, target_coord.standing_bottom_right.y, target_coord.standing_bottom_right.x + offset, target_coord.standing_bottom_right.y + offset, pixel_color.npc_dark) ||
+        pixel_search_and_click(target_coord.standing_bottom_right_2.x, target_coord.standing_bottom_right_2.y, target_coord.standing_bottom_right_2.x + offset, target_coord.standing_bottom_right_2.y + offset, pixel_color.npc) ||
+        pixel_search_and_click(target_coord.standing_bottom_right_2.x, target_coord.standing_bottom_right_2.y, target_coord.standing_bottom_right_2.x + offset, target_coord.standing_bottom_right_2.y + offset, pixel_color.npc_dark)
         count += 1
     
     if (count >= 3)
@@ -619,28 +610,28 @@ TargetIsLayingDownFacingMe()
 {
     count := 0
     ; If the bottom 4 searches result in true, true, true, false
-    if pixel_search_and_click(target_coord.laying_left.x, target_coord.laying_left.y, target_coord.laying_left.x + 30, target_coord.laying_left.y + 30, pixel_color.enemy) ||
-        pixel_search_and_click(target_coord.laying_left.x, target_coord.laying_left.y, target_coord.laying_left.x + 30, target_coord.laying_left.y + 30, pixel_color.enemy_dark) ||
-        pixel_search_and_click(target_coord.laying_left_2.x, target_coord.laying_left_2.y, target_coord.laying_left_2.x + 30, target_coord.laying_left_2.y + 30, pixel_color.enemy) ||
-        pixel_search_and_click(target_coord.laying_left_2.x, target_coord.laying_left_2.y, target_coord.laying_left_2.x + 30, target_coord.laying_left_2.y + 30, pixel_color.enemy_dark)
+    if pixel_search_and_click(target_coord.laying_left.x, target_coord.laying_left.y, target_coord.laying_left.x + 30, target_coord.laying_left.y + 30, pixel_color.npc) ||
+        pixel_search_and_click(target_coord.laying_left.x, target_coord.laying_left.y, target_coord.laying_left.x + 30, target_coord.laying_left.y + 30, pixel_color.npc_dark) ||
+        pixel_search_and_click(target_coord.laying_left_2.x, target_coord.laying_left_2.y, target_coord.laying_left_2.x + 30, target_coord.laying_left_2.y + 30, pixel_color.npc) ||
+        pixel_search_and_click(target_coord.laying_left_2.x, target_coord.laying_left_2.y, target_coord.laying_left_2.x + 30, target_coord.laying_left_2.y + 30, pixel_color.npc_dark)
     count += 1
     
-    if pixel_search_and_click(target_coord.laying_middle.x, target_coord.laying_middle.y, target_coord.laying_middle.x + 30, target_coord.laying_middle.y + 30, pixel_color.enemy) ||
-        pixel_search_and_click(target_coord.laying_middle.x, target_coord.laying_middle.y, target_coord.laying_middle.x + 30, target_coord.laying_middle.y + 30, pixel_color.enemy_dark) ||
-        pixel_search_and_click(target_coord.laying_middle_2.x, target_coord.laying_middle_2.y, target_coord.laying_middle_2.x + 30, target_coord.laying_middle_2.y + 30, pixel_color.enemy) ||
-        pixel_search_and_click(target_coord.laying_middle_2.x, target_coord.laying_middle_2.y, target_coord.laying_middle_2.x + 30, target_coord.laying_middle_2.y + 30, pixel_color.enemy_dark)
+    if pixel_search_and_click(target_coord.laying_middle.x, target_coord.laying_middle.y, target_coord.laying_middle.x + 30, target_coord.laying_middle.y + 30, pixel_color.npc) ||
+        pixel_search_and_click(target_coord.laying_middle.x, target_coord.laying_middle.y, target_coord.laying_middle.x + 30, target_coord.laying_middle.y + 30, pixel_color.npc_dark) ||
+        pixel_search_and_click(target_coord.laying_middle_2.x, target_coord.laying_middle_2.y, target_coord.laying_middle_2.x + 30, target_coord.laying_middle_2.y + 30, pixel_color.npc) ||
+        pixel_search_and_click(target_coord.laying_middle_2.x, target_coord.laying_middle_2.y, target_coord.laying_middle_2.x + 30, target_coord.laying_middle_2.y + 30, pixel_color.npc_dark)
         count += 1
 
-    if pixel_search_and_click(target_coord.laying_right.x, target_coord.laying_right.y, target_coord.laying_right.x + 30, target_coord.laying_right.y + 30, pixel_color.enemy) ||
-        pixel_search_and_click(target_coord.laying_right.x, target_coord.laying_right.y, target_coord.laying_right.x + 30, target_coord.laying_right.y + 30, pixel_color.enemy_dark) ||
-        pixel_search_and_click(target_coord.laying_right_2.x, target_coord.laying_right_2.y, target_coord.laying_right_2.x + 30, target_coord.laying_right_2.y + 30, pixel_color.enemy) ||
-        pixel_search_and_click(target_coord.laying_right_2.x, target_coord.laying_right_2.y, target_coord.laying_right_2.x + 30, target_coord.laying_right_2.y + 30, pixel_color.enemy_dark)
+    if pixel_search_and_click(target_coord.laying_right.x, target_coord.laying_right.y, target_coord.laying_right.x + 30, target_coord.laying_right.y + 30, pixel_color.npc) ||
+        pixel_search_and_click(target_coord.laying_right.x, target_coord.laying_right.y, target_coord.laying_right.x + 30, target_coord.laying_right.y + 30, pixel_color.npc_dark) ||
+        pixel_search_and_click(target_coord.laying_right_2.x, target_coord.laying_right_2.y, target_coord.laying_right_2.x + 30, target_coord.laying_right_2.y + 30, pixel_color.npc) ||
+        pixel_search_and_click(target_coord.laying_right_2.x, target_coord.laying_right_2.y, target_coord.laying_right_2.x + 30, target_coord.laying_right_2.y + 30, pixel_color.npc_dark)
         count += 1
 
-    if !pixel_search_and_click(target_coord.laying_bottom.x, target_coord.laying_bottom.y, target_coord.laying_bottom.x + 30, target_coord.laying_bottom.y + 30, pixel_color.enemy) ||
-        !pixel_search_and_click(target_coord.laying_bottom.x, target_coord.laying_bottom.y, target_coord.laying_bottom.x + 30, target_coord.laying_bottom.y + 30, pixel_color.enemy_dark) ||
-        !pixel_search_and_click(target_coord.laying_bottom_2.x, target_coord.laying_bottom_2.y, target_coord.laying_bottom_2.x + 30, target_coord.laying_bottom_2.y + 30, pixel_color.enemy) ||
-        !pixel_search_and_click(target_coord.laying_bottom_2.x, target_coord.laying_bottom_2.y, target_coord.laying_bottom_2.x + 30, target_coord.laying_bottom_2.y + 30, pixel_color.enemy_dark)
+    if !pixel_search_and_click(target_coord.laying_bottom.x, target_coord.laying_bottom.y, target_coord.laying_bottom.x + 30, target_coord.laying_bottom.y + 30, pixel_color.npc) ||
+        !pixel_search_and_click(target_coord.laying_bottom.x, target_coord.laying_bottom.y, target_coord.laying_bottom.x + 30, target_coord.laying_bottom.y + 30, pixel_color.npc_dark) ||
+        !pixel_search_and_click(target_coord.laying_bottom_2.x, target_coord.laying_bottom_2.y, target_coord.laying_bottom_2.x + 30, target_coord.laying_bottom_2.y + 30, pixel_color.npc) ||
+        !pixel_search_and_click(target_coord.laying_bottom_2.x, target_coord.laying_bottom_2.y, target_coord.laying_bottom_2.x + 30, target_coord.laying_bottom_2.y + 30, pixel_color.npc_dark)
         count += 1
     
     if (count >= 3)
@@ -685,7 +676,7 @@ GetMousePosOffsets()
 }
 
 ; This function waits for an image, and an optional timeout (default is 10s)
-WaitForImage(ImageURL, Timeout := 3000, coord_group := "None") {
+WaitForImage(ImageURL, Timeout := 3000, coord_group := "None", shade_variance:=20) {
     SplitPath ImageURL, &ImageName
     if coord_group = "None" {
         x1:= 0
@@ -699,14 +690,14 @@ WaitForImage(ImageURL, Timeout := 3000, coord_group := "None") {
         x2:= coord_group.x2
         y2:= coord_group.y2
     }
-
+    
     ; Store the current tick count
     StartTime := A_TickCount
                                                                                                 ToolTip "6. WaitForImage: waiting on:`n" ImageName, X_TOOLTIP.6, Y_TOOLTIP.6, 6
     ; Keep checking until timeout has passed
     while (A_TickCount - StartTime) < Timeout {
         ; Check for the image
-        if ImageExists(ImageURL, x1, y1, x2, y2) {
+        if ImageExists(ImageURL, x1, y1, x2, y2, shade_variance) {
             return true
         }
 
@@ -814,7 +805,7 @@ WaitForAllImages(ImageURLs, Timeout := 3000, coord_group := "None") {
 
 
 ; Function to check if the ImageURL is present in the window
-ImageExists(ImageURL, x1:=0,y1:=0, x2:=A_ScreenWidth,y2:=A_ScreenHeight) {
+ImageExists(ImageURL, x1:=0,y1:=0, x2:=A_ScreenWidth,y2:=A_ScreenHeight, shade_variance:=20) {
     CoordMode "ToolTip", "Screen"
     CoordMode "Pixel"
     shade_variation := 90
@@ -822,25 +813,55 @@ ImageExists(ImageURL, x1:=0,y1:=0, x2:=A_ScreenWidth,y2:=A_ScreenHeight) {
     SplitPath ImageURL, &ImageName
     
     try {
-        ; Search for the image on the entire screen with variation tolerance of 50
-        if ImageSearch(&FoundX, &FoundY, x1, y1, x2, y2, "*TransBlack " ImageURL) { 
-                                                                                    ToolTip "7. ImageExists: checking for: `n" ImageName " WAS found! @" FoundX " & " FoundY , X_TOOLTIP.7, Y_TOOLTIP.7, 7
-        return true
+        ; Search for the image on the entire screen with variation tolerance of shade_variance
+        if ImageSearch(&FoundX, &FoundY, x1, y1, x2, y2, "*" shade_variance " *TransBlack " ImageURL) { 
+                                                                                                                    ToolTip "7. ImageExists: checking for: `n" ImageName " WAS found! @" FoundX " & " FoundY , X_TOOLTIP.7, Y_TOOLTIP.7, 7
+            return true
         } else {
-                                                                                    ToolTip "7. ImageExists: checking for: `n" ImageName " was NOT found!", X_TOOLTIP.7, Y_TOOLTIP.7, 7
+                                                                                                                    ToolTip "7. ImageExists: checking for: `n" ImageName " was NOT found!", X_TOOLTIP.7, Y_TOOLTIP.7, 7
         }
     } catch as exc {
-                                                                                    ToolTip "7. ImageExists: Could not conduct the search due to the following error:`n" exc.Message " > " ImageURL, X_TOOLTIP.7, Y_TOOLTIP.7, 7
+                                                                                                                    ToolTip "7. ImageExists: Could not conduct the search due to the following error:`n" exc.Message " > " ImageURL, X_TOOLTIP.7, Y_TOOLTIP.7, 7
     }
 
     return false
 }
 
-ImageSearchAndClick(ImageURL, scan_area:=0, click_type:=0, offset:=0, x1:=0, y1:=0, x2:=0, y2:=0, shade_variance:=50)
+
+PixelSearchAndClick(PixelColor, scanAreaInput:=0, click_type:=0, offset:=0, x1:=0, y1:=0, x2:=0, y2:=0, shade_variance:=0)
 {
     menu_width := 140
-    shade_variation := 15
-    scan_area := GetScanArea(scan_area)
+    
+    scanArea := GetScanArea(scanAreaInput)
+    
+    if WinActive(runelite_window)
+    {
+        ; delays should be randomized often
+        set_random_delays()
+        
+        if PixelSearch(&foundX, &foundY,
+                        scanArea.x1, scanArea.y1,
+                        scanArea.x2, scanArea.y2, 
+                        PixelColor, shade_variance ) {
+                                                                                          ToolTip "8. PixelSearchAndClick: " PixelColor " was found at: (" foundX ", " foundY ")", X_TOOLTIP.8, Y_TOOLTIP.8, 8
+            ;depending on what area we are clicking, the offset will be different
+            offsetObj := GetOffset(offset) ;TODO separate this into GetPixelOffset / GetImageOffset?
+            
+            offsetX := foundX + offsetObj.x
+            offsetY := foundY + offsetObj.y
+            
+            ClickOffset(click_type, offsetX, offsetY)
+            return true
+        }
+    }
+    return false
+}
+
+ImageSearchAndClick(ImageURL, scanAreaInput:=0, click_type:=0, offset:=0, x1:=0, y1:=0, x2:=0, y2:=0, shade_variance:=50)
+{
+    menu_width := 140
+    
+    scanArea := GetScanArea(scanAreaInput)
     
     SplitPath ImageURL, &ImageName
     
@@ -849,23 +870,23 @@ ImageSearchAndClick(ImageURL, scan_area:=0, click_type:=0, offset:=0, x1:=0, y1:
         ; delays should be randomized often
         set_random_delays()
         
-        if (ImageSearch(&found_x, &found_y,
-            scan_area.x1, scan_area.y1,
-            scan_area.x2, scan_area.y2, 
-            ("*" shade_variance " *TransBlack ") ImageURL) 
-        or ImageSearch(&found_x, &found_y,
-            scan_area.x1, scan_area.y1,
-            scan_area.x2, scan_area.y2, 
-            ("*" shade_variance " ") ImageURL))
+        if (ImageSearch(&foundX, &foundY,
+                        scanArea.x1, scanArea.y1,
+                        scanArea.x2, scanArea.y2, 
+                        ("*" shade_variance " *TransBlack ") ImageURL) 
+        or ImageSearch(&foundX, &foundY,
+                        scanArea.x1, scanArea.y1,
+                        scanArea.x2, scanArea.y2, 
+                        ("*" shade_variance " ") ImageURL))
         {
-                                                                                          ToolTip "8. ImageSearchAndClick: Looking for:`n" ImageName " was found at: (" found_x ", " found_y ")", X_TOOLTIP.8, Y_TOOLTIP.8, 8
+                                                                                          ToolTip "8. ImageSearchAndClick: Looking for:`n" ImageName " was found at: (" foundX ", " foundY ")", X_TOOLTIP.8, Y_TOOLTIP.8, 8
             ;depending on what type of image, the offset will be different
-            offset_obj := GetOffset(offset)
+            offsetObj := GetOffset(offset)
             
-            offset_x := found_x + offset_obj.x
-            offset_y := found_y + offset_obj.y
+            offsetX := foundX + offsetObj.x
+            offsetY := foundY + offsetObj.y
             
-            ClickOffset(click_type, offset_x, offset_y)
+            ClickOffset(click_type, offsetX, offsetY)
             return true
         }
     }
@@ -875,6 +896,8 @@ ImageSearchAndClick(ImageURL, scan_area:=0, click_type:=0, offset:=0, x1:=0, y1:
 GetScanArea(scan_area := 0)
 {
     menu_width := 0
+    ; adjusted window width to not include menu.. clashes with the menu width adjustment though :\
+    gameWindowWidth := A_ScreenWidth - 20
     switch scan_area
     {
         case "top_left":
@@ -928,19 +951,59 @@ GetScanArea(scan_area := 0)
         case "under_mouse":
             MouseGetPos(&x, &y)
             scan_area_obj := {
-                x1: x - 130, y1: y - 10, 
+                x1: x - 130, y1: y - 10,
                 x2: x + 120, y2: y + 255
             } 
             menu_width := 0
+        
+        case "p1":
+            scan_area_obj := {
+                x1:0, y1:20, 
+                x2:A_ScreenWidth / 3, y2:A_ScreenHeight / 2
+            } 
+            menu_width := 0
+        case "p2":
+            scan_area_obj := {
+                x1:A_ScreenWidth / 3, y1:20,
+                x2:A_ScreenWidth * 2 / 3, y2:A_ScreenHeight / 2
+            } 
+            menu_width := 0
+        case "p3":
+            scan_area_obj := {
+                x1:A_ScreenWidth * 2 / 3, y1:20,
+                x2:A_ScreenWidth - 20, y2:A_ScreenHeight / 2
+            } 
+            menu_width := 0
+        case "p4":
+            scan_area_obj := {
+                x1:0, y1:A_ScreenHeight / 2,
+                x2:A_ScreenWidth / 3, y2:A_ScreenHeight - 50
+            } 
+            menu_width := 0
+        case "p5":
+            scan_area_obj := {
+                x1:A_ScreenWidth / 3, y1:A_ScreenHeight / 2,
+                x2:A_ScreenWidth * 2 / 3, y2:A_ScreenHeight - 50
+            } 
+            menu_width := 0
+
+        case "p6":
+            scan_area_obj := {
+                x1:A_ScreenWidth * 2 / 3, y1:A_ScreenHeight / 2,
+                x2:A_ScreenWidth - 20, y2:A_ScreenHeight - 50
+            } 
+            menu_width := 0
+
+        
 
         default:
             scan_area_obj := {
                 x1: 0, y1: 0, 
-                x2: A_ScreenWidth, y2: A_ScreenHeight
+                x2: A_ScreenWidth-20, y2: A_ScreenHeight
             }
             menu_width := 0
     }
-    if MenuIsOpen()
+    if menu_is_open()
     {
         scan_area_obj.x1 -= menu_width
         scan_area_obj.x2 -= menu_width
@@ -958,11 +1021,28 @@ GetOffset(offset_item)
             ;we want to move mouse down 2 to 11 pixels to click randomly within the image
             vertical := Random(1, 10)
 
+        ;"option_short" refers to when the right click menu is half sized from the usual
+        case "option_short":
+            ;we want to move mouse horizontally to click more in the center of the image
+            horizontal := Random(-1, 100) ;30
+            ;we want to move mouse down vertical pixels to click randomly within the image
+            vertical := Random(-2, 5)
+
         ;"item" refers to an item in the bag, also works for fishing spot indicators
         case "item":
             ;item pictures are cut so that the"middle" of the image is the starting point
             horizontal := Random(5, 15)
             vertical := Random(5, 15)
+        
+        ;"item" refers to an item in the bag, also works for fishing spot indicators
+        case "tile":
+            ;item pictures are cut so that the"middle" of the image is the starting point
+            horizontal := Random(-50, 50)
+            vertical := Random(-50, 50)
+
+        case "tile_sw":
+            horizontal := Random(-50, 0)
+            vertical := Random(0, 50)
 
         ;default is no offset, can be used when searching but not clicking on an image
         default:
