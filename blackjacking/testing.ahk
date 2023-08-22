@@ -19,7 +19,11 @@ F3::
 
 F4::
 {
-    RightClickNPC()
+     if ImageSearchAndClick(images.cant_pickpocket_combat, "chat_bottom_2",,,,,,,5)
+     {
+       ToolTip "Found it!", 0, 500, 9
+     }
+     return
 }
 
 F5::

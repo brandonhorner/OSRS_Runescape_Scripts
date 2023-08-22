@@ -414,7 +414,8 @@ SendKey(key, presses := 1){
     }
 }
 
-set_random_delays(mouse_delay_low := 40, mouse_delay_high := 43, key_delay_low := 80, key_delay_high := 190, press_duration_low := 40, press_duration_high := 75) {
+; WAS set_random_delays(mouse_delay_low := 40, mouse_delay_high := 43, key_delay_low := 80, key_delay_high := 190, press_duration_low := 40, press_duration_high := 75) {
+set_random_delays(mouse_delay_low := 20, mouse_delay_high := 23, key_delay_low := 30, key_delay_high := 50, press_duration_low := 20, press_duration_high := 30) {
     ; Set the delay of your mouse movement in microseconds
     delaySpeed := Random(mouse_delay_low, mouse_delay_high)
     SetMouseDelay(delaySpeed)
@@ -1001,12 +1002,10 @@ GetScanArea(scan_area := 0)
             } 
             menu_width := 0
 
-        
-
         default:
             scan_area_obj := {
-                x1: 0, y1: 0, 
-                x2: A_ScreenWidth-20, y2: A_ScreenHeight
+                x1: 0, y1: 20, 
+                x2: A_ScreenWidth-20, y2: A_ScreenHeight-50
             }
             menu_width := 0
     }
@@ -1052,8 +1051,9 @@ GetOffset(offset_item)
             vertical := Random(0, 50)
 
         case "south":
-            horizontal := Random(-10, 10)
-            vertical := Random(0, 100)
+            horizontal := Random(0, 0)
+            vertical := Random(0, 30)
+            
         ;default is no offset, can be used when searching but not clicking on an image
         default:
             horizontal := 0

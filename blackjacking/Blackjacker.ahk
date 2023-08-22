@@ -34,6 +34,7 @@ global images := {
     pickpocket_attempt : A_WorkingDir "\image_library\blackjacking\pickpocket_attempt.bmp",
     pickpocket_success : A_WorkingDir "\image_library\blackjacking\pickpocket_success.bmp",
     pickpocket_failure : A_WorkingDir "\image_library\blackjacking\pickpocket_failure.bmp",
+    cant_pickpocket_combat : A_WorkingDir "\image_library\blackjacking\cant_pickpocket_combat.png",
     right_click_options : A_WorkingDir "\image_library\blackjacking\right_click_options.png",
     cannot_knockout : A_WorkingDir "\image_library\blackjacking\cannot_do_that.bmp",
     healthbar : A_WorkingDir "\image_library\blackjacking\healthbar.bmp",
@@ -46,6 +47,7 @@ global images := {
     open_bag : A_WorkingDir "\image_library\open_bag.bmp",
     open_curtain_option : A_WorkingDir "\image_library\blackjacking\open_curtain.png",
     close_curtain_option : A_WorkingDir "\image_library\blackjacking\close_curtain.png",
+    select_an_option : A_WorkingDir "\image_library\blackjacking\select_an_option.png",
     stunned : A_WorkingDir "\image_library\been_stunned.bmp"
 }
 
@@ -198,7 +200,7 @@ Main()
         }
                                                                             ToolTip "Right click (2 of 3).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
         RightClickNPC()                                                     ; prime another right click menu
-        sleep_random(0, 0) ; WAS 725
+        sleep_random(425, 425) ; WAS 725
         CheckAndUpdateStatus(&knockout_failure, &pickpocket_failure)
                                                                     ToolTip "Pickpocket  (1 of 2).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
         if !ClickPickpocket()                                       ; if it fails to click pickpocket
@@ -208,18 +210,19 @@ Main()
                                                                     ToolTip "Counters:`nSingle pickpockets: " sngl_pickpockets "`nDouble pickpockets: " dbl_pickpockets, X_TOOLTIP.9, Y_TOOLTIP.9, 9
         if CheckIfStunned()
             continue                                                        ; check if we are stunned, wait it out if we are
+        CheckIfCombat()
                                                                     ToolTip "Right click (3 of 3).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
         RightClickNPC()                                             ; right click the NPC again
         CheckAndUpdateStatus(&knockout_failure, &pickpocket_failure)
         WaitForPickpocketAttempt()
-        if (knockout_failure and pickpocket_failure) {              ; if the pickpocket failed,
-                                                                    ToolTip "Epic failure, restarting in .5 to 1.5s", X_TOOLTIP.4, Y_TOOLTIP.4, 4
-            sleep_random(500, 1500)
-            MsgBox "We in combat..."
-            Reload                                                 ; we are in combat :\ Reload.
-        }
+        ;if (knockout_failure and pickpocket_failure) {              ; if the pickpocket failed,
+        ;                                                            ToolTip "Epic failure, restarting in .5 to 1.5s", X_TOOLTIP.4, Y_TOOLTIP.4, 4
+        ;    sleep_random(500, 1500)
+        ;    MsgBox "We in combat..."
+        ;    Reload                                                 ; we are in combat :\ Reload.
+        ;}
                                                                     ToolTip "Pickpocket  (2 of 2).", X_TOOLTIP.4, Y_TOOLTIP.4, 4
-        sleep_random(550,550)
+        sleep_random(550,570)
         if !ClickPickpocket()                                       ; try to pickpocket                      
             continue                                                ; start the loop over
         
@@ -251,6 +254,25 @@ CheckIfStunned()
     if ImageSearchAndClick(images.imstunned, "top_left",,,,,,,5)
     {
         sleep_random(10, 10)
+        return true
+    }
+                                                                            ToolTip "", X_TOOLTIP.1, Y_TOOLTIP.1, 1
+    return false
+}
+
+CheckIfCombat()
+{
+                                                                            ToolTip "Stunned. Waiting...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
+    if ImageSearchAndClick(images.cant_pickpocket_combat, "chat_bottom_2",,,,,,,5)
+    {
+        sleep_random(150, 300)
+        PixelSearchAndClick(pixel_color.tile_purple, "p5", "left")
+        sleep_random(6000,7500)
+        PixelSearchAndClick(pixel_color.npc, "p2", "right")
+        sleep_random(300, 500)
+        ClickKnockout()
+        sleep_random(425, 425)
+        ClickPickpocket()
         return true
     }
                                                                             ToolTip "", X_TOOLTIP.1, Y_TOOLTIP.1, 1
@@ -377,17 +399,21 @@ ClickPixel(color, coord_obj:="None", offsetInput:="None")
 }
 
 ; ClickCurtain() assumes you've zoomed in and are facing north and are in the small building by curtain.
-ClickCurtain()
+ClickCurtain(scanArea := "None")
 {
-    if PixelSearchAndClick(pixel_color.object_green, "center", "right", "south")
+    if PixelSearchAndClick(pixel_color.object_green, "p5", "right")
     {
         sleep_random(300, 500)
-        if ImageSearchAndClick(images.open_curtain_option, "under_mouse", "left", "option_short") or
-            ImageSearchAndClick(images.close_curtain_option, "under_mouse", "left", "option_short") 
-            {
-                
-                return true
-            }
+        if (ImageSearchAndClick(images.open_curtain_option, "under_mouse", "left", "option_short") or
+            ImageSearchAndClick(images.close_curtain_option, "under_mouse", "left", "option_short"))
+        {
+            return true
+        }
+        else{
+            MouseMove(150, -150, 5, "Relative")
+            sleep_random(300, 500)
+            ClickCurtain()
+        }
     }
     return false
 }
@@ -401,13 +427,16 @@ ClickNotedLobsters()
 
 LeftClickNPC()
 {
-    if PixelSearchAndClick(pixel_color.npc, "p1", "mouseover") or PixelSearchAndClick(pixel_color.npc, "p2", "mouseover")
-        or PixelSearchAndClick(pixel_color.npc, "p4", "mouseover") or PixelSearchAndClick(pixel_color.npc, "p5", "mouseover")
-        or PixelSearchAndClick(pixel_color.npc_dark, "p1", "mouseover") or PixelSearchAndClick(pixel_color.npc_dark, "p2", "mouseover")
-        or PixelSearchAndClick(pixel_color.npc_dark, "p4", "mouseover") or PixelSearchAndClick(pixel_color.npc_dark, "p5", "mouseover")
+    if PixelSearchAndClick(pixel_color.npc, "p1", "left") or PixelSearchAndClick(pixel_color.npc, "p2", "left")
+        or PixelSearchAndClick(pixel_color.npc, "p4", "left") or PixelSearchAndClick(pixel_color.npc, "p5", "left")
+        or PixelSearchAndClick(pixel_color.npc_dark, "p1", "left") or PixelSearchAndClick(pixel_color.npc_dark, "p2", "left")
+        or PixelSearchAndClick(pixel_color.npc_dark, "p4", "left") or PixelSearchAndClick(pixel_color.npc_dark, "p5", "left")
     {
-        Click("Left")
-        return true
+        sleep_random(1500, 1500)
+        if ImageSearchAndClick(images.select_an_option, "chat")
+            return true
+        ClickNotedLobsters() 
+        LeftClickNPC()
     }
     return false
 }
@@ -416,11 +445,12 @@ ReloadLobsters() ;TODO randomize the times
 {
     while(!ClickCurtain())
         sleep_random(500, 1500)
-    sleep_random(1000, 1000)
+    sleep_random(1500, 1500)
 
     PixelSearchAndClick(pixel_color.tile_teal, "p6", "left", "tile_sw")
     sleep_random(1500, 1500)
-    while(!ClickCurtain())
+    
+    while(!ClickCurtain("p5"))
         sleep_random(500, 1500)
     sleep_random(500, 500)
 
@@ -433,10 +463,10 @@ ReloadLobsters() ;TODO randomize the times
     ClickNotedLobsters()
     sleep_random(7500,7500)
     LeftClickNPC()
-    sleep_random(2500,2500)
+    sleep_random(1500,1500)
     randNum := Random(300, 300)
     PressAndHoldKey("3", randNum)
-    sleep_random(1500,1500)
+    sleep_random(1500,1500 )
     zoom("out")
     PixelSearchAndClick(pixel_color.tile_pink, "p5", "left", "tile")
     sleep_random(8500, 8500)
@@ -450,7 +480,7 @@ ReloadLobsters() ;TODO randomize the times
     PixelSearchAndClick(pixel_color.tile_pink, "p5", "left", "tile_sw")
     sleep_random(3500, 3500)
 
-    while(!ClickCurtain())
+    while(!ClickCurtain("p4"))
         sleep_random(500, 1500)
     sleep_random(500, 500)
     
