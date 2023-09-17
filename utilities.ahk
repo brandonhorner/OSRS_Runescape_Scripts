@@ -609,9 +609,9 @@ CheckIfFullOnMoneyBags()
 {
     if ImageSearchAndClick(images.money_bag_full, "bag", "mouseover", "item") {
                                                                             ToolTip "Clicking the FULL money bag :')...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-        sleep_random(400, 1500)
+        sleep_random(400, 900)
         Click("Left")
-        sleep_random(500, 1500)
+        sleep_random(500, 900)
         return true
     }
     return false
@@ -905,8 +905,18 @@ PixelSearchAndClick(PixelColor, scanAreaInput:=0, click_type:=0, offset:=0, x1:=
 {
     menu_width := 140
     
-    scanArea := GetScanArea(scanAreaInput)
-    
+    if scanAreaInput != 0
+    {
+        scanArea := GetScanArea(scanAreaInput)
+    }
+    else
+    {
+        scanArea := {
+            x1: x1, y1: y1, 
+            x2: x2, y2: y2
+        }
+    }
+
     if WinActive(runelite_window)
     {
         ; delays should be randomized often
@@ -934,7 +944,17 @@ ImageSearchAndClick(ImageURL, scanAreaInput:=0, click_type:=0, offset:=0, x1:=0,
 {
     menu_width := 140
     
-    scanArea := GetScanArea(scanAreaInput)
+    if scanAreaInput != 0
+    {
+        scanArea := GetScanArea(scanAreaInput)
+    }
+    else
+    {
+        scanArea := {
+            x1: x1, y1: y1, 
+            x2: x2, y2: y2
+        }
+    }
     
     SplitPath ImageURL, &ImageName
     
@@ -1120,6 +1140,10 @@ GetOffset(offset_item)
 
         case "tile_sw":
             horizontal := Random(-50, 0)
+            vertical := Random(0, 50)
+
+        case "tile_se":
+            horizontal := Random(0, 50)
             vertical := Random(0, 50)
 
         case "south":
