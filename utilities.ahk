@@ -2,19 +2,19 @@
 global XTOOLTIP := 600
 global YTOOLTIP := 550
 
-setup_in()
-{
-    if WinActive(runelite_window)
-    {
-        ;zoom all the way out
-        zoom("in")
-        sleep_random(100, 200)
+; setup_in()
+; {
+;     if WinActive(runelite_window)
+;     {
+;         ;zoom all the way out
+;         zoom("in")
+;         sleep_random(100, 200)
         
-        ;Face North (click compass)
-        click_compass()
-        sleep_random(100, 200)
-    }
-}
+;         ;Face North (click compass)
+;         click_compass()
+;         sleep_random(100, 200)
+;     }
+; }
 
 setup_out()
 {
@@ -563,6 +563,78 @@ WaitForTick()
 {
     if WaitForPixel(pixel_color.tick, 1700, 121, 1701, 121)
         return true
+    return false
+}
+
+; click the first available lobster in your inventory
+EatLobster()
+{
+                                                                            ToolTip "Eating lobster...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
+    open_bag()
+    sleep_random(500, 1500)
+    if ImageSearchAndClick(images.lobster_cooked, "bag", "mouseover", "item") {
+        sleep_random(500, 1500)
+        Click("Left")
+        sleep_random(500, 1500)
+        return true
+    }
+                                                                            ToolTip "...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
+    return false
+}
+
+
+HealthIsLow()
+{
+    if ImageExists(images.healthbar, 1400, 820, 1700, 850)
+    {
+        return false
+    }
+                                                                            ToolTip "Health is low...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
+    return true
+}
+
+CheckIfStunned()
+{
+                                                                            ToolTip "Stunned. Waiting...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
+    if ImageSearchAndClick(images.imstunned, "top_left",,,,,,,5)
+    {
+        sleep_random(100, 100)
+        return true
+    }
+                                                                            ToolTip "", X_TOOLTIP.1, Y_TOOLTIP.1, 1
+    return false
+}
+
+CheckIfFullOnMoneyBags()
+{
+    if ImageSearchAndClick(images.money_bag_full, "bag", "mouseover", "item") {
+                                                                            ToolTip "Clicking the FULL money bag :')...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
+        sleep_random(400, 1500)
+        Click("Left")
+        sleep_random(500, 1500)
+        return true
+    }
+    return false
+}
+
+; 1 in 4 chance to click the money bag in your inventory
+ClickMoneyBag()
+{
+    lucky_number := Random(1,5)
+    if !(lucky_number = 4)
+        return false    
+    
+    SendKey(1)
+    if ImageExists(images.open_bag) {                                       ;ensure bag is open
+        sleep_random(10, 100)
+        if ImageSearchAndClick(images.money_bag, "bag", "mouseover", "item")
+                                                                            ToolTip "Clicking the money bag...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
+            sleep_random(500, 1500)
+            Click("Left")
+            sleep_random(500, 1500)
+            return true
+    }
+                                                                            ToolTip "", X_TOOLTIP.1, Y_TOOLTIP.1, 1
     return false
 }
 

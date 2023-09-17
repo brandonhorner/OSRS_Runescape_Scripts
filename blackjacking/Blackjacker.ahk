@@ -232,6 +232,20 @@ Main()
     }
 }
 
+setup_in()
+{
+    if WinActive(runelite_window)
+    {
+        ;zoom all the way out
+        zoom("in")
+        sleep_random(100, 200)
+        
+        ;Face North (click compass)
+        click_compass()
+        sleep_random(100, 200)
+    }
+}
+
 WaitForPickPocketAttempt()
 {
     if WaitForImage(images.pickpocket_attempt, 100, coord.chat_bottom)
@@ -246,96 +260,6 @@ CheckAndUpdateStatus(&knockout_failure, &pickpocket_failure)
         knockout_failure := true
     if ImageExists(images.pickpocket_failure, coord.chat_bottom_2.x1, coord.chat_bottom_2.y1, coord.chat_bottom_2.x2, coord.chat_bottom_2.y2,)
         pickpocket_failure := true
-}
-
-CheckIfStunned()
-{
-                                                                            ToolTip "Stunned. Waiting...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-    if ImageSearchAndClick(images.imstunned, "top_left",,,,,,,5)
-    {
-        sleep_random(10, 10)
-        return true
-    }
-                                                                            ToolTip "", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-    return false
-}
-
-CheckIfCombat()
-{
-                                                                            ToolTip "Stunned. Waiting...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-    if ImageSearchAndClick(images.cant_pickpocket_combat, "chat_bottom_2",,,,,,,5)
-    {
-        sleep_random(150, 300)
-        PixelSearchAndClick(pixel_color.tile_purple, "p5", "left")
-        sleep_random(6000,7500)
-        PixelSearchAndClick(pixel_color.npc, "p2", "right")
-        sleep_random(300, 500)
-        ClickKnockout()
-        sleep_random(425, 425)
-        ClickPickpocket()
-        return true
-    }
-                                                                            ToolTip "", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-    return false
-}
-
-HealthIsLow()
-{
-    if ImageExists(images.healthbar, 1400, 820, 1700, 850)
-    {
-        return false
-    }
-                                                                            ToolTip "Health is low...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-    return true
-}
-
-; click the first availableb lobster in your inventory
-EatLobster()
-{
-                                                                            ToolTip "Eating lobster...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-    open_bag()
-    sleep_random(500, 1500)
-    if ImageSearchAndClick(images.lobster_cooked, "bag", "mouseover", "item") {
-        sleep_random(500, 1500)
-        Click("Left")
-        sleep_random(500, 1500)
-        return true
-    }
-                                                                            ToolTip "...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-    return false
-}
-
-CheckIfFullOnMoneyBags()
-{
-    if ImageSearchAndClick(images.money_bag_full, "bag", "mouseover", "item") {
-                                                                            ToolTip "Clicking the FULL money bag :')...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-        sleep_random(400, 1500)
-        Click("Left")
-        sleep_random(500, 1500)
-        return true
-    }
-    return false
-}
-
-; 1 in 4 chance to click the money bag in your inventory
-ClickMoneyBag()
-{
-    lucky_number := Random(1,5)
-    if !(lucky_number = 4)
-        return false    
-    
-    SendKey(1)
-    if ImageExists(images.open_bag) {                                       ;ensure bag is open
-        sleep_random(10, 100)
-        if ImageSearchAndClick(images.money_bag, "bag", "mouseover", "item")
-                                                                            ToolTip "Clicking the money bag...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-            sleep_random(500, 1500)
-            Click("Left")
-            sleep_random(500, 1500)
-            return true
-    }
-                                                                            ToolTip "", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-    return false
 }
 
 ; at this point, the right click menu in the game is open, now we left click the knockout option
@@ -389,6 +313,25 @@ RightClickNPC()
                                                                             ToolTip("Right Clicking:`roffset x:" offset_x ", y:" offset_y "`rx:" click_area.x ", y:" click_area.y, X_TOOLTIP.3, Y_TOOLTIP.3, 3)
         return true
     }
+    return false
+}
+
+CheckIfCombat()
+{
+                                                                            ToolTip "Stunned. Waiting...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
+    if ImageSearchAndClick(images.cant_pickpocket_combat, "chat_bottom_2",,,,,,,5)
+    {
+        sleep_random(150, 300)
+        PixelSearchAndClick(pixel_color.tile_purple, "p5", "left")
+        sleep_random(6000,7500)
+        PixelSearchAndClick(pixel_color.npc, "p2", "right")
+        sleep_random(300, 500)
+        ClickKnockout()
+        sleep_random(425, 425)
+        ClickPickpocket()
+        return true
+    }
+                                                                            ToolTip "", X_TOOLTIP.1, Y_TOOLTIP.1, 1
     return false
 }
 
