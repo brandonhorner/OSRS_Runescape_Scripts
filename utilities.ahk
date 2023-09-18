@@ -1143,8 +1143,8 @@ GetOffset(offset_item)
             vertical := Random(0, 50)
 
         case "tile_se":
-            horizontal := Random(0, 50)
-            vertical := Random(0, 50)
+            horizontal := Random(20, 100)
+            vertical := Random(20, 100)
 
         case "south":
             horizontal := Random(0, 0)
