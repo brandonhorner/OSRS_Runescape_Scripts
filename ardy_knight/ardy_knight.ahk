@@ -35,18 +35,18 @@ F1::
 Main()
 {
     setup_in()
-    
+    noNPCtoRight := 0
     clickAttempts := 0
     fullMoneyBagOpens := 0
 
-    while(true)
+    while(noNPCtoRight < 10)
     {
         ; set the click location. each time we are full on money bags this will reset
         x := Random(1085, 1165)
         y := Random(480, 525)
         
         ; while we don't have full money bags, let's
-        while (!CheckIfFullOnMoneyBags())
+        while (!CheckIfFullOnMoneyBags() or noNPCtoRight < 10)
         {
             ; make sure menu is closed
             if(menu_is_open()) {
@@ -77,9 +77,10 @@ Main()
             LeftClickArdyKnight(x, y)
         }
         else
-        {
+        { 
             PixelSearchAndClick(pixel_color.tile_purple, "p2", "left", "tile_se")
-            sleep_random(5000, 7000)
+            sleep_random(4000, 8000)
+            noNPCtoRight++
         }
         clickAttempts++
         sleep_random(200,300)
