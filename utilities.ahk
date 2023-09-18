@@ -2,6 +2,134 @@
 global XTOOLTIP := 600
 global YTOOLTIP := 550
 
+CoordMode("Pixel", "Screen")
+CoordMode("Mouse", "Screen")
+
+SetWorkingDir A_MyDocuments "\AutoHotkey_Scripts\runescape"
+
+; these are image files used for image searching
+global images := {
+    menaphite_hovering_text : A_WorkingDir "\image_library\blackjacking\menaphite_hovering_text.png",
+    lobster_cooked : A_WorkingDir "\image_library\lobster_cooked.png",
+    lobster_cooked_noted : A_WorkingDir "\image_library\blackjacking\lobster_cooked_noted.png",
+    knockout_option : A_WorkingDir "\image_library\blackjacking\knockout_option.bmp",
+    knockout_success : A_WorkingDir "\image_library\blackjacking\knockout_success.bmp",
+    knockout_failure : A_WorkingDir "\image_library\blackjacking\knockout_failure.bmp",
+    pickpocket_option : A_WorkingDir "\image_library\blackjacking\pickpocket_option.bmp",
+    pickpocket_attempt : A_WorkingDir "\image_library\blackjacking\pickpocket_attempt.bmp",
+    pickpocket_success : A_WorkingDir "\image_library\blackjacking\pickpocket_success.bmp",
+    pickpocket_failure : A_WorkingDir "\image_library\blackjacking\pickpocket_failure.bmp",
+    cant_pickpocket_combat : A_WorkingDir "\image_library\blackjacking\cant_pickpocket_combat.png",
+    right_click_options : A_WorkingDir "\image_library\blackjacking\right_click_options.png",
+    cannot_knockout : A_WorkingDir "\image_library\blackjacking\cannot_do_that.bmp",
+    healthbar : A_WorkingDir "\image_library\blackjacking\healthbar.bmp",
+    stunned : A_WorkingDir "\image_library\blackjacking\stunned.bmp",
+    imstunned : A_WorkingDir "\image_library\blackjacking\imstunned.png",
+    missed_right_click : A_WorkingDir "\image_library\blackjacking\missed_right_click.bmp",
+    combat : A_WorkingDir "\image_library\blackjacking\combat.bmp",
+    money_bag : A_WorkingDir "\image_library\blackjacking\money_bag.png",
+    money_bag_full : A_WorkingDir "\image_library\blackjacking\money_bag_full.png",
+    open_bag : A_WorkingDir "\image_library\open_bag.bmp",
+    open_curtain_option : A_WorkingDir "\image_library\blackjacking\open_curtain.png",
+    close_curtain_option : A_WorkingDir "\image_library\blackjacking\close_curtain.png",
+    select_an_option : A_WorkingDir "\image_library\blackjacking\select_an_option.png",
+    stunned : A_WorkingDir "\image_library\been_stunned.bmp"
+}
+
+
+
+; some tooltip coords
+global X_TOOLTIP := {
+    1: 0,   ; <-| main functions
+    2: 0,   ; <-|
+    3: 0,   ; <-|
+    4: 980, ; <-|
+    
+    5: 0,  ; <-| image search / support functions
+    6: 0,  ; <-|
+    7: 0,  ; <-|
+    8: 0,  ; <-|
+    9: 0   ; <-|
+}
+
+global Y_TOOLTIP := {
+    1: 100, ; <-| main functions
+    2: 125, ; <-|
+    3: 150, ; <-|
+    4: 205, ; <-|
+
+    5: 205, ; <-| image search / support functions
+    6: 230, ; <-|
+    7: 285, ; <-|
+    8: 325, ; <-|
+    9: 375  ; <-|
+}
+
+
+gameWindowWidth := A_ScreenWidth - 20
+; object that holds all of the screen area coordinates
+global coord := {
+    chat_all:       { x1: 3, y1: 872, x2: 494, y2: 986 },
+    chat_bottom:    { x1: 3, y1: 969, x2: 494, y2: 986 },
+    chat_bottom_2:  { x1: 3, y1: 958, x2: 494, y2: 986 },
+    bag:        { x1:1385, y1:700, x2:1855, y2:1000 },
+    top_left:   { x1:0, y1:22, x2:200, y2:128 },
+    middle:     { x1:0, y1:200, x2:1650, y2:970 },
+    health:     { x1:1400, y1:820, x2:1700, y2:850 },
+    
+    ; Screen below is split up like this:
+    ;       p1       ;       p2       ;       p3      ;
+    ;       p1       ;       p2       ;       p3      ;
+    ;_______p1_______;_______p2_______;_______p3______;
+    ;       p4       ;       p5       ;       p6      ;
+    ;       p4       ;       p5       ;       p6      ;
+    ;       p4       ;       p5       ;       p6      ;
+    p1 : { x1:0, y1:20, x2:gameWindowWidth / 3, y2:A_ScreenHeight / 2 },
+    p2 : { x1:gameWindowWidth / 3, y1:20, x2:gameWindowWidth * 2 / 3, y2:A_ScreenHeight / 2 },
+    p3 : { x1:gameWindowWidth * 2 / 3, y1:20, x2:gameWindowWidth, y2:A_ScreenHeight / 2 },
+    p4 : { x1:0, y1:A_ScreenHeight / 2, x2:gameWindowWidth / 3, y2:A_ScreenHeight},
+    p5 : { x1:gameWindowWidth / 3, y1:A_ScreenHeight / 2, x2:gameWindowWidth * 2 / 3, y2:A_ScreenHeight},
+    p6 : { x1:gameWindowWidth * 2 / 3, y1:A_ScreenHeight / 2, x2:gameWindowWidth, y2:A_ScreenHeight}
+}
+
+/**
+ * coords to ensure an NPC's orientation
+ * add more vertices to these :o
+ */
+global target_coord := {
+    laying_left:    { x:745, y:330 },
+    laying_middle:  { x:890, y:225 },
+    laying_right:   { x:1030,y:380 },
+    laying_bottom:  { x:805, y:600 },
+    laying_left_2:    { x:824, y:330 },
+    laying_middle_2:  { x:965, y:225 },
+    laying_right_2:   { x:1105,y:375 },
+    laying_bottom_2:  { x:890, y:600 },
+    standing_top_left:      { x:805, y:240 },
+    standing_top_right:     { x:975, y:245 },
+    standing_bottom_left:   { x:805, y:600 },
+    standing_bottom_right:  { x:940, y:535 },
+    standing_top_left_2:        { x:885, y:245 },
+    standing_top_right_2:       { x:1055,y:245 },
+    standing_bottom_left_2:     { x:890, y:600 },
+    standing_bottom_right_2:    { x:1030,y:530 }
+}
+
+; these are the colors of outlines around NPCs and the tick on the compass
+global pixel_color := {
+    tile_teal : 0x00FAFF,
+    tile_purple : 0x6655FF,
+    tile_pink : 0xD769E8,
+    object_green: 0xAAFF00,
+    bag_background: 0x3E3529,
+    npc : 0xA4FF00,
+    npc_dark : 0x84CD00,
+    tick : 0x00DFDF,
+    tick_2 : 0x1580AD,
+    tick_3 : 0x01E0E1
+}
+
+; put this back after you look up how to override these
 ; setup_in()
 ; {
 ;     if WinActive(runelite_window)
@@ -15,6 +143,15 @@ global YTOOLTIP := 550
 ;         sleep_random(100, 200)
 ;     }
 ; }
+
+InventoryIsFull()
+{
+    ; if the bag backgroudn color is in the last space, then the bag is assumed not full.. 
+    ;  probs should make this more robust later
+    if PixelSearchAndClick(pixel_color.bag_background,,,, 1821, 967, 1829, 976)
+        return false
+    return true
+}
 
 setup_out()
 {
@@ -607,6 +744,7 @@ CheckIfStunned()
 
 CheckIfFullOnMoneyBags()
 {
+    SendKey("1")
     if ImageSearchAndClick(images.money_bag_full, "bag", "mouseover", "item") {
                                                                             ToolTip "Clicking the FULL money bag :')...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
         sleep_random(400, 900)
@@ -966,11 +1104,11 @@ ImageSearchAndClick(ImageURL, scanAreaInput:=0, click_type:=0, offset:=0, x1:=0,
         if (ImageSearch(&foundX, &foundY,
                         scanArea.x1, scanArea.y1,
                         scanArea.x2, scanArea.y2, 
-                        ("*" shade_variance " *TransBlack ") ImageURL) 
+                        "*" shade_variance " *TransBlack " ImageURL)
         or ImageSearch(&foundX, &foundY,
                         scanArea.x1, scanArea.y1,
                         scanArea.x2, scanArea.y2, 
-                        ("*" shade_variance " ") ImageURL))
+                        "*" shade_variance " " ImageURL))
         {
                                                                                           ToolTip "8. ImageSearchAndClick: Looking for:`n" ImageName " was found at: (" foundX ", " foundY ")", X_TOOLTIP.8, Y_TOOLTIP.8, 8
             ;depending on what type of image, the offset will be different
