@@ -29,14 +29,15 @@ global images := {
     combat : A_WorkingDir "\image_library\blackjacking\combat.bmp",
     money_bag : A_WorkingDir "\image_library\blackjacking\money_bag.png",
     money_bag_full : A_WorkingDir "\image_library\blackjacking\money_bag_full.png",
+    minimap_bank_icon : A_WorkingDir "\image_library\minimap_bank_icon.png",
     open_bag : A_WorkingDir "\image_library\open_bag.bmp",
+    minimap_cake_stall_icon : A_WorkingDir "\image_library\minimap_cake_stall_icon.png",
+    deposit_inventory : A_WorkingDir "\image_library\deposit_inventory.png",
     open_curtain_option : A_WorkingDir "\image_library\blackjacking\open_curtain.png",
     close_curtain_option : A_WorkingDir "\image_library\blackjacking\close_curtain.png",
     select_an_option : A_WorkingDir "\image_library\blackjacking\select_an_option.png",
     stunned : A_WorkingDir "\image_library\been_stunned.bmp"
 }
-
-
 
 ; some tooltip coords
 global X_TOOLTIP := {
@@ -78,12 +79,12 @@ global coord := {
     health:     { x1:1400, y1:820, x2:1700, y2:850 },
     
     ; Screen below is split up like this:
+    ;                ;                ;               ;
     ;       p1       ;       p2       ;       p3      ;
-    ;       p1       ;       p2       ;       p3      ;
-    ;_______p1_______;_______p2_______;_______p3______;
+    ;________________;________________;_______________;
+    ;                ;                ;               ;
     ;       p4       ;       p5       ;       p6      ;
-    ;       p4       ;       p5       ;       p6      ;
-    ;       p4       ;       p5       ;       p6      ;
+    ;                ;                ;               ;
     p1 : { x1:0, y1:20, x2:gameWindowWidth / 3, y2:A_ScreenHeight / 2 },
     p2 : { x1:gameWindowWidth / 3, y1:20, x2:gameWindowWidth * 2 / 3, y2:A_ScreenHeight / 2 },
     p3 : { x1:gameWindowWidth * 2 / 3, y1:20, x2:gameWindowWidth, y2:A_ScreenHeight / 2 },
@@ -139,16 +140,17 @@ global pixel_color := {
 ;         sleep_random(100, 200)
         
 ;         ;Face North (click compass)
-;         click_compass()
+;         ClickCompass()
 ;         sleep_random(100, 200)
 ;     }
 ; }
 
 InventoryIsFull()
 {
-    ; if the bag backgroudn color is in the last space, then the bag is assumed not full.. 
-    ;  probs should make this more robust later
-    if PixelSearchAndClick(pixel_color.bag_background,,,, 1821, 967, 1829, 976)
+    SendKey(1)
+    ; if the bag background color is in the last space, then the bag is assumed not full.. 
+    ;  probs should make this more robust later (count 28 non-blank slots)
+    if PixelSearchAndClick(pixel_color.bag_background,,,, 1821, 967, 1829, 976, 30)
         return false
     return true
 }
@@ -162,7 +164,7 @@ setup_out()
         sleep_random(100, 200)
         
         ;Face North (click compass)
-        click_compass()
+        ClickCompass()
         sleep_random(100, 200)
         
         ;move camera angle to above character
@@ -209,7 +211,7 @@ zoom(zoom_direction, zoom_level:=30)
     return
 }
 
-click_compass()
+ClickCompass()
 {
     xp_minimap_button := A_WorkingDir "\image_library\xp_minimap_button.bmp"
     shade_variation := 50
@@ -219,7 +221,7 @@ click_compass()
         y_offset := Random(-23, 0)
         x_offset += foundX
         y_offset += foundY
-        Click("left, " x_offset ", " y_offset)
+        ControlClick "x" x_offset " y" y_offset, runelite_window
         return true
     }
     else
@@ -541,7 +543,7 @@ SendKey(key, presses := 1){
     set_random_delays(45, 85)
 
     if (presses <= 1){
-        Send "{" key "}"
+        ControlSend "{" key "}"
         return
     }
     if (presses > 1){
@@ -911,7 +913,6 @@ WaitForImage(ImageURL, Timeout := 3000, coord_group := "None", shade_variance:=2
         if ImageExists(ImageURL, x1, y1, x2, y2, shade_variance) {
             return true
         }
-
         ; Sleep for a short period to not hog the CPU
         Sleep 10
     }
@@ -1270,9 +1271,7 @@ GetOffset(offset_item)
             horizontal := Random(5, 15)
             vertical := Random(5, 15)
         
-        ;"item" refers to an item in the bag, also works for fishing spot indicators
         case "tile":
-            ;item pictures are cut so that the"middle" of the image is the starting point
             horizontal := Random(-50, 50)
             vertical := Random(-50, 50)
 
@@ -1284,10 +1283,22 @@ GetOffset(offset_item)
             horizontal := Random(20, 100)
             vertical := Random(20, 100)
 
+        case "tile_se_reduced":
+            horizontal := Random(15, 40)
+            vertical := Random(15, 40)
+
         case "south":
             horizontal := Random(0, 0)
-            vertical := Random(0, 30)
-            
+            vertical := Random(10, 30)
+
+        case "southish":
+            horizontal := Random(-15, 15)
+            vertical := Random(20, 80)
+
+        case "minimap_icon":
+            horizontal := Random(0,5)
+            vertical := Random(0,5)
+
         ;default is no offset, can be used when searching but not clicking on an image
         default:
             horizontal := 0

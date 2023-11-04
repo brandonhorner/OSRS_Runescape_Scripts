@@ -28,6 +28,7 @@ F1::
         Main()
 }
 
+
 +F1::Reload()
 
 ^F2::ExitApp()
@@ -54,24 +55,25 @@ Main()
                 continue
         }
         
-        ;1. Preliminaries ----------------------
+        ; then complete preliminaries ----------------------
         if CheckIfStunned()
-            continue                                                        ; check if we are stunned, wait it out if we are
+            continue                                                       ; check if we are stunned, wait it out if we are
         
-        if HealthIsLow() {                                                   ; check if health is low
+        if HealthIsLow() {                                                 ; check if health is low
 
             ClickMoneyBag()
 
             if !EatLobster() {                                             ; try to eat a lobster if it is
 
-                ReloadFood()                                                 ; pause for player to reload inventory if you're out of lobbies
+                ReloadFood()                                               ; pause for player to reload inventory if you're out of lobbies
             }
         }
         ; -------------------------------------
-
+        ; obligitory sleep command seemed nice, might delete later
         WaitForTick()
         sleep_random(300,500)
-        ; Wait for the next tick, then left click the ardy night.. then wait some more.
+
+        ; wait for the next tick, then left click the ardy knight.. then wait some more.
         if EnemyToRight()
         {
             LeftClickArdyKnight(x, y)
@@ -82,6 +84,7 @@ Main()
             sleep_random(4000, 8000)
             noNPCtoRight++
         }
+
         clickAttempts++
         sleep_random(200,300)
         WaitForTick()

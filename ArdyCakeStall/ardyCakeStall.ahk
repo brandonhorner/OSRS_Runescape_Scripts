@@ -21,6 +21,18 @@ global runelite_window := "RuneLite - Bradensky"
 CoordMode("Pixel", "Screen")
 CoordMode("Mouse", "Screen")
 
+F3::
+{
+    if PixelSearchAndClick(pixel_color.tile_pink, "p2", "mouseover", "south") or PixelSearchAndClick(pixel_color.tile_pink, "p3", "mouseover", "south")
+    {
+        Click
+        ToolTip "Made it", 5, 5, 1
+    }
+    else{
+        ToolTip "No", 5, 5, 1
+    }    
+    return
+}
 
 F1::
 {
@@ -34,10 +46,10 @@ F1::
 
 Main()
 {
-    setup_in()
-    
+    SetupZoomIn()
+    sleep_random(500,1000)
     clickAttempts := 0
-
+    runs := 0
     while(true)
     {
         ; set the click location. each time we are full on money bags this will reset
@@ -45,7 +57,7 @@ Main()
         y := Random(462, 626)
         
         ; while we don't have full money bags, let's
-        while (true)
+        while (runs < 10)
         {
             ; make sure menu is closed
             if(menu_is_open()) {
@@ -54,22 +66,16 @@ Main()
         }
         
         ;1. Preliminaries ----------------------
-        if CheckIfStunned()
-            continue                                                        ; check if we are stunned, wait it out if we are
-        
-        if HealthIsLow() {                                                   ; check if health is low
-
-            ClickMoneyBag()
-
-            if !EatLobster() {                                             ; try to eat a lobster if it is
-
-                ReloadFood()                                                 ; pause for player to reload inventory if you're out of lobbies
-            }
+        if HealthIsLow() or InventoryIsFull(){                                                   ; check if health is low
+            runs++
+            BankItems()
+            ReturnToStall()
+            SetupZoomIn()
+            sleep_random(500,1000)
         }
         ; -------------------------------------
+        sleep_random(350, 450)
 
-        WaitForTick()
-        sleep_random(300,500)
         ; Wait for the next tick, then left click the ardy night.. then wait some more.
         if StallToLeft()
         {
@@ -77,30 +83,90 @@ Main()
         }
         else
         {
-            sleep_random(300, 800)
+            sleep_random(200, 700)
         }
         clickAttempts++
-        sleep_random(200,300)
-        WaitForTick()
 
-        ToolTip "Counter:`nClicks attempted:" clickAttempts, X_TOOLTIP.9, Y_TOOLTIP.9, 9
+        ToolTip "Counter:`nClicks attempted:" clickAttempts "`nRuns: " runs, X_TOOLTIP.9, Y_TOOLTIP.9, 9
         ; wait for the final message for double pickpocket (or 2 ticks)   
         }
 
     }
+    return
 }
 
+BankItems()
+{
+    ClickMiniMap("bank_from_cake_stall")
+    ToolTip "Sleeping 30s" 500, 200, 8
+    sleep_random(33000, 37000)
+    ToolTip "" 500, 200, 8
+
+    zoom("out", 5)
+    sleep_random(250, 450)
+    
+    DepositBoxOpen(0)
+    sleep_random(1500, 3000)
+
+    QuickDepositAll()
+    sleep_random(500, 1000)
+
+    return true
+}
+
+DepositBoxOpen(index)
+{
+    ; click the deposit box
+    if PixelSearchAndClick(pixel_color.npc, "p4", "mouseover", "southish") or PixelSearchAndClick(pixel_color.npc, "p5", "mouseover", "southish") or PixelSearchAndClick(pixel_color.npc, "p6", "mouseover", "southish")
+    {
+        Click
+        if WaitForImage(images.deposit_inventory) 
+            return true
+    }
+    else
+    {
+        zoom("out", 2)
+        sleep_random(300, 500)
+        if(index < 5)
+            DepositBoxOpen(index)
+        else
+            return false
+    }
+}
+
+QuickDepositAll()
+{
+    ; click the deposit inventory button
+    if ImageSearchAndClick(images.deposit_inventory, "p5", "left", "item")
+        return true
+    return false
+}
+
+ClickMiniMap(minimap_icon_img_path)
+{
+    switch minimap_icon_img_path {
+        case "cake_stall":
+            x := Random(1820, 1826) 
+            y := Random(50, 52)
+
+        case "bank_from_cake_stall":
+            x := Random(1767, 1774)
+            y := Random(155, 165)
+    }
+
+    Click(x,y)
+}
 
 StallToLeft()
 {   ;1115, 410, 1230, 575
-    if (PixelSearchAndClick(pixel_color.npc,,,, 426, 231, 763, 667, 30))
+    if (PixelSearchAndClick(pixel_color.npc, "p5",,, 426, 231, 763, 667, 30))
     {
         return true
     }
     return false
 }
 
-setup_in()
+SetupZoomIn()
 {
     if WinActive(runelite_window)
     {
@@ -113,6 +179,22 @@ setup_in()
         sleep_random(800, 1200)
         Send("{W up}")
     }
+}
+
+ReturnToStall()
+{
+    ClickMiniMap("cake_stall")
+    
+    zoom("in")
+    zoom("out", 10)
+
+    ToolTip "Sleeping 30s" 500, 200, 8
+    sleep_random(33000, 37000)
+    ToolTip "" 500, 200, 8
+
+    if PixelSearchAndClick(pixel_color.tile_pink, "p2", "mouseover", "tile_se_reduced") or PixelSearchAndClick(pixel_color.tile_pink, "p3", "mouseover", "tile_se_reduced")
+        Click
+    sleep_random(6000, 9000)
 }
 
 ReloadFood()
