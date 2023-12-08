@@ -250,7 +250,7 @@ open_bag()
     return false
 }
 
-; returns true if menu is open, false otherwise
+; if menu is open, create a msg box to close the menu, false otherwise
 menu_is_open()
 {
     menu_bg_color := 0x282828

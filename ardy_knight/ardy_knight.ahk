@@ -11,7 +11,8 @@
 ; (You can still split your friend chat)
 
 #SingleInstance Force
-#Include ..\utilities.ahk
+;#Include ..\utilities.ahk
+#Include ..\utilities_controlclick.ahk
 
 SetWorkingDir A_MyDocuments "\AutoHotkey_Scripts\runescape"
 
@@ -35,7 +36,7 @@ F1::
 
 Main()
 {
-    setup_in()
+    SetupZoomIn()
     noNPCtoRight := 0
     clickAttempts := 0
     fullMoneyBagOpens := 0
@@ -71,7 +72,7 @@ Main()
         ; -------------------------------------
         ; obligitory sleep command seemed nice, might delete later
         WaitForTick()
-        sleep_random(300,500)
+        SleepRandom(300,500)
 
         ; wait for the next tick, then left click the ardy knight.. then wait some more.
         if EnemyToRight()
@@ -81,12 +82,12 @@ Main()
         else
         { 
             PixelSearchAndClick(pixel_color.tile_purple, "p2", "left", "tile_se")
-            sleep_random(4000, 8000)
+            SleepRandom(4000, 8000)
             noNPCtoRight++
         }
 
         clickAttempts++
-        sleep_random(200,300)
+        SleepRandom(200,300)
         WaitForTick()
 
         totalMoneyBags := fullMoneyBagOpens * 28
@@ -100,25 +101,25 @@ Main()
 
 EnemyToRight()
 {   ;1115, 410, 1230, 575
-    if (PixelSearchAndClick(pixel_color.npc,,,,1115, 410, 1230, 575, 30))
+    if ( PixelSearchAndClick(pixel_color.npc,,,,1115, 410, 1230, 575, 30))
     {
         return true
     }
     return false
 }
 
-setup_in()
+SetupZoomIn()
 {
     if WinActive(runelite_window)
     {
         ;zoom all the way out
         zoom("in")
-        sleep_random(100, 200)
-        Send("{W down}")
+        SleepRandom(100, 200)
+        ControlSend "{W Down}",, runelite_window
         ;Face North (click compass)
         click_compass()
-        sleep_random(1000, 1000)
-        Send("{W up}")
+        SleepRandom(1000, 1000)
+        ControlSend "{W up}",, runelite_window
 
     }
 }
@@ -131,5 +132,5 @@ ReloadFood()
 /*Assumes you will be replacing your left click option with pickpocket*/
 LeftClickArdyKnight(x, y)
 {
-    Click x, y, "Left"
+    ControlClick "x" x " y" y, runelite_window,, "Left"
 }
