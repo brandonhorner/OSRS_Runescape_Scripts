@@ -5,7 +5,7 @@ global YTOOLTIP := 550
 CoordMode("Pixel", "Screen")
 CoordMode("Mouse", "Screen")
 
-SetWorkingDir A_MyDocuments "\AutoHotkey_Scripts\runescape"
+SetWorkingDir "C:\Git\OSRS_Runescape_Scripts"
 
 ; these are image files used for image searching
 global images := {
@@ -33,7 +33,8 @@ global images := {
     open_curtain_option : A_WorkingDir "\image_library\blackjacking\open_curtain.png",
     close_curtain_option : A_WorkingDir "\image_library\blackjacking\close_curtain.png",
     select_an_option : A_WorkingDir "\image_library\blackjacking\select_an_option.png",
-    stunned : A_WorkingDir "\image_library\been_stunned.bmp"
+    stunned : A_WorkingDir "\image_library\been_stunned.bmp",
+    xp_minimap_button : A_WorkingDir "\image_library\xp_minimap_button.png"
 }
 
 
@@ -124,9 +125,9 @@ global pixel_color := {
     bag_background: 0x3E3529,
     npc : 0xA4FF00,
     npc_dark : 0x84CD00,
-    tick : 0x00DFDF,
+    tick : 0x00908D,
     tick_2 : 0x1580AD,
-    tick_3 : 0x01E0E1
+    tick_3 : 0x01E0E11
 }
 
 ; put this back after you look up how to override these
@@ -146,7 +147,7 @@ global pixel_color := {
 
 InventoryIsFull()
 {
-    ; if the bag backgroudn color is in the last space, then the bag is assumed not full.. 
+    ; if the bag background color is in the last space, then the bag is assumed not full.. 
     ;  probs should make this more robust later
     if PixelSearchAndClick(pixel_color.bag_background,,,, 1821, 967, 1829, 976)
         return false
@@ -211,9 +212,10 @@ zoom(zoom_direction, zoom_level:=30)
 
 click_compass()
 {
-    xp_minimap_button := A_WorkingDir "\image_library\xp_minimap_button.bmp"
     shade_variation := 50
-    if ImageSearch(&foundX, &foundY, 0, 0, A_ScreenWidth, A_ScreenHeight, "*" shade_variation " " xp_minimap_button)
+    options := "*" shade_variation " " images.xp_minimap_button
+    
+    if ImageSearch(&foundX, &foundY, 0, 0, A_ScreenWidth, A_ScreenHeight, options)
     {
         x_offset := Random(30, 60)
         y_offset := Random(-23, 0)
@@ -224,7 +226,7 @@ click_compass()
     }
     else
     {
-        ToolTip("Could not conduct the search`rsearch area: 0x0 and " A_ScreenWidth "x" A_ScreenHeight "`rimage = " xp_minimap_button, 100, 500, 20)
+        ToolTip("Could not conduct the search`rsearch area: 0x0 and " A_ScreenWidth "x" A_ScreenHeight "`rimage = " images.xp_minimap_button, 100, 500, 20)
         return false
 
     }
@@ -473,6 +475,7 @@ image_search_and_click(ImageURL, scan_area:=0, click_type:=0, offset:=0, x1:=0, 
 ;   but want to click something in an area nearby it.
 pixel_search_and_click(x1, y1, x2, y2, pixel_color, modifier:=0, offset_x:=0, offset_y:=0, shade_variance := 50)
 {
+    ;MsgBox("pixel_search_and_click: " x1 " " y1 " " x2 " " y2 " " pixel_color " " modifier " " offset_x " " offset_y " " shade_variance)
     if WinActive(runelite_window)
     {
         ;delaySpeed := Random(20, 80)
@@ -669,10 +672,11 @@ Retry:
     return false
 }
 
-
+; weird things happen when you pass a hexadecimal color two times, so maybe don't use this function lol
 WaitForPixel(color, x1, y1, x2, y2)
 {
-    ; try 10k times lol (3.6GHz baby)
+    ; MsgBox("WaitForPixel: " color " " x1 " " y1 " " x2 " " y2)  
+    ; try 10k times lol (3.6GHz baby)!
     while (A_Index < 10000) {
         if (pixel_search_and_click(x1, y1, x2, y2, color)){
             return true
@@ -683,24 +687,28 @@ WaitForPixel(color, x1, y1, x2, y2)
     return true
 }
 
+WaitForTick()
+{
+    while (A_Index < 10000 )
+    {   ;1700, 119, 1704, 123
+        if (pixel_search_and_click(1700, 119, 1706, 123, pixel_color.tick)) {
+            return true
+        }
+                                                                                ToolTip("5. WaitForTick(): " A_Index " tries. Can't find the color...", X_TOOLTIP.5, Y_TOOLTIP.5, 5)
+    }
+    return false
+}
+
 ; Check to see if the mini map button is in the normal position
 MenuIsOpen()
 {
-    xp_minimap_button := A_WorkingDir "\image_library\xp_minimap_button.png"
     StartTime := A_TickCount
     ; Keep checking until timeout have passed
     while (A_TickCount - StartTime) < 50 {
-        if(ImageExists(xp_minimap_button, 1665, 56, 1695, 81))
+        if(ImageExists(images.xp_minimap_button, 1665, 56, 1695, 81))
             return false
     }
     return true
-}
-
-WaitForTick()
-{
-    if WaitForPixel(pixel_color.tick, 1700, 121, 1701, 121)
-        return true
-    return false
 }
 
 ; click the first available lobster in your inventory
