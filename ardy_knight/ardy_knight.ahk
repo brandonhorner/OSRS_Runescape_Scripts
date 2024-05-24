@@ -11,10 +11,9 @@
 ; (You can still split your friend chat)
 
 #SingleInstance Force
-;#Include ..\utilities.ahk
-#Include ..\utilities_controlclick.ahk
+#Include ..\utilities.ahk
 
-SetWorkingDir A_MyDocuments "\AutoHotkey_Scripts\runescape"
+SetWorkingDir "C:\Git\OSRS_Runescape_Scripts\ardy_knight"
 
 ; this is the name of the window, if the script isn't working it's because you need to change this to your name.
 global runelite_window := "RuneLite - BinaryBilly"
@@ -29,97 +28,102 @@ F1::
         Main()
 }
 
-
 +F1::Reload()
 
 ^F2::ExitApp()
 
 Main()
 {
-    SetupZoomIn()
+    setup_in()
     noNPCtoRight := 0
     clickAttempts := 0
-    fullMoneyBagOpens := 0
+    fullMoneyBagsOpened := 0
+    totalMoneyBags := 0
 
-    while(noNPCtoRight < 10)
+    while(noNPCtoRight < 150)
     {
         ; set the click location. each time we are full on money bags this will reset
-        x := Random(1085, 1165)
-        y := Random(480, 525)
+        x := Random(1105, 1185)
+        y := Random(485, 545)
         
         ; while we don't have full money bags, let's
-        while (!CheckIfFullOnMoneyBags() or noNPCtoRight < 10)
+        while (noNPCtoRight < 150)
         {
             ; make sure menu is closed
             if(menu_is_open()) {
                 MsgBox "Close the menu in Runelite to continue."
                 continue
-        }
-        
-        ; then complete preliminaries ----------------------
-        if CheckIfStunned()
-            continue                                                       ; check if we are stunned, wait it out if we are
-        
-        if HealthIsLow() {                                                 ; check if health is low
+            }
+            
+            ;1. Preliminaries ----------------------
+            ; if CheckIfStunned()
+            ;     continue                                                        ; check if we are stunned, wait it out if we are
+            
+            ; if HealthIsLow() {                                                   ; check if health is low
 
-            ClickMoneyBag()
+            ;     ClickMoneyBag()
 
-            if !EatLobster() {                                             ; try to eat a lobster if it is
+            ;     if !EatLobster() {                                             ; try to eat a lobster if it is
 
-                ReloadFood()                                               ; pause for player to reload inventory if you're out of lobbies
+            ;         ReloadFood()                                                 ; pause for player to reload inventory if you're out of lobbies
+            ;     }
+            ; }
+            ; ; -------------------------------------
+            WaitForTick()
+            
+            ;2. Main Loop --------------------------
+            ; Wait for the next tick, then left click the ardy night.. then wait some more.
+            if EnemyToRight()
+            {
+                LeftClickArdyKnight(x, y)
+            }
+            else
+            { 
+                PixelSearchAndClick(pixel_color.tile_purple, "p2", "left", "tile_se")
+                sleep_random(800, 5000)
+                noNPCtoRight++
+            }
+
+            clickAttempts++
+            ToolTip "Counter:`nSingle pickpocket (clicks attempted, not pickpockets): " clickAttempts "`nComplete stacks of money bags: " fullMoneyBagsOpened " (" totalMoneyBags " total)`nNPC wasn't to the right " noNPCtoRight " times.", X_TOOLTIP.9, Y_TOOLTIP.9, 9
+            
+            WaitForTick()
+
+            if (CheckIfFullOnMoneyBags())
+            {
+                fullMoneyBagsOpened++
+                totalMoneyBags := fullMoneyBagsOpened * 28
+                break
             }
         }
-        ; -------------------------------------
-        ; obligitory sleep command seemed nice, might delete later
-        WaitForTick()
-        SleepRandom(300,500)
-
-        ; wait for the next tick, then left click the ardy knight.. then wait some more.
-        if EnemyToRight()
-        {
-            LeftClickArdyKnight(x, y)
-        }
-        else
-        { 
-            PixelSearchAndClick(pixel_color.tile_purple, "p2", "left", "tile_se")
-            SleepRandom(4000, 8000)
-            noNPCtoRight++
-        }
-
-        clickAttempts++
-        SleepRandom(200,300)
-        WaitForTick()
-
-        totalMoneyBags := fullMoneyBagOpens * 28
-        ToolTip "Counter:`nSingle pickpocket (clicks attempted, not pickpockets): " clickAttempts "`nComplete 28 stacks of money bags: " fullMoneyBagOpens "`nThat makes " totalMoneyBags " total money bags", X_TOOLTIP.9, Y_TOOLTIP.9, 9
-        ; wait for the final message for double pickpocket (or 2 ticks)   
-        }
-
-        fullMoneyBagOpens++
     }
 }
 
 EnemyToRight()
 {   ;1115, 410, 1230, 575
-    if ( PixelSearchAndClick(pixel_color.npc,,,,1115, 410, 1230, 575, 30))
+    loop(3)
     {
-        return true
+        if (PixelSearchAndClick(pixel_color.npc,,,,1115, 410, 1230, 575, 30))
+            {
+                return true
+            }
+            sleep_random(200, 500)    
     }
     return false
 }
 
-SetupZoomIn()
+setup_in()
 {
     if WinActive(runelite_window)
     {
         ;zoom all the way out
         zoom("in")
-        SleepRandom(100, 200)
-        ControlSend "{W Down}",, runelite_window
+        sleep_random(100, 200)
+        Send("{W down}")
         ;Face North (click compass)
         click_compass()
-        SleepRandom(1000, 1000)
-        ControlSend "{W up}",, runelite_window
+        sleep_random(2000, 2000)
+        Send("{W up}")
 
     }
 }
@@ -132,5 +136,7 @@ ReloadFood()
 /*Assumes you will be replacing your left click option with pickpocket*/
 LeftClickArdyKnight(x, y)
 {
-    ControlClick "x" x " y" y, runelite_window,, "Left"
+    MouseMove(x, y)
+    sleep_random(120, 210)
+    Click
 }
