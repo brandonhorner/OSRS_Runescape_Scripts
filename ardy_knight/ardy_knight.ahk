@@ -70,8 +70,8 @@ Main()
             ; }
             ; ; -------------------------------------
             WaitForTick()
-            sleep_random(300,500)
-
+            
+            ;2. Main Loop --------------------------
             ; Wait for the next tick, then left click the ardy night.. then wait some more.
             if EnemyToRight()
             {
@@ -87,7 +87,6 @@ Main()
             clickAttempts++
             ToolTip "Counter:`nSingle pickpocket (clicks attempted, not pickpockets): " clickAttempts "`nComplete stacks of money bags: " fullMoneyBagsOpened " (" totalMoneyBags " total)`nNPC wasn't to the right " noNPCtoRight " times.", X_TOOLTIP.9, Y_TOOLTIP.9, 9
             
-            sleep_random(200,300)
             WaitForTick()
 
             if (CheckIfFullOnMoneyBags())
@@ -96,16 +95,19 @@ Main()
                 totalMoneyBags := fullMoneyBagsOpened * 28
                 break
             }
-
         }
     }
 }
 
 EnemyToRight()
 {   ;1115, 410, 1230, 575
-    if (PixelSearchAndClick(pixel_color.npc,,,,1115, 410, 1230, 575, 30))
+    loop(3)
     {
-        return true
+        if (PixelSearchAndClick(pixel_color.npc,,,,1115, 410, 1230, 575, 30))
+            {
+                return true
+            }
+            sleep_random(200, 500)    
     }
     return false
 }
@@ -120,7 +122,7 @@ setup_in()
         Send("{W down}")
         ;Face North (click compass)
         click_compass()
-        sleep_random(1000, 1000)
+        sleep_random(2000, 2000)
         Send("{W up}")
 
     }
