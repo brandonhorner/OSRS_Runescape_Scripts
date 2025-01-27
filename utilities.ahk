@@ -37,7 +37,9 @@ global images := {
     close_curtain_option : A_WorkingDir "\image_library\blackjacking\close_curtain.png",
     select_an_option : A_WorkingDir "\image_library\blackjacking\select_an_option.png",
     stunned : A_WorkingDir "\image_library\been_stunned.bmp",
-    xp_minimap_button : A_WorkingDir "\image_library\xp_minimap_button.png"
+    xp_minimap_button : A_WorkingDir "\image_library\xp_minimap_button.png",
+    inspect_trawler_net : A_WorkingDir "\image_library\fishing_trawler\inspect_trawler_net.png",
+    bank_all_trawler_net : A_WorkingDir "\image_library\fishing_trawler\bank_all_trawler_net.png"
 }
 
 ; some tooltip coords
@@ -122,6 +124,7 @@ global pixel_color := {
     tile_teal : 0x00FAFF,
     tile_purple : 0x6655FF,
     tile_pink : 0xD769E8,
+    tile_red : 0xFF0000,
     object_green: 0xAAFF00,
     bag_background: 0x3E3529,
     npc : 0xA4FF00,
@@ -148,16 +151,13 @@ global pixel_color := {
 
 InventoryIsFull()
 {
-<<<<<<< HEAD
     ; if the bag background color is in the last space, then the bag is assumed not full.. 
     ;  probs should make this more robust later
     if PixelSearchAndClick(pixel_color.bag_background,,,, 1821, 967, 1829, 976)
-=======
     SendKey(1)
     ; if the bag background color is in the last space, then the bag is assumed not full.. 
     ;  probs should make this more robust later (count 28 non-blank slots)
     if PixelSearchAndClick(pixel_color.bag_background,,,, 1821, 967, 1829, 976, 30)
->>>>>>> c09d5f2b244d69719fe48c1eafc9ff1c49a98648
         return false
     return true
 }
@@ -217,7 +217,11 @@ zoom(zoom_direction, zoom_level:=30)
     }
     return
 }
-
+/*
+ChangeResolution(width, height) {
+    RunWait(qres_path . " /x " . width . " /y " . height)
+}
+*/
 ClickCompass()
 {
     shade_variation := 50
@@ -718,7 +722,7 @@ MenuIsOpen()
     }
     return true
 }
-
+/*
 ; click the first available lobster in your inventory
 EatLobster()
 {
@@ -791,7 +795,7 @@ ClickMoneyBag()
                                                                             ToolTip "", X_TOOLTIP.1, Y_TOOLTIP.1, 1
     return false
 }
-
+*/
 ; target is outlined with a solid line, this function checks for a pixel at 4 points around the outline
 ;   if 3 out of 4 points are found, we are going to return true, there is only one cardinal
 ;   direction that can produce these 3 points, so we know they standing up facing us
@@ -1312,6 +1316,10 @@ GetOffset(offset_item)
         case "minimap_icon":
             horizontal := Random(0,5)
             vertical := Random(0,5)
+
+        case "trawler_net":
+            horizontal := Random(50, 250)
+            vertical := Random(50, 250)
             
         ;default is no offset, can be used when searching but not clicking on an image
         default:

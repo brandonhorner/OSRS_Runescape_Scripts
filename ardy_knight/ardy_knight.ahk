@@ -18,6 +18,9 @@ SetWorkingDir "C:\Git\OSRS_Runescape_Scripts\ardy_knight"
 ; this is the name of the window, if the script isn't working it's because you need to change this to your name.
 global runelite_window := "RuneLite - BinaryBilly"
 
+; this is the path to the QRes executable, if you don't have it, you can download it from here: https://sourceforge.net/projects/qres/
+global qres_path := "C:\Tools\QRes\QRes.exe"
+
 CoordMode("Pixel", "Screen")
 CoordMode("Mouse", "Screen")
 
@@ -28,7 +31,21 @@ F1::
         Main()
 }
 
-+F1::Reload()
++F1::
+{
+    ; Switch to 2560x1440 resolution
+    ChangeResolution(2560, 1440)
+    sleep_random(300, 500)
+    Reload()
+
+}
+
+F2::
+{
+    ; Switch to 2560x1440 resolution
+    ChangeResolution(2560, 1440)
+    sleep_random(300, 500)
+}
 
 ^F2::ExitApp()
 
@@ -37,6 +54,7 @@ Main()
     setup_in()
     noNPCtoRight := 0
     clickAttempts := 0
+    totalMoneyMade := 0
     fullMoneyBagsOpened := 0
     totalMoneyBags := 0
 
@@ -85,13 +103,14 @@ Main()
             }
 
             clickAttempts++
-            ToolTip "Counter:`nSingle pickpocket (clicks attempted, not pickpockets): " clickAttempts "`nComplete stacks of money bags: " fullMoneyBagsOpened " (" totalMoneyBags " total)`nNPC wasn't to the right " noNPCtoRight " times.", X_TOOLTIP.9, Y_TOOLTIP.9, 9
+            ToolTip "Counter:`nSingle pickpocket (clicks attempted, not pickpockets): " clickAttempts "`nComplete stacks of money bags: " fullMoneyBagsOpened " (" totalMoneyBags " total)`nNPC wasn't to the right " noNPCtoRight " times.`nYou made " totalMoneyMade " gold this run.", X_TOOLTIP.9, Y_TOOLTIP.9, 9
             
             WaitForTick()
 
             if (CheckIfFullOnMoneyBags())
             {
                 fullMoneyBagsOpened++
+                totalMoneyMade := fullMoneyBagsOpened * 28 * 100
                 totalMoneyBags := fullMoneyBagsOpened * 28
                 break
             }
@@ -116,12 +135,16 @@ setup_in()
 {
     if WinActive(runelite_window)
     {
+        ; Switch to 1920x1080 resolution
+        ChangeResolution(1920, 1080)
+        sleep_random(300, 500)
+
         ;zoom all the way out
         zoom("in")
         sleep_random(100, 200)
         Send("{W down}")
         ;Face North (click compass)
-        click_compass()
+        ClickCompass()
         sleep_random(2000, 2000)
         Send("{W up}")
 
