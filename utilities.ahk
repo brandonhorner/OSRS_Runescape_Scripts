@@ -39,7 +39,13 @@ global images := {
     stunned : A_WorkingDir "\image_library\been_stunned.bmp",
     xp_minimap_button : A_WorkingDir "\image_library\xp_minimap_button.png",
     inspect_trawler_net : A_WorkingDir "\image_library\fishing_trawler\inspect_trawler_net.png",
-    bank_all_trawler_net : A_WorkingDir "\image_library\fishing_trawler\bank_all_trawler_net.png"
+    bank_all_trawler_net : A_WorkingDir "\image_library\fishing_trawler\bank_all_trawler_net.png",
+    cross_gangplank : A_WorkingDir "\image_library\fishing_trawler\cross_gangplank.png",
+    you_sail_out_to_see_text : A_WorkingDir "\image_library\fishing_trawler\you_sail_out_to_see_text.png",
+    climb_ship_ladder : A_WorkingDir "\image_library\fishing_trawler\climb_ship_ladder.png",
+    you_sail_back_to_port_khazard : A_WorkingDir "\image_library\fishing_trawler\you_sail_back_to_port_khazard.png",
+    no_trawler_loot : A_WorkingDir "\image_library\fishing_trawler\no_trawler_loot.png",
+    chop_tentacle : A_WorkingDir "\image_library\fishing_trawler\chop_tentacle.png",
 }
 
 ; some tooltip coords
@@ -93,7 +99,14 @@ global coord := {
     p3 : { x1:gameWindowWidth * 2 / 3, y1:20, x2:gameWindowWidth, y2:A_ScreenHeight / 2 },
     p4 : { x1:0, y1:A_ScreenHeight / 2, x2:gameWindowWidth / 3, y2:A_ScreenHeight},
     p5 : { x1:gameWindowWidth / 3, y1:A_ScreenHeight / 2, x2:gameWindowWidth * 2 / 3, y2:A_ScreenHeight},
-    p6 : { x1:gameWindowWidth * 2 / 3, y1:A_ScreenHeight / 2, x2:gameWindowWidth, y2:A_ScreenHeight}
+    p6 : { x1:gameWindowWidth * 2 / 3, y1:A_ScreenHeight / 2, x2:gameWindowWidth, y2:A_ScreenHeight},
+    ;v1 is p1 + p4 (vertical section 1) of the screen (one of three)
+    v1 : { x1:0, y1:20, x2:gameWindowWidth / 3, y2:A_ScreenHeight},
+    v2 : { x1:gameWindowWidth / 3, y1:20, x2:gameWindowWidth * 2 / 3, y2:A_ScreenHeight},
+    v3 : { x1:gameWindowWidth * 2 / 3, y1:20, x2:gameWindowWidth, y2:A_ScreenHeight},
+    ;h1 is p1 + p2 + p3 (horizontal section 1) of the screen (one of two)
+    h1 : { x1:0, y1:20, x2:gameWindowWidth, y2:A_ScreenHeight / 2},
+    h2 : { x1:0, y1:A_ScreenHeight / 2, x2:gameWindowWidth, y2:A_ScreenHeight},
 }
 
 /**
@@ -168,7 +181,6 @@ setup_out()
     {
         ;zoom all the way out
         zoom("out")
-        sleep_random(100, 200)
         
         ;Face North (click compass)
         ClickCompass()
@@ -176,7 +188,7 @@ setup_out()
         
         ;move camera angle to above character
         Send("{up down}")
-        sleep_random(1300, 5000)
+        sleep_random(1300, 2200)
         Send("{up up}")
         return
     }
@@ -195,6 +207,9 @@ move_mouse_center()
 }
 
 ;zooms the camera out to max by default
+;  zoom_direction: "in" or "out"
+;  zoom_level: how many times to zoom in or out
+;   6 moderate zoom, maybe a total of 15 zooms in or out
 zoom(zoom_direction, zoom_level:=30)
 {
     move_mouse_center()
@@ -1279,9 +1294,9 @@ GetOffset(offset_item)
         ;"option_short" refers to when the right click menu is half sized from the usual
         case "option_short":
             ;we want to move mouse horizontally to click more in the center of the image
-            horizontal := Random(-1, 100) ;30
+            horizontal := Random(1, 100) ;30
             ;we want to move mouse down vertical pixels to click randomly within the image
-            vertical := Random(-2, 5)
+            vertical := Random(1, 5)
 
         ;"item" refers to an item in the bag, also works for fishing spot indicators
         case "item":
@@ -1318,8 +1333,24 @@ GetOffset(offset_item)
             vertical := Random(0,5)
 
         case "trawler_net":
-            horizontal := Random(50, 250)
-            vertical := Random(50, 250)
+            horizontal := Random(50, 100)
+            vertical := Random(50, 100)
+
+        case "gangplank":
+            horizontal := Random(5, 40)
+            vertical := Random(5, 10)
+
+        case "ladder":
+            horizontal := Random(10, 20)
+            vertical := Random(15, 40)
+
+        case "north_kraken":
+            horizontal := Random(3, 10)
+            vertical := Random(50, 100)
+
+        case "south_kraken":
+            horizontal := Random(3, 8)
+            vertical := Random(10, 15)
             
         ;default is no offset, can be used when searching but not clicking on an image
         default:
