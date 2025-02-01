@@ -44,9 +44,12 @@ global images := {
     you_sail_out_to_see_text : A_WorkingDir "\image_library\fishing_trawler\you_sail_out_to_see_text.png",
     climb_ship_ladder : A_WorkingDir "\image_library\fishing_trawler\climb_ship_ladder.png",
     you_sail_back_to_port_khazard : A_WorkingDir "\image_library\fishing_trawler\you_sail_back_to_port_khazard.png",
-    no_trawler_loot : A_WorkingDir "\image_library\fishing_trawler\no_trawler_loot.png",
+    no_loot_trawler_net : A_WorkingDir "\image_library\fishing_trawler\no_loot_trawler_net.png",
     chop_tentacle : A_WorkingDir "\image_library\fishing_trawler\chop_tentacle.png",
+    bailing_bucket : A_WorkingDir "\image_library\fishing_trawler\bailing_bucket.png",
+    bailing_bucket_empty : A_WorkingDir "\image_library\fishing_trawler\bailing_bucket_empty.png",
 }
+
 
 ; some tooltip coords
 global X_TOOLTIP := {
@@ -184,7 +187,6 @@ setup_out()
         
         ;Face North (click compass)
         ClickCompass()
-        sleep_random(100, 200)
         
         ;move camera angle to above character
         Send("{up down}")
@@ -1320,6 +1322,10 @@ GetOffset(offset_item)
             horizontal := Random(15, 40)
             vertical := Random(15, 40)
 
+        case "tile_south":
+            horizontal := Random(0, 5)
+            vertical := Random(10, 30)
+        
         case "south":
             horizontal := Random(0, 0)
             vertical := Random(10, 30)
@@ -1344,6 +1350,10 @@ GetOffset(offset_item)
             horizontal := Random(10, 20)
             vertical := Random(15, 40)
 
+        case "boat_pink_tile":
+            horizontal := Random(-10, 10)
+            vertical := Random(15, 30)
+
         case "north_kraken":
             horizontal := Random(3, 10)
             vertical := Random(50, 100)
@@ -1351,6 +1361,10 @@ GetOffset(offset_item)
         case "south_kraken":
             horizontal := Random(3, 8)
             vertical := Random(10, 15)
+
+        case "bailing_bucket":
+            horizontal := Random(1, 4)
+            vertical := Random(1, 4)
             
         ;default is no offset, can be used when searching but not clicking on an image
         default:
