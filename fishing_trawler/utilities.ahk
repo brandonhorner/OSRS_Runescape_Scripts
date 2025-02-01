@@ -8,7 +8,6 @@ global YTOOLTIP := 550
 CoordMode("Pixel", "Screen")
 CoordMode("Mouse", "Screen")
 
-; Set working directory to the parent folder for all your projects.
 SetWorkingDir "C:\Git\OSRS_Runescape_Scripts"
 
 ; ----------------------------
@@ -58,61 +57,53 @@ global Y_TOOLTIP := {
 ; Utility Functions
 ; ----------------------------
 
-; Sleep for a random time between sleep_time_low and sleep_time_high (milliseconds)
-sleep_random(sleep_time_low, sleep_time_high) {
-    sleep_time := Random(sleep_time_low, sleep_time_high)
-    Sleep sleep_time
-    return sleep_time
+SleepRandom(sleepTimeLow, sleepTimeHigh) {
+    sleepTime := Random(sleepTimeLow, sleepTimeHigh)
+    Sleep sleepTime
+    return sleepTime
 }
 
-; Set randomized delays for mouse and key actions.
-set_random_delays(mouse_delay_low := 20, mouse_delay_high := 23, key_delay_low := 30, key_delay_high := 50, press_duration_low := 20, press_duration_high := 30) {
-    delaySpeed := Random(mouse_delay_low, mouse_delay_high)
+SetRandomDelays(mouseDelayLow := 20, mouseDelayHigh := 23, keyDelayLow := 30, keyDelayHigh := 50, pressDurationLow := 20, pressDurationHigh := 30) {
+    delaySpeed := Random(mouseDelayLow, mouseDelayHigh)
     SetMouseDelay(delaySpeed)
     
-    key_delay_speed := Random(key_delay_low, key_delay_high)
-    press_duration := Random(press_duration_low, press_duration_high)
-    SetKeyDelay(key_delay_speed, press_duration)
+    keyDelaySpeed := Random(keyDelayLow, keyDelayHigh)
+    pressDuration := Random(pressDurationLow, pressDurationHigh)
+    SetKeyDelay(keyDelaySpeed, pressDuration)
 }
 
-; Move the mouse to roughly the center of the screen with a random offset.
-move_mouse_center() {
-    offset_x := Random(-300, 300)
-    offset_y := Random(-300, 300)
-    new_x_pos := A_ScreenWidth / 2 + offset_x
-    new_y_pos := A_ScreenHeight / 2 + offset_y
-    MouseMove(new_x_pos, new_y_pos)
+MoveMouseCenter() {
+    offsetX := Random(-300, 300)
+    offsetY := Random(-300, 300)
+    newXPos := A_ScreenWidth / 2 + offsetX
+    newYPos := A_ScreenHeight / 2 + offsetY
+    MouseMove(newXPos, newYPos)
 }
 
-; Zoom the camera in or out by simulating mouse wheel scrolls.
-; zoom_direction: "in" or "out"
-; zoom_level: number of wheel steps (default is 30)
-zoom(zoom_direction, zoom_level := 30) {
-    move_mouse_center()
-    if (zoom_direction = "out") {
-        Loop zoom_level {
+Zoom(zoomDirection, zoomLevel := 30) {
+    MoveMouseCenter()
+    if (zoomDirection = "out") {
+        Loop zoomLevel {
             Send("{Wheeldown}")
-            sleep_random(45, 65)
+            SleepRandom(45, 65)
         }
-    } else {  ; zoom in
-        Loop zoom_level {
+    } else {
+        Loop zoomLevel {
             Send("{Wheelup}")
-            sleep_random(35, 55)
+            SleepRandom(35, 55)
         }
     }
 }
 
-; Click the RuneLite compass button.
-; (This uses the xp_minimap_button image and offsets the click to a likely “North” location.)
 ClickCompass() {
-    shade_variation := 50
-    options := "*" shade_variation " " images.xp_minimap_button
+    shadeVariation := 50
+    options := "*" shadeVariation " " images.xp_minimap_button
     if ImageSearch(&foundX, &foundY, 0, 0, A_ScreenWidth, A_ScreenHeight, options) {
-        x_offset := Random(30, 60)
-        y_offset := Random(-23, 0)
-        x_offset += foundX
-        y_offset += foundY
-        Click("left", x_offset, y_offset)
+        xOffset := Random(30, 60)
+        yOffset := Random(-23, 0)
+        xOffset += foundX
+        yOffset += foundY
+        Click("left", xOffset, yOffset)
         return true
     } else {
         ToolTip("Could not find the compass button.", 100, 500, 20)
@@ -120,22 +111,20 @@ ClickCompass() {
     }
 }
 
-; A setup routine that “zooms out,” clicks the compass and tilts the camera.
-setup_out() {
+SetupOut() {
     if WinActive(runelite_window) {
-        zoom("out")
+        Zoom("out")
         ClickCompass()
         Send("{up down}")
-        sleep_random(1300, 2200)
+        SleepRandom(1300, 2200)
         Send("{up up}")
         return
     }
 }
 
-; Display a tooltip then send a key. (Used for, e.g., sending "B" after plugging leaks.)
 SendKey(key, presses := 1) {
     ToolTip "Key: " key "`nPresses: " presses " time(s)", X_TOOLTIP.3, Y_TOOLTIP.3, 3
-    set_random_delays(45, 85)
+    SetRandomDelays(45, 85)
     if (presses <= 1) {
         Send("{" key "}")
         return
@@ -151,32 +140,28 @@ SendKey(key, presses := 1) {
 ; Image & Pixel Searching Functions
 ; ----------------------------
 
-; Searches a given screen area for a pixel of the given color then clicks it.
-; scanAreaInput can be a preset name (see GetScanArea below)
-PixelSearchAndClick(PixelColor, scanAreaInput := 0, click_type := 0, offset := 0, x1 := 0, y1 := 0, x2 := 0, y2 := 0, shade_variance := 0) {
-    menu_width := 140
+PixelSearchAndClick(PixelColor, scanAreaInput := 0, clickType := 0, offset := 0, x1 := 0, y1 := 0, x2 := 0, y2 := 0, shadeVariance := 0) {
+    menuWidth := 140
     if scanAreaInput != 0 {
         scanArea := GetScanArea(scanAreaInput)
     } else {
         scanArea := { x1: x1, y1: y1, x2: x2, y2: y2 }
     }
     if WinActive(runelite_window) {
-        set_random_delays()
-        if PixelSearch(&foundX, &foundY, scanArea.x1, scanArea.y1, scanArea.x2, scanArea.y2, PixelColor, shade_variance) {
+        SetRandomDelays()
+        if PixelSearch(&foundX, &foundY, scanArea.x1, scanArea.y1, scanArea.x2, scanArea.y2, PixelColor, shadeVariance) {
             offsetObj := GetOffset(offset)
             offsetX := foundX + offsetObj.x
             offsetY := foundY + offsetObj.y
-            ClickOffset(click_type, offsetX, offsetY)
+            ClickOffset(clickType, offsetX, offsetY)
             return true
         }
     }
     return false
 }
 
-; Searches a given screen area for an image then clicks it.
-; scanAreaInput may be a preset area name.
-ImageSearchAndClick(ImageURL, scanAreaInput := 0, click_type := 0, offset := 0, x1 := 0, y1 := 0, x2 := 0, y2 := 0, shade_variance := 50) {
-    menu_width := 140
+ImageSearchAndClick(ImageURL, scanAreaInput := 0, clickType := 0, offset := 0, x1 := 0, y1 := 0, x2 := 0, y2 := 0, shadeVariance := 50) {
+    menuWidth := 140
     if scanAreaInput != 0 {
         scanArea := GetScanArea(scanAreaInput)
     } else {
@@ -184,75 +169,71 @@ ImageSearchAndClick(ImageURL, scanAreaInput := 0, click_type := 0, offset := 0, 
     }
     SplitPath ImageURL, &ImageName
     if WinActive(runelite_window) {
-        set_random_delays()
-        if (ImageSearch(&foundX, &foundY, scanArea.x1, scanArea.y1, scanArea.x2, scanArea.y2, "*" shade_variance " *TransBlack " ImageURL)
-         or ImageSearch(&foundX, &foundY, scanArea.x1, scanArea.y1, scanArea.x2, scanArea.y2, "*" shade_variance " " ImageURL)) {
+        SetRandomDelays()
+        if (ImageSearch(&foundX, &foundY, scanArea.x1, scanArea.y1, scanArea.x2, scanArea.y2, "*" shadeVariance " *TransBlack " ImageURL)
+         or ImageSearch(&foundX, &foundY, scanArea.x1, scanArea.y1, scanArea.x2, scanArea.y2, "*" shadeVariance " " ImageURL)) {
             ToolTip "8. ImageSearchAndClick: Found " ImageName, X_TOOLTIP.8, Y_TOOLTIP.8, 8
             offsetObj := GetOffset(offset)
             offsetX := foundX + offsetObj.x
             offsetY := foundY + offsetObj.y
-            ClickOffset(click_type, offsetX, offsetY)
+            ClickOffset(clickType, offsetX, offsetY)
             return true
         }
     }
     return false
 }
 
-; Returns a scan area object based on preset names.
-; (These names – such as "p2", "middle", "bank", etc. – are used in your Fishing Trawler script.)
-GetScanArea(scan_area := 0) {
-    menu_width := 0
+GetScanArea(scanArea := 0) {
+    menuWidth := 0
     gameWindowWidth := A_ScreenWidth - 20
-    switch scan_area {
+    switch scanArea {
         case "top_left":
-            scan_area_obj := { x1: 0, y1: 22, x2: 190, y2: 75 }
+            scanAreaObj := { x1: 0, y1: 22, x2: 190, y2: 75 }
         case "bag":
-            scan_area_obj := { x1: 1645, y1: 700, x2: 1855, y2: 1000 }
+            scanAreaObj := { x1: 1645, y1: 700, x2: 1855, y2: 1000 }
         case "chat_all":
-            scan_area_obj := { x1: 3, y1: 872, x2: 494, y2: 986 }
+            scanAreaObj := { x1: 3, y1: 872, x2: 494, y2: 986 }
         case "chat_bottom":
-            scan_area_obj := { x1: 3, y1: 969, x2: 494, y2: 986 }
+            scanAreaObj := { x1: 3, y1: 969, x2: 494, y2: 986 }
         case "chat_bottom_2":
-            scan_area_obj := { x1: 3, y1: 958, x2: 510, y2: 1015 }
+            scanAreaObj := { x1: 3, y1: 958, x2: 510, y2: 1015 }
         case "middle":
-            scan_area_obj := { x1: 0, y1: 200, x2: 1650, y2: 970 }
+            scanAreaObj := { x1: 0, y1: 200, x2: 1650, y2: 970 }
         case "center":
-            scan_area_obj := { x1: A_ScreenWidth / 4, y1: A_ScreenHeight / 4, x2: A_ScreenWidth * 3 / 4, y2: A_ScreenHeight * 3 / 4 }
+            scanAreaObj := { x1: A_ScreenWidth / 4, y1: A_ScreenHeight / 4, x2: A_ScreenWidth * 3 / 4, y2: A_ScreenHeight * 3 / 4 }
         case "bank":
-            scan_area_obj := { x1: 575, y1: 50, x2: 1060, y2: 850 }
+            scanAreaObj := { x1: 575, y1: 50, x2: 1060, y2: 850 }
         case "under_mouse":
             MouseGetPos(&x, &y)
-            scan_area_obj := { x1: x - 130, y1: y - 10, x2: x + 120, y2: y + 255 }
+            scanAreaObj := { x1: x - 130, y1: y - 10, x2: x + 120, y2: y + 255 }
         case "p1":
-            scan_area_obj := { x1: 0, y1: 20, x2: A_ScreenWidth / 3, y2: A_ScreenHeight / 2 }
+            scanAreaObj := { x1: 0, y1: 20, x2: A_ScreenWidth / 3, y2: A_ScreenHeight / 2 }
         case "p2":
-            scan_area_obj := { x1: A_ScreenWidth / 3, y1: 20, x2: A_ScreenWidth * 2 / 3, y2: A_ScreenHeight / 2 }
+            scanAreaObj := { x1: A_ScreenWidth / 3, y1: 20, x2: A_ScreenWidth * 2 / 3, y2: A_ScreenHeight / 2 }
         case "p3":
-            scan_area_obj := { x1: A_ScreenWidth * 2 / 3, y1: 20, x2: A_ScreenWidth - 20, y2: A_ScreenHeight / 2 }
+            scanAreaObj := { x1: A_ScreenWidth * 2 / 3, y1: 20, x2: A_ScreenWidth - 20, y2: A_ScreenHeight / 2 }
         case "p4":
-            scan_area_obj := { x1: 0, y1: A_ScreenHeight / 2, x2: A_ScreenWidth / 3, y2: A_ScreenHeight - 50 }
+            scanAreaObj := { x1: 0, y1: A_ScreenHeight / 2, x2: A_ScreenWidth / 3, y2: A_ScreenHeight - 50 }
         case "p5":
-            scan_area_obj := { x1: A_ScreenWidth / 3, y1: A_ScreenHeight / 2, x2: A_ScreenWidth * 2 / 3, y2: A_ScreenHeight - 50 }
+            scanAreaObj := { x1: A_ScreenWidth / 3, y1: A_ScreenHeight / 2, x2: A_ScreenWidth * 2 / 3, y2: A_ScreenHeight - 50 }
         case "p6":
-            scan_area_obj := { x1: A_ScreenWidth * 2 / 3, y1: A_ScreenHeight / 2, x2: A_ScreenWidth - 20, y2: A_ScreenHeight - 50 }
+            scanAreaObj := { x1: A_ScreenWidth * 2 / 3, y1: A_ScreenHeight / 2, x2: A_ScreenWidth - 20, y2: A_ScreenHeight - 50 }
         default:
-            scan_area_obj := { x1: 0, y1: 20, x2: A_ScreenWidth - 20, y2: A_ScreenHeight - 50 }
+            scanAreaObj := { x1: 0, y1: 20, x2: A_ScreenWidth - 20, y2: A_ScreenHeight - 50 }
     }
-    if menu_is_open() {
-        scan_area_obj.x1 -= menu_width
-        scan_area_obj.x2 -= menu_width
+    if MenuIsOpen() {
+        scanAreaObj.x1 -= menuWidth
+        scanAreaObj.x2 -= menuWidth
     }
-    return scan_area_obj
+    return scanAreaObj
 }
 
-; In this project we assume the RuneLite menu is closed.
-menu_is_open() {
+MenuIsOpen() {
     return false
 }
 
-; Returns an offset object based on a preset offset name.
-GetOffset(offset_item) {
-    switch offset_item {
+GetOffset(offsetItem) {
+    switch offsetItem {
         case "option":
             horizontal := Random(0, 200)
             vertical := Random(1, 10)
@@ -315,17 +296,16 @@ GetOffset(offset_item) {
     return offset
 }
 
-; Click at a given offset using the specified click type.
-ClickOffset(click_type, offset_x := 0, offset_y := 0) {
-    switch click_type {
+ClickOffset(clickType, offsetX := 0, offsetY := 0) {
+    switch clickType {
         case "right":
-            Click("right", offset_x, offset_y)
+            Click("right", offsetX, offsetY)
         case "left":
-            Click(offset_x, offset_y)
+            Click(offsetX, offsetY)
         case "mouseover":
-            Click(offset_x, offset_y, 0)
+            Click(offsetX, offsetY, 0)
         case "doubleclick":
-            Click(offset_x, offset_y, 2)
+            Click(offsetX, offsetY, 2)
         case "in_place":
             Click()
     }
