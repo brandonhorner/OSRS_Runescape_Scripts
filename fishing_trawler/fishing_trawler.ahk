@@ -44,25 +44,27 @@ ClickFishingTrawlerNet() {
 
     interactedSuccessfully := false
     failedToClickTrawlerNet := 0
-    maxAttempts := 100
+    maxAttempts := 80
 
     while (!interactedSuccessfully && failedToClickTrawlerNet < maxAttempts) {
-        if (!TryRightClickTrawlerNet()) {
+        if (!RightClickTrawlerNet()) {
             failedToClickTrawlerNet++
             continue
         }
-        if (!TryConfirmTrawlerNet()) {
+        if (!ConfirmTrawlerNet()) {
             failedToClickTrawlerNet++
-            ; Move the mouse up and to the right first
+            ; Move the mouse up and to the right to reset right-click menu
             MouseGetPos(&mx, &my)
-            newX := mx + Random(100, 300)
-            newY := my - Random(100, 300)
+            newX := mx + Random(40, 80)
+            newY := my - Random(40, 80)
             MouseMove(newX, newY, 20)
             SleepRandom(300, 700)
             continue
         }
         if (!WaitForBankAllButton()) {
             failedToClickTrawlerNet++
+            ClickPinkTile()
+            SleepRandom(1000, 1500)
             continue
         }
 
@@ -70,7 +72,7 @@ ClickFishingTrawlerNet() {
     }
 }
 
-TryRightClickTrawlerNet() {
+RightClickTrawlerNet() {
     ShowSequentialTooltip("[TrawlerNet] Searching for Trawler Net pixel...")
 
     foundTrawlerNet := PixelSearchAndClick(0xFF0000, "p2", "mouseover", "trawler_net", 0, 0, 0, 0, 5)
@@ -85,11 +87,11 @@ TryRightClickTrawlerNet() {
     return true
 }
 
-TryConfirmTrawlerNet() {
+ConfirmTrawlerNet() {
     ShowSequentialTooltip("[TrawlerNet] Searching for confirmation image...")
 
-    foundInteractTrawlerNetOption := ImageSearchAndClick(images.inspect_trawler_net, "p2", "mouseover", "option_short", 0, 0, 0, 0, 5)
-    if (!foundInteractTrawlerNetOption) {
+    interactTrawlerNetOptionImage := ImageSearchAndClick(images.inspect_trawler_net, "p2", "mouseover", "option_short", 0, 0, 0, 0, 5)
+    if (!interactTrawlerNetOptionImage.found) {
         ShowSequentialTooltip("[TrawlerNet] Confirmation NOT found.")
         SleepRandom(500, 700)
         return false
@@ -115,10 +117,11 @@ WaitForBankAllButton() {
     return true
 }
 
+; change to control click
 TryClickBankAll() {
     ShowSequentialTooltip("[TrawlerNet] Searching for 'Bank all' button...")
-    foundBankAllButton := ImageSearchAndClick(images.bank_all_trawler_net, "", "mouseover", "item", 0, 0, A_ScreenWidth, A_ScreenHeight, 5)
-    if (!foundBankAllButton) {
+    bankAllButtonImage := ImageSearchAndClick(images.bank_all_trawler_net, "", "mouseover", "item", 0, 0, A_ScreenWidth, A_ScreenHeight, 5)
+    if (!bankAllButtonImage.found) {
         ShowSequentialTooltip("[TrawlerNet] Bank all not found.")
         return false
     }
@@ -131,8 +134,8 @@ TryClickBankAll() {
 TrawlerLootMessageExists() {
     global images
     ShowSequentialTooltip("[TrawlerNet] Searching for message in chatbox stating that we don't have trawler loot...")
-    foundTrawlerLootMessage := ImageSearchAndClick(images.no_loot_trawler_net, "v2", "mouseover", "no offset", 0, 0, 0, 0, 5)
-    if (foundTrawlerLootMessage) {
+    trawlerLootMessageImage := ImageSearchAndClick(images.no_loot_trawler_net, "v2", "mouseover", "no offset", 0, 0, 0, 0, 5)
+    if (trawlerLootMessageImage.found) {
         ShowSequentialTooltip("[TrawlerNet] Message found-- No loot in net.")
         return true
     }
@@ -154,8 +157,8 @@ ClickGangPlank() {
         if (!TryConfirmGangPlank()) {
             failedToClickGangPlank++
             MouseGetPos(&mx, &my)
-            newX := mx + Random(100, 300)
-            newY := my - Random(100, 300)
+            newX := mx + Random(40, 80)
+            newY := my - Random(40, 80)
             MouseMove(newX, newY, 20)
             SleepRandom(100, 200)
             continue
@@ -180,8 +183,8 @@ TryRightClickGangPlank() {
 
 TryConfirmGangPlank() {
     ShowSequentialTooltip("[GangPlank] Searching for confirmation image...")
-    foundInteractGangPlankOption := ImageSearchAndClick(images.cross_gangplank, "p3", "mouseover", "option_short", 0, 0, 0, 0, 5)
-    if (!foundInteractGangPlankOption) {
+    interactGangPlankOptionImage := ImageSearchAndClick(images.cross_gangplank, "p3", "mouseover", "option_short", 0, 0, 0, 0, 5)
+    if (!interactGangPlankOptionImage.found) {
         ShowSequentialTooltip("[GangPlank] Confirmation NOT found.")
         SleepRandom(500, 700)
         return false
@@ -198,8 +201,8 @@ WaitForLoadingScreen() {
     attempts := 0
     while (attempts < 300) {
         ShowSequentialTooltip("[Waiting] Waiting for Fishing Trawler loading screen... Attempt #" attempts)
-        foundSailingText := ImageSearchAndClick(images.you_sail_out_to_see_text, "v2", "mouseover", "no offset", 0, 0, 0, 0, 5)
-        if (foundSailingText) {
+        sailingImage := ImageSearchAndClick(images.you_sail_out_to_see_text, "v2", "mouseover", "no offset", 0, 0, 0, 0, 5)
+        if (sailingImage.found) {
             ShowSequentialTooltip("[Waiting] Found Fishing Trawler loading screen! Round starting in 12s.")
             SleepRandom(12000, 12000)
             break
@@ -207,60 +210,6 @@ WaitForLoadingScreen() {
         attempts++
         SleepRandom(1000, 2000)
     }
-}
-
-ClickLadder() {
-    global images
-
-    interactedSuccessfully := false
-    failedToClickLadder := 0
-    maxAttempts := 20
-
-    while (!interactedSuccessfully && failedToClickLadder < maxAttempts) {
-        if (!TryRightClickLadder()) {
-            failedToClickLadder++
-            continue
-        }
-        if (!TryConfirmClimbLadder()) {
-            failedToClickLadder++
-            continue
-        }
-        interactedSuccessfully := true
-    }
-}
-
-TryRightClickLadder() {
-    MouseGetPos(&mx, &my)
-    newX := mx + Random(100, 300)
-    newY := my - Random(100, 300)
-    MouseMove(newX, newY, 20)
-    SleepRandom(100, 200)
-    ShowSequentialTooltip("[Ladder] Searching for Ladder pixel...")
-    foundLadder := PixelSearchAndClick(0xFF00FF, "h1", "mouseover", "ladder", 0, 0, 0, 0, 5)
-    if (!foundLadder) {
-        ShowSequentialTooltip("[Ladder] Could not find ladder pixel.")
-        SleepRandom(500, 700)
-        return false
-    }
-    SleepRandom(400, 700)
-    Click("right")
-    ShowSequentialTooltip("[Ladder] Found ladder pixel! Right-clicked.")
-    return true
-}
-
-TryConfirmClimbLadder() {
-    ShowSequentialTooltip("[Ladder] Searching for confirmation image...")
-    foundInteractLadderOption := ImageSearchAndClick(images.climb_ship_ladder, "h1", "mouseover", "option_short", 0, 0, 0, 0, 5)
-    if (!foundInteractLadderOption) {
-        ShowSequentialTooltip("[Ladder] Confirmation NOT found.")
-        SleepRandom(500, 700)
-        return false
-    }
-    ShowSequentialTooltip("[Ladder] Confirmation found! Climbing.")
-    SleepRandom(400, 700)
-    Click()
-    SleepRandom(2000, 3000)
-    return true
 }
 
 ClickPinkTile() {
@@ -293,10 +242,10 @@ TryLeftClickPinkTile() {
     return true
 }
 
-CheckIfRoundIsOver() {
+RoundIsNotOver() {
     global images
-    foundRoundOver := ImageSearchAndClick(images.you_sail_back_to_port_khazard, "v2", "mouseover", "no offset", 0, 0, 0, 0, 5)
-    if (!foundRoundOver)
+    roundOverImage := ImageSearchAndClick(images.you_sail_back_to_port_khazard, "v2", "mouseover", "no offset", 0, 0, 0, 0, 5)
+    if (!roundOverImage.found)
         return true
     return false
 }
@@ -348,6 +297,52 @@ PlugLeaks() {
     }
 }
 
+ControlClickPlugLeaks() {
+    ShowSequentialTooltip("[Leaks] Checking columns for teal...")
+    columns := [
+        {
+            name:    "Column 1",
+            detect:  { x1: 921, y1: 669, x2: 1045, y2: 787 },
+            click:   { x1: 853, y1: 844, x2: 1102, y2: 1144 }
+        },
+        {
+            name:    "Column 2",
+            detect:  { x1: 1198, y1: 705, x2: 1317, y2: 754 },
+            click:   { x1: 1127, y1: 850, x2: 1400, y2: 1148 }
+        },
+        {
+            name:    "Column 3",
+            detect:  { x1: 1471, y1: 689, x2: 1610, y2: 782 },
+            click:   { x1: 1402, y1: 847, x2: 1704, y2: 1155 }
+        }
+    ]
+    leakColor := 0x00FFFF
+    shadeVariance := 10
+    foundAny := false
+
+    for _, col in columns {
+        ShowSequentialTooltip("[Leaks] Searching " col.name " detection area for teal pixel...")
+        if WinActive(runelite_window) {
+            success := PixelSearch(&foundX, &foundY, col.detect.x1, col.detect.y1, col.detect.x2, col.detect.y2, leakColor, shadeVariance)
+            if (success) {
+                ShowSequentialTooltip("[Leaks] Found leak in " col.name "! Clicking in lower area to fix...")
+                clickX := Random(col.click.x1 + 20, col.click.x2 - 20)
+                clickY := Random(col.click.y1 + 20, col.click.y2 - 20)
+                options := "x" clickX " y" clickY " NA"
+                SleepRandom(100, 200)
+                ControlClick(options, runelite_window, "", "Left", 1)
+                SleepRandom(1200, 1300)
+                return true
+            }
+        }
+    }
+    if (!foundAny) {
+        ShowSequentialTooltip("[Leaks] No teal pixels found in any column.")
+        SleepRandom(100, 250)
+        return false
+    }
+}
+
 CorrectToPinkTile() { ; TODO FIX THIS
     global images
     ShowSequentialTooltip("[PinkTile] Searching for Pink Tile pixel...")
@@ -382,11 +377,11 @@ ClickBucket() {
     global images
     ShowSequentialTooltip("[Bucket] Searching for bailing bucket in inventory...")
 
-    foundBucket := ImageSearchAndClick(images.bailing_bucket, "", "mouseover", "bailing_bucket", 0, 0, A_ScreenWidth, A_ScreenHeight, 5)
-    if (!foundBucket) {
-        foundBucket := ImageSearchAndClick(images.bailing_bucket_empty, "", "mouseover", "bailing_bucket", 0, 0, A_ScreenWidth, A_ScreenHeight, 5)
+    bucket := ImageSearchAndClick(images.bailing_bucket, "", "mouseover", "bailing_bucket", 0, 0, A_ScreenWidth, A_ScreenHeight, 5)
+    if (!bucket.found) {
+        bucket := ImageSearchAndClick(images.bailing_bucket_empty, "", "mouseover", "bailing_bucket", 0, 0, A_ScreenWidth, A_ScreenHeight, 5)
     }
-    if (!foundBucket) {
+    if (!bucket.found) {
         ShowSequentialTooltip("[Bucket] Bailing bucket not found.")
         return false
     }
@@ -396,10 +391,42 @@ ClickBucket() {
     return true
 }
 
-^`:: 
-{ }  ; Used for testing
+ControlClickBucket() {
+    ; refine search area to client window
+    CoordMode("Pixel", "Window")
 
-^F1:: {
+    ; Image search for the bailing bucket
+    bucketEmpty := ImageSearchAndClick(IMAGES.bailing_bucket_empty, "0", "0", "bailing_bucket", 0, 0, A_ScreenWidth, A_ScreenHeight, 5)
+    bucketFull := ImageSearchAndClick(IMAGES.bailing_bucket, "0", "0", "bailing_bucket", 0, 0, A_ScreenWidth, A_ScreenHeight, 5)
+    if (bucketEmpty.found) {
+        options := "x" bucketEmpty.x " y" bucketEmpty.y " NA"
+        ControlClick(options, runelite_window, "", "Left", 1)
+    } 
+    else if (bucketFull.found) {
+        options := "x" bucketFull.x " y" bucketFull.y " NA"
+        ControlClick(options, runelite_window, "", "Left", 1)
+    } else {
+        ShowSequentialTooltip("[Bucket] Bailing bucket not found.")
+        SendKey("B")
+        SleepRandom(1000,2000)
+    }
+    SleepRandom(100, 200)
+}
+
+^F1:: 
+{
+
+    ClickGangPlank()
+    while (RoundIsNotOver())
+    {
+        ShowSequentialTooltip("Waiting for round to be over...")
+        ControlClickPlugLeaks()
+
+    }
+    ShowSequentialTooltip("Round complete.")
+}  ; Used for testing
+
+^`:: {
     response := MsgBox("Do you want to start by looting the trawler net?", "Trawler Setup", "YesNo")
     if (response = "Yes") {
         runIteration := 1
@@ -413,7 +440,7 @@ ClickBucket() {
             skipToBoat := false
     }
 
-    while (runIteration <= 20) {
+    while (runIteration <= 30) {
         if (!skipToBoat) {
             SetupOut()
             Zoom("in", "6")
@@ -425,9 +452,11 @@ ClickBucket() {
             ClickGangPlank()
             WaitForLoadingScreen()
         }
+        
         ClickPinkTile()
         Zoom("in", "12")
-        CorrectToPinkTile()
+        SleepRandom(1200, 1500)
+        ClickPinkTile()
 
         leaksPlugged := 0
         failedToPlugLeaks := 0
@@ -439,16 +468,16 @@ ClickBucket() {
             } else {
                 ShowSequentialTooltip("[MiniGame] No leaks found...")
                 failedToPlugLeaks++
-                if(failedToPlugLeaks = 20) {
+                if(failedToPlugLeaks = 60) {
                     ShowSequentialTooltip("[MiniGame] Failed to plug leaks 50 times. Clicking Pink Tile...")
                     ClickPinkTile()
                 }
             }
         }
         SendKey("B")
-        while(CheckIfRoundIsOver()) {
+        while(RoundIsNotOver()) {
             ToolTip(" Waiting for round to be over...", X_TOOLTIP.8, Y_TOOLTIP.8, 8)
-            ClickBucket()
+            ControlClickBucket()
             SleepRandom(200, 1000)
         }
         ToolTip("Round " . runIteration++ . " complete.", X_TOOLTIP.9, Y_TOOLTIP.9, 9)

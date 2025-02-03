@@ -123,16 +123,19 @@ SetupOut() {
 }
 
 SendKey(key, presses := 1) {
-    ToolTip "Key: " key "`nPresses: " presses " time(s)", X_TOOLTIP.3, Y_TOOLTIP.3, 3
+    if (!WinActive(runelite_window)) {
+        return false
+    }
+    ;ToolTip "Key: " key "`nPresses: " presses " time(s)", X_TOOLTIP.3, Y_TOOLTIP.3, 3
     SetRandomDelays(45, 85)
     if (presses <= 1) {
         Send("{" key "}")
-        return
+        return true
     }
     if (presses > 1) {
         Send("{" key "}")
         SendKey(key, presses - 1)
-        return
+        return true
     }
 }
 
@@ -177,10 +180,10 @@ ImageSearchAndClick(ImageURL, scanAreaInput := 0, clickType := 0, offset := 0, x
             offsetX := foundX + offsetObj.x
             offsetY := foundY + offsetObj.y
             ClickOffset(clickType, offsetX, offsetY)
-            return true
+            return {found: true, x: foundX, y: foundY}
         }
     }
-    return false
+    return {found: false}
 }
 
 GetScanArea(scanArea := 0) {
@@ -238,8 +241,8 @@ GetOffset(offsetItem) {
             horizontal := Random(0, 200)
             vertical := Random(1, 10)
         case "option_short":
-            horizontal := Random(1, 100)
-            vertical := Random(1, 5)
+            horizontal := Random(1, 50)
+            vertical := Random(0, 1)
         case "item":
             horizontal := Random(5, 15)
             vertical := Random(5, 15)
