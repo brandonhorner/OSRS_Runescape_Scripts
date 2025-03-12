@@ -1,15 +1,14 @@
 # main_bot.py
 import time
 import random
-import pyautogui
 from screen_interactor import ScreenInteractor
-from karambwan_bot import KarambwanBot
 from chat_monitor import ChatMonitor
 
 def main_loop(max_loops=50):
     # Create your interactor and bot objects.
     si = ScreenInteractor()
-
+    print("Starting in 3 seconds...")
+    time.sleep(3)
     # Step 0: Zoom out all the way
     print("Zooming out...")
     si.zoom_out(times=10)
@@ -35,8 +34,8 @@ def main_loop(max_loops=50):
             # Step 1: Click on the fishing spot using the raw karambwan image.
             fishing_spot_image = 'Karambwans/raw_karambwan.png'
             # Use the "center" area for the top-middle of the screen.
-            center_region = si.get_scan_area("center")
-            fishing_spot_click = si.click_image_without_moving(fishing_spot_image, region=center_region, confidence=0.8, offset_range=(0, 3))
+            center_region = si.get_scan_area("v2")
+            fishing_spot_click = si.click_image_cv2_without_moving(fishing_spot_image, region=center_region, confidence=0.98, offset_range=(0, 3))
             print(f"Fishing spot (raw karambwan) clicked at {fishing_spot_click}.")
 
             # Step 2: Wait for the chat to indicate that inventory is full.

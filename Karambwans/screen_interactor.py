@@ -1,11 +1,40 @@
-# screen_interactor.py
 import pyautogui
 import time
 import random
+from PIL import Image, ImageChops  # if needed for additional processing
+import cv2
+import numpy as np
 
 class ScreenInteractor:
     def __init__(self):
         pass
+
+    def get_scan_area(self, label):
+        screen_width, screen_height = pyautogui.size()
+        areas = {
+            "center": (screen_width // 3, 0, screen_width // 4, screen_height - 50),
+            "p1": (0, 0, screen_width // 3, screen_height // 2),
+            "p2": (screen_width // 3, 0, screen_width // 3, screen_height // 2),
+            "p3": (2 * screen_width // 3, 0, screen_width - 2 * (screen_width // 3), screen_height // 2),
+            "p4": (0, screen_height // 2, screen_width // 3, screen_height - screen_height // 2),
+            "p5": (screen_width // 3, screen_height // 2, screen_width // 3, screen_height - screen_height // 2),
+            "p6": (2 * screen_width // 3, screen_height // 2, screen_width - 2 * (screen_width // 3), screen_height - screen_height // 2),
+            "h1": (0, 0, screen_width, screen_height // 2),
+            "h2": (0, screen_height // 2, screen_width, screen_height - screen_height // 2),
+            "v1": (0, 0, screen_width // 3, screen_height),
+            "v2": (screen_width // 3, 0, screen_width // 3, screen_height),
+            "v3": (2 * screen_width // 3, 0, screen_width - 2 * (screen_width // 3), screen_height),
+            "bag": (screen_width - 243, screen_height - 345, 183, 260),
+            "chat": (0, screen_height - 200, 500, screen_height - 72),
+            "activity_pane": (0, 22, 150, 250)
+        }
+        return areas.get(label, (0, 0, screen_width, screen_height))
+        
+    def resolve_region(self, region):
+        """If region is a string, look it up using get_scan_area; otherwise return it directly."""
+        if isinstance(region, str):
+            return self.get_scan_area(region)
+        return region
 
     def find_pixel(self, color_hex, region=None, tolerance=10):
         screenshot = pyautogui.screenshot(region=region)
@@ -21,94 +50,8 @@ class ScreenInteractor:
                     return (x, y)
         return None
 
-    def move_mouse_to(self, x, y):
-        pyautogui.moveTo(x, y)
-
-
-    def click_without_moving(self, button='left'):
-        current_x, current_y = pyautogui.position()
-        pyautogui.mouseDown(x=current_x, y=current_y, button=button)
-        pyautogui.mouseUp(x=current_x, y=current_y, button=button)
-        return (current_x, current_y)
-    
-
-    def click_image_without_moving(self, image_path, region=None, confidence=0.8, offset_range=(-10, 10)):
-        """
-        Generic method to click an image without moving the cursor visibly.
-        Finds the image on the screen, determines a random coordinate within its bounding box
-        (with an additional random offset), temporarily moves the mouse there, performs a click,
-        and restores the original mouse position.
-        Returns the (x, y) coordinates where the click was performed.
-        """
-        location = pyautogui.locateOnScreen(image_path, region=region, confidence=confidence)
-        if not location:
-            raise ValueError(f"Image '{image_path}' not found on screen.")
-        left, top, width, height = location
-        x_target = random.randint(left, left + width - 1) + random.randint(*offset_range)
-        y_target = random.randint(top, top + height - 1) + random.randint(*offset_range)
-        original = pyautogui.position()
-        pyautogui.moveTo(x_target, y_target)
-        self.click_without_moving(button='left')
-        pyautogui.moveTo(original)
-        return (x_target, y_target)
-
-    def zoom_out(self, times=3, delay_low=0.005, delay_high=0.01, scroll_amount=-400):
-        screen_width, screen_height = pyautogui.size()
-        x, y = screen_width // 2, screen_height // 2
-        original = pyautogui.position()
-        pyautogui.moveTo(x, y)
-        for _ in range(times):
-            pyautogui.scroll(scroll_amount)
-            time.sleep(random.uniform(delay_low, delay_high))
-        pyautogui.moveTo(original)
-
-    def zoom_in(self, times=3, delay_low=0.005, delay_high=0.01, scroll_amount=400):
-        screen_width, screen_height = pyautogui.size()
-        x, y = screen_width // 2, screen_height // 2
-        original = pyautogui.position()
-        pyautogui.moveTo(x, y)
-        for _ in range(times):
-            pyautogui.scroll(scroll_amount)
-            time.sleep(random.uniform(delay_low, delay_high))
-        pyautogui.moveTo(original)
-
-    def get_scan_area(self, label):
-        """
-        Returns a region tuple (x, y, width, height) based on the label.
-        Labels (examples):
-          - p1, p2, ..., p6: Screen panels (e.g. left-to-right, top-bottom)
-          - h1, h2: Horizontal top and bottom halves.
-          - v1, v2, v3: Vertical slices.
-          - bag, chat: Specific regions.
-        Adjust the values as needed for your resolution.
-        """
-        screen_width, screen_height = pyautogui.size()
-        areas = {
-            # center should be smilar to p2 and p4, but skinnier. So it's the middle 5th of a 5 panels
-            "center": (screen_width // 3, 0, screen_width // 4, screen_height - 50),
-            "p1": (0, 0, screen_width // 3, screen_height // 2),
-            "p2": (screen_width // 3, 0, screen_width // 3, screen_height // 2),
-            "p3": (2 * screen_width // 3, 0, screen_width - 2 * (screen_width // 3), screen_height // 2),
-            "p4": (0, screen_height // 2, screen_width // 3, screen_height - screen_height // 2),
-            "p5": (screen_width // 3, screen_height // 2, screen_width // 3, screen_height - screen_height // 2),
-            "p6": (2 * screen_width // 3, screen_height // 2, screen_width - 2 * (screen_width // 3), screen_height - screen_height // 2),
-            "h1": (0, 0, screen_width, screen_height // 2),
-            "h2": (0, screen_height // 2, screen_width, screen_height - screen_height // 2),
-            "v1": (0, 0, screen_width // 3, screen_height),
-            "v2": (screen_width // 3, 0, screen_width // 3, screen_height),
-            "v3": (2 * screen_width // 3, 0, screen_width - 2 * (screen_width // 3), screen_height),
-            "bag": (screen_width - 243, screen_height - 345, 183, 260),
-            "chat": (0, screen_height - 200, 500, 200)
-        }
-        return areas.get(label, (0, 0, screen_width, screen_height))
-
     def pixel_click(self, color, region, tolerance=10, offset_range_x=(10, 30), offset_range_y=(10, 30), button='left'):
-        """
-        Finds a pixel matching the given hex color in the specified region,
-        applies a random offset, temporarily moves the mouse there, clicks without moving the visible cursor,
-        and then restores the original position.
-        Returns the (x, y) coordinates where the click was performed.
-        """
+        region = self.resolve_region(region)
         found_pixel = self.find_pixel(color, region=region, tolerance=tolerance)
         if not found_pixel:
             raise ValueError(f"{color} pixel not found in region {region}.")
@@ -118,6 +61,124 @@ class ScreenInteractor:
         target_y = found_pixel[1] + offset_y
         original = pyautogui.position()
         pyautogui.moveTo(target_x, target_y)
+        time.sleep(random.uniform(0.05, 0.1))
         self.click_without_moving(button=button)
         pyautogui.moveTo(original)
         return (target_x, target_y)
+
+    def find_image_cv2(self, image_path, region=None, threshold=0.8):
+        # Resolve the region if it's given as a label
+        region = self.resolve_region(region) if region is not None else None
+        
+        target = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+        if target is None:
+            print(f"Failed to load image: {image_path}")
+            return None
+
+        if region:
+            screenshot = pyautogui.screenshot(region=region)
+            region_offset = (region[0], region[1])
+        else:
+            screenshot = pyautogui.screenshot()
+            region_offset = (0, 0)
+            
+        screenshot_cv = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+        result = cv2.matchTemplate(screenshot_cv, target, cv2.TM_CCOEFF_NORMED)
+        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+        if max_val >= threshold:
+            target_h, target_w = target.shape[:2]
+            top_left = max_loc
+            center = (top_left[0] + target_w // 2, top_left[1] + target_h // 2)
+            center = (center[0] + region_offset[0], center[1] + region_offset[1])
+            return center
+        else:
+            return None
+
+    def click_image_cv2_without_moving(self, image_path, region=None, confidence=0.8, offset_range=(-10, 10)):
+        center = self.find_image_cv2(image_path, region=region, threshold=confidence)
+        if center is None:
+            print(f"Image not found: {image_path}")
+            return None
+        offset_x = random.randint(*offset_range)
+        offset_y = random.randint(*offset_range)
+        target = (center[0] + offset_x, center[1] + offset_y)
+        original = pyautogui.position()
+        pyautogui.moveTo(target)
+        time.sleep(random.uniform(0.05, 0.1))
+        self.click_without_moving(button='left')
+        pyautogui.moveTo(original)
+        return target
+    
+    def move_mouse_to(self, x, y):
+        pyautogui.moveTo(x, y)
+
+    def click_without_moving(self, button='left'):
+        current_x, current_y = pyautogui.position()
+        pyautogui.mouseDown(x=current_x, y=current_y, button=button)
+        pyautogui.mouseUp(x=current_x, y=current_y, button=button)
+        return (current_x, current_y)
+
+    def check_region_color(self, region, expected_color_hex, tolerance=10, samples=3):
+        # Ensure region is a tuple of ints
+        region = tuple(int(x) for x in region)
+        expected_color = tuple(int(expected_color_hex[i:i+2], 16) for i in (0, 2, 4))
+        screenshot = pyautogui.screenshot(region=region).convert("RGB")
+        width, height = screenshot.size
+        center = (width // 2, height // 2)
+        center_color = screenshot.getpixel(center)
+        print(f"Checking region color, center pixel: {center_color}, expected: {expected_color}")
+        if center_color[0] < 20 and center_color[1] < 20 and center_color[2] < 20:
+            for _ in range(samples):
+                x = random.randint(0, width - 1)
+                y = random.randint(0, height - 1)
+                sample_color = screenshot.getpixel((x, y))
+                print(f"Sampled color at ({x},{y}): {sample_color}")
+                if all(abs(sample_color[i] - expected_color[i]) <= tolerance for i in range(3)):
+                    return True
+            return False
+        else:
+            return all(abs(center_color[i] - expected_color[i]) <= tolerance for i in range(3))
+
+
+    def click_image_without_moving(self, image_path, region=None, confidence=0.8, offset_range=(-10, 10),
+                                   expected_color=None, color_tolerance=10, color_samples=3):
+        try:
+            location = pyautogui.locateOnScreen(image_path, region=region, confidence=confidence)
+        except Exception:
+            return None
+        if not location:
+            return None
+
+        if expected_color is not None:
+            if not self.check_region_color(location, expected_color, tolerance=color_tolerance, samples=color_samples):
+                return None
+
+        left, top, width, height = location
+        x_target = random.randint(left, left + width - 1) + random.randint(*offset_range)
+        y_target = random.randint(top, top + height - 1) + random.randint(*offset_range)
+        original = pyautogui.position()
+        pyautogui.moveTo(x_target, y_target)
+        time.sleep(random.uniform(0.05, 0.1))
+        self.click_without_moving(button='left')
+        pyautogui.moveTo(original)
+        return (x_target, y_target)
+
+    def zoom_out(self, times=3, delay_low=0.005, delay_high=0.01, scroll_amount=-400):
+        screen_width, screen_height = pyautogui.size()
+        x, y = screen_width // 6, screen_height // 6
+        original = pyautogui.position()
+        pyautogui.moveTo(x, y)
+        for _ in range(times):
+            pyautogui.scroll(scroll_amount)
+            time.sleep(random.uniform(delay_low, delay_high))
+        pyautogui.moveTo(original)
+
+    def zoom_in(self, times=3, delay_low=0.005, delay_high=0.01, scroll_amount=400):
+        screen_width, screen_height = pyautogui.size()
+        x, y = screen_width // 6, screen_height // 6
+        original = pyautogui.position()
+        pyautogui.moveTo(x, y)
+        for _ in range(times):
+            pyautogui.scroll(scroll_amount)
+            time.sleep(random.uniform(delay_low, delay_high))
+        pyautogui.moveTo(original)
