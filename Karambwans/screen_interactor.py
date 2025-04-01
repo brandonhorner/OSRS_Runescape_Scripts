@@ -11,7 +11,9 @@ class ScreenInteractor:
 
     def get_scan_area(self, label):
         screen_width, screen_height = pyautogui.size()
+        # todo: Offset these in the x direction if menu is open (check if combat tab (active or not) is on screen)
         areas = {
+            "game_screen": (0, 90, screen_width - 280, screen_height - 245),
             "center": (screen_width // 3, 0, screen_width // 4, screen_height - 50),
             "p1": (0, 0, screen_width // 3, screen_height // 2),
             "p2": (screen_width // 3, 0, screen_width // 3, screen_height // 2),
