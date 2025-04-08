@@ -1,5 +1,6 @@
 import time
 import random
+import pyautogui
 import cv2
 import numpy as np
 from screen_interactor import ScreenInteractor
@@ -51,14 +52,15 @@ def main_loop(max_loops=50):
                     
                     print(f"Spore found at {spore_location}")
                     
+                    # Single attempt to click the spore
                     # Right-click with offset (100px right, 10px down)
                     target_x = spore_location[0] + random.uniform(97, 103)
                     target_y = spore_location[1] + random.uniform(7, 13)
                     
-                    # Move to target and right-click using screen_interactor
-                    si.move_mouse_to(target_x, target_y)
+                    # Move to target and right-click
+                    pyautogui.moveTo(target_x, target_y)
                     time.sleep(random.uniform(0.1, 0.2))
-                    si.click_without_moving(button='right')
+                    pyautogui.click(button='right')
                     print(f"Right-clicked at position: ({target_x}, {target_y})")
                     
                     # Wait longer for the context menu to appear
@@ -68,13 +70,13 @@ def main_loop(max_loops=50):
                     spore_clicked = False
                     try:
                         # Take a screenshot of the entire screen
-                        menu_screenshot = si.screenshot()
+                        menu_screenshot = pyautogui.screenshot()
                         
                         # Convert the screenshot to CV2 format
                         menu_cv = cv2.cvtColor(np.array(menu_screenshot), cv2.COLOR_RGB2BGR)
                         
                         # Load and match the "Take seaweed spore" template
-                        template = cv2.imread('Karambwans/take_seaweed_spore.png')
+                        template = cv2.imread('python_bots/images/take_seaweed_spore.png')
                         if template is None:
                             raise ValueError("Could not load take_seaweed_spore.png template")
                         
@@ -93,10 +95,10 @@ def main_loop(max_loops=50):
                             click_x += random.randint(-3, 3)
                             click_y += random.randint(-2, 2)
                             
-                            # Click on the option using screen_interactor
-                            si.move_mouse_to(click_x, click_y)
+                            # Click on the option
+                            pyautogui.moveTo(click_x, click_y)
                             time.sleep(random.uniform(.05, .09))
-                            si.click_without_moving()
+                            pyautogui.click()
                             print(f"Clicked 'Take seaweed spore' at ({click_x}, {click_y})")
                             
                             time.sleep(random.uniform(7, 8))
@@ -149,7 +151,7 @@ def main_loop(max_loops=50):
                         offset_range_x=(-80, 80),
                         offset_range_y=(-80, 80)
                     )
-                    print(f"Returned to red box at {red_box_click}")
+                    print(f"Returning to red box at {red_box_click}")
                     time.sleep(random.uniform(7, 8))
                     print(f"Returned to red box.")
                     

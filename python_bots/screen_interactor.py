@@ -72,7 +72,8 @@ class ScreenInteractor:
         # Resolve the region if it's given as a label
         region = self.resolve_region(region) if region is not None else None
         
-        target = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+        # Load the template image and convert to BGR
+        target = cv2.imread(image_path)
         if target is None:
             print(f"Failed to load image: {image_path}")
             return None
@@ -84,7 +85,16 @@ class ScreenInteractor:
             screenshot = pyautogui.screenshot()
             region_offset = (0, 0)
             
+        # Convert screenshot to BGR format
         screenshot_cv = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+        
+        # Ensure both images are in the same format
+        if target.shape[2] != screenshot_cv.shape[2]:
+            if target.shape[2] == 4:  # If template has alpha channel
+                target = cv2.cvtColor(target, cv2.COLOR_BGRA2BGR)
+            elif screenshot_cv.shape[2] == 4:
+                screenshot_cv = cv2.cvtColor(screenshot_cv, cv2.COLOR_BGRA2BGR)
+        
         result = cv2.matchTemplate(screenshot_cv, target, cv2.TM_CCOEFF_NORMED)
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
         if max_val >= threshold:
