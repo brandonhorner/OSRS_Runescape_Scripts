@@ -119,8 +119,8 @@ def setup_bank(si):
     print("Checking for required items...")
     
     # Check for vial of water and harralander
-    vial_location = si.find_image_cv2('python_bots/images/vial_of_water.png', threshold=0.9)
-    harralander_location = si.find_image_cv2('python_bots/images/harralander.png', threshold=0.9)
+    vial_location = si.find_image_cv2('python_bots/images/vial_of_water.png', threshold=0.98)
+    harralander_location = si.find_image_cv2('python_bots/images/harralander.png', threshold=0.98)
     
     if not vial_location or not harralander_location:
         print("Required items not found in bank. Stopping script.")
@@ -277,8 +277,8 @@ def bank_items(si):
         print("Deposited all items")
         
         # Check if we can continue (items still available)
-        vial_location = si.find_image_cv2('python_bots/images/vial_of_water.png', threshold=0.9)
-        harralander_location = si.find_image_cv2('python_bots/images/harralander.png', threshold=0.9)
+        vial_location = si.find_image_cv2('python_bots/images/vial_of_water.png', threshold=0.98)
+        harralander_location = si.find_image_cv2('python_bots/images/harralander.png', threshold=0.98)
         
         if not vial_location or not harralander_location:
             print("Out of materials. Stopping script.")
