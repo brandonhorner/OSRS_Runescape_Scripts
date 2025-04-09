@@ -1,0 +1,1 @@
+This will be my attempt at creating a library of functions that can interact with the RuneLite plugin to grab data about objects on the screen.
