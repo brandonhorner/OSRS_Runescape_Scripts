@@ -68,7 +68,7 @@ class ScreenInteractor:
         pyautogui.moveTo(original)
         return (target_x, target_y)
 
-    def find_image_cv2(self, image_path, region=None, threshold=0.8):
+    def find_image_cv2(self, image_path, region=None, threshold=0.98):
         # Resolve the region if it's given as a label
         region = self.resolve_region(region) if region is not None else None
         
@@ -106,6 +106,54 @@ class ScreenInteractor:
         else:
             return None
 
+    def find_all_images_cv2(self, image_path, region=None, threshold=0.98):
+        """Find all instances of an image in the specified region that match above the threshold.
+        Returns a list of center coordinates for each match."""
+        # Resolve the region if it's given as a label
+        region = self.resolve_region(region) if region is not None else None
+        
+        # Load the template image and convert to BGR
+        target = cv2.imread(image_path)
+        if target is None:
+            print(f"Failed to load image: {image_path}")
+            return []
+
+        if region:
+            screenshot = pyautogui.screenshot(region=region)
+            region_offset = (region[0], region[1])
+        else:
+            screenshot = pyautogui.screenshot()
+            region_offset = (0, 0)
+            
+        # Convert screenshot to BGR format
+        screenshot_cv = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+        
+        # Ensure both images are in the same format
+        if target.shape[2] != screenshot_cv.shape[2]:
+            if target.shape[2] == 4:  # If template has alpha channel
+                target = cv2.cvtColor(target, cv2.COLOR_BGRA2BGR)
+            elif screenshot_cv.shape[2] == 4:
+                screenshot_cv = cv2.cvtColor(screenshot_cv, cv2.COLOR_BGRA2BGR)
+        
+        # Get template dimensions
+        target_h, target_w = target.shape[:2]
+        
+        # Perform template matching
+        result = cv2.matchTemplate(screenshot_cv, target, cv2.TM_CCOEFF_NORMED)
+        
+        # Find all locations where the match is above threshold
+        locations = np.where(result >= threshold)
+        matches = []
+        
+        # Convert locations to center coordinates
+        for pt in zip(*locations[::-1]):
+            center = (pt[0] + target_w // 2, pt[1] + target_h // 2)
+            # Add region offset to get screen coordinates
+            center = (center[0] + region_offset[0], center[1] + region_offset[1])
+            matches.append(center)
+        
+        return matches
+
     def click_image_cv2_without_moving(self, image_path, region=None, confidence=0.8, offset_range=(-10, 10)):
         center = self.find_image_cv2(image_path, region=region, threshold=confidence)
         if center is None:
@@ -119,6 +167,47 @@ class ScreenInteractor:
         time.sleep(random.uniform(0.05, 0.1))
         self.click_without_moving(button='left')
         pyautogui.moveTo(original)
+        return target
+
+    def click_image_cv2(self, image_path, region=None, confidence=0.8, offset_range_x=(-7, 7), offset_range_y=(-7, 7), sleep_after=None, click_type='left'):
+        """Click on an image with separate x and y offset ranges and optional sleep after clicking.
+        
+        Args:
+            image_path: Path to the image file to find and click
+            region: Region to search in (can be string label or tuple)
+            confidence: Confidence threshold for image matching
+            offset_range_x: Tuple of (min, max) for random x offset from center
+            offset_range_y: Tuple of (min, max) for random y offset from center
+            sleep_after: If provided, sleep for random time between (min, max) after clicking
+            click_type: Type of click to perform ('left', 'right', or 'double')
+        
+        Returns:
+            Tuple of (x, y) click coordinates or None if image not found
+        """
+        center = self.find_image_cv2(image_path, region=region, threshold=confidence)
+        if center is None:
+            print(f"Image not found: {image_path}")
+            return None
+            
+        offset_x = random.randint(*offset_range_x)
+        offset_y = random.randint(*offset_range_y)
+        target = (center[0] + offset_x, center[1] + offset_y)
+        pyautogui.moveTo(target)
+        time.sleep(random.uniform(0.05, 0.1))
+        
+        if click_type == 'right':
+            pyautogui.click(button='right')
+        elif click_type == 'double':
+            pyautogui.click()
+            # Human-like delay between double clicks (typically 100-200ms)
+            time.sleep(random.uniform(0.1, 0.2))
+            pyautogui.click()
+        else:  # default to left click
+            pyautogui.click()
+        
+        if sleep_after is not None:
+            time.sleep(random.uniform(*sleep_after))
+            
         return target
     
     def move_mouse_to(self, x, y):
