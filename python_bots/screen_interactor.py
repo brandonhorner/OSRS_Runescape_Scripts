@@ -283,3 +283,89 @@ class ScreenInteractor:
             pyautogui.scroll(scroll_amount)
             time.sleep(random.uniform(delay_low, delay_high))
         pyautogui.moveTo(original)
+
+    def find_closest_pixel(self, color_hex, tolerance=1, max_radius=1440, local_search_size=90):
+        """Find the closest pixel of the specified color to the center of the screen by expanding search radius.
+        Optionally performs a local search around the found pixel to find the top-left most pixel.
+        
+        Args:
+            color_hex: The hex color to search for (e.g. "00FFFF" for teal)
+            tolerance: Color matching tolerance
+            max_radius: Maximum radius to search from center (default: 1440 for 2560x1440 screen)
+            local_search_size: Size of the local search area around the found pixel (default: 90x90)
+        
+        Returns:
+            Tuple of (x, y) coordinates of the closest matching pixel, or None if none found
+        """
+        screen_width, screen_height = pyautogui.size()
+        center_x, center_y = screen_width // 2, screen_height // 2
+        target_color = tuple(int(color_hex[i:i+2], 16) for i in (0, 2, 4))
+        
+        # Start with a small radius and expand
+        for radius in range(50, max_radius, 50):
+            # Calculate search area
+            left = max(0, center_x - radius)
+            right = min(screen_width, center_x + radius)
+            top = max(0, center_y - radius)
+            bottom = min(screen_height, center_y + radius)
+            
+            # Take screenshot of the current search area
+            screenshot = pyautogui.screenshot(region=(int(left), int(top), int(right - left), int(bottom - top)))
+            
+            # Convert to numpy array for faster processing
+            pixels = np.array(screenshot)
+            
+            # Find all pixels that match the target color within tolerance
+            matches = np.where(
+                (np.abs(pixels[:, :, 0] - target_color[0]) <= tolerance) &
+                (np.abs(pixels[:, :, 1] - target_color[1]) <= tolerance) &
+                (np.abs(pixels[:, :, 2] - target_color[2]) <= tolerance)
+            )
+            
+            if len(matches[0]) > 0:
+                # Calculate distances to center for all matches
+                distances = np.sqrt(
+                    (matches[0] + top - center_y) ** 2 +
+                    (matches[1] + left - center_x) ** 2
+                )
+                
+                # Find the closest match
+                closest_idx = np.argmin(distances)
+                closest_y = matches[0][closest_idx] + top
+                closest_x = matches[1][closest_idx] + left
+                
+                # If local_search_size is specified, perform a local search
+                if local_search_size > 0:
+                    # Calculate local search area
+                    local_left = max(0, closest_x - local_search_size // 2)
+                    local_right = min(screen_width, closest_x + local_search_size // 2)
+                    local_top = max(0, closest_y - local_search_size // 2)
+                    local_bottom = min(screen_height, closest_y + local_search_size // 2)
+                    
+                    # Take screenshot of local area
+                    local_screenshot = pyautogui.screenshot(region=(
+                        int(local_left), 
+                        int(local_top),
+                        int(local_right - local_left),
+                        int(local_bottom - local_top)
+                    ))
+                    
+                    # Convert to numpy array
+                    local_pixels = np.array(local_screenshot)
+                    
+                    # Find all matching pixels in local area
+                    local_matches = np.where(
+                        (np.abs(local_pixels[:, :, 0] - target_color[0]) <= tolerance) &
+                        (np.abs(local_pixels[:, :, 1] - target_color[1]) <= tolerance) &
+                        (np.abs(local_pixels[:, :, 2] - target_color[2]) <= tolerance)
+                    )
+                    
+                    if len(local_matches[0]) > 0:
+                        # Find the top-left most pixel in the local area
+                        top_left_idx = np.argmin(local_matches[0] + local_matches[1])
+                        return (int(local_matches[1][top_left_idx] + local_left), 
+                               int(local_matches[0][top_left_idx] + local_top))
+                
+                return (int(closest_x), int(closest_y))
+        
+        return None
