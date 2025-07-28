@@ -76,7 +76,7 @@ def main_loop(max_loops=50):
                         menu_cv = cv2.cvtColor(np.array(menu_screenshot), cv2.COLOR_RGB2BGR)
                         
                         # Load and match the "Take seaweed spore" template
-                        template = cv2.imread('python_bots/images/take_seaweed_spore.png')
+                        template = cv2.imread('python_bots/image_library/take_seaweed_spore.png')
                         if template is None:
                             raise ValueError("Could not load take_seaweed_spore.png template")
                         

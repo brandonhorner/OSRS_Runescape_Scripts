@@ -21,7 +21,7 @@ def create_bank_close_monitor(si):
     """Helper function to create a new ImageMonitor instance for the bank close button"""
     return ImageMonitor(
         screen_interactor=si,
-        image_path='python_bots/images/bank_close.png',
+        image_path='python_bots/image_library/bank_close.png',
         region="game_screen",
         confidence=0.9,
         check_interval=0.2,
@@ -54,7 +54,7 @@ def setup_bank(si):
     print("Starting setup...")
     
     # First check if bank is already open
-    bank_close_location = si.find_image_cv2('python_bots/images/bank_close.png', threshold=0.9)
+    bank_close_location = si.find_image_cv2('python_bots/image_library/bank_close.png', threshold=0.9)
     if bank_close_location:
         print("Bank is already open")
         # Move mouse away from bank interface
@@ -87,7 +87,7 @@ def setup_bank(si):
                     
                     # Wait for context menu and click "Use bank"
                     time.sleep(random.uniform(0.3, 0.5))
-                    use_bank_location = si.find_image_cv2('python_bots/images/use_bank.png', threshold=0.9)
+                    use_bank_location = si.find_image_cv2('python_bots/image_library/use_bank.png', threshold=0.9)
                     if use_bank_location:
                         pyautogui.moveTo(use_bank_location[0], use_bank_location[1])
                         time.sleep(random.uniform(0.2, 0.4))
@@ -115,8 +115,8 @@ def setup_bank(si):
     print("Checking for required items...")
     
     # Check for volcanic ash and harralander potion (unf)
-    ash_location = si.find_image_cv2('python_bots/images/volcanic_ash.png', threshold=0.98)
-    potion_location = si.find_image_cv2('python_bots/images/harralander_potion_unf.png', threshold=0.99)
+    ash_location = si.find_image_cv2('python_bots/image_library/volcanic_ash.png', threshold=0.98)
+    potion_location = si.find_image_cv2('python_bots/image_library/harralander_potion_unf.png', threshold=0.99)
     
     if not ash_location or not potion_location:
         print("Required items not found in bank. Stopping script.")
@@ -130,7 +130,7 @@ def setup_bank(si):
     time.sleep(random.uniform(0.3, 1))
     
     # Try to find and click "Withdraw-27" first
-    withdraw_27_location = si.find_image_cv2('python_bots/images/withdraw-27.png', threshold=0.98)
+    withdraw_27_location = si.find_image_cv2('python_bots/image_library/withdraw-27.png', threshold=0.98)
     if withdraw_27_location:
         pyautogui.moveTo(withdraw_27_location[0], withdraw_27_location[1])
         time.sleep(random.uniform(0.2, 0.4))
@@ -138,7 +138,7 @@ def setup_bank(si):
         print("Clicked 'Withdraw-27'")
     else:
         # Try withdraw-x option
-        withdraw_x_location = si.find_image_cv2('python_bots/images/withdraw-x.png', threshold=0.9)
+        withdraw_x_location = si.find_image_cv2('python_bots/image_library/withdraw-x.png', threshold=0.9)
         if withdraw_x_location:
             pyautogui.moveTo(withdraw_x_location[0], withdraw_x_location[1])
             time.sleep(random.uniform(1, 1.4))
@@ -155,8 +155,8 @@ def setup_bank(si):
             return False
     
     # Check and set X quantity if needed
-    if not si.find_image_cv2('python_bots/images/bank_x_quantity_is_active.png', threshold=0.95):
-        x_quantity_location = si.find_image_cv2('python_bots/images/bank_x_quantity_is_NOT_active.png', threshold=0.95)
+    if not si.find_image_cv2('python_bots/image_library/bank_x_quantity_is_active.png', threshold=0.95):
+        x_quantity_location = si.find_image_cv2('python_bots/image_library/bank_x_quantity_is_NOT_active.png', threshold=0.95)
         if x_quantity_location:
             pyautogui.moveTo(x_quantity_location[0], x_quantity_location[1])
             time.sleep(random.uniform(0.2, 0.4))
@@ -182,7 +182,7 @@ def setup_bank(si):
         time.sleep(random.uniform(0.5, 0.8))
         
         # Check if ash is in inventory
-        ash_bag_location = si.find_image_cv2('python_bots/images/volcanic_ash.png', region="bag", threshold=0.98)
+        ash_bag_location = si.find_image_cv2('python_bots/image_library/volcanic_ash.png', region="bag", threshold=0.98)
         if ash_bag_location:
             print("Volcanic ash successfully withdrawn")
             ash_withdrawn = True
@@ -196,7 +196,7 @@ def setup_bank(si):
 
     # Close bank
     print("Closing bank...")
-    bank_close_location = si.find_image_cv2('python_bots/images/bank_close.png', threshold=0.9)
+    bank_close_location = si.find_image_cv2('python_bots/image_library/bank_close.png', threshold=0.9)
     if bank_close_location:
         pyautogui.moveTo(bank_close_location[0], bank_close_location[1])
         time.sleep(random.uniform(0.2, 0.4))
@@ -205,7 +205,7 @@ def setup_bank(si):
         time.sleep(random.uniform(0.5, 1.5))
         
         # Check if bag interface is present
-        bag_is_closed_location = si.find_image_cv2('python_bots/images/bag_is_closed.png', threshold=0.98)
+        bag_is_closed_location = si.find_image_cv2('python_bots/image_library/bag_is_closed.png', threshold=0.98)
         if bag_is_closed_location:
             print("Closed bag icon still present, clicking bag to open...")
             pyautogui.moveTo(bag_is_closed_location[0], bag_is_closed_location[1])
@@ -221,7 +221,7 @@ def make_potions(si):
     time.sleep(random.uniform(.5, 1))
     
     # Click volcanic ash
-    ash_bag_location = si.find_image_cv2('python_bots/images/volcanic_ash.png', region="bag", threshold=0.99)
+    ash_bag_location = si.find_image_cv2('python_bots/image_library/volcanic_ash.png', region="bag", threshold=0.99)
     if ash_bag_location:
         pyautogui.moveTo(ash_bag_location[0], ash_bag_location[1])
         time.sleep(random.uniform(0.2, 0.4))
@@ -229,7 +229,7 @@ def make_potions(si):
         print("Clicked volcanic ash in inventory")
     
     # Click harralander potion (unf)
-    potion_bag_location = si.find_image_cv2('python_bots/images/harralander_potion_unf.png', region="bag", threshold=0.99)
+    potion_bag_location = si.find_image_cv2('python_bots/image_library/harralander_potion_unf.png', region="bag", threshold=0.99)
     if potion_bag_location:
         pyautogui.moveTo(potion_bag_location[0], potion_bag_location[1])
         time.sleep(random.uniform(0.2, 0.4))
@@ -248,7 +248,7 @@ def bank_items(si):
     print("Banking items...")
     
     # First check if bank is already open
-    bank_close_location = si.find_image_cv2('python_bots/images/bank_close.png', threshold=0.9)
+    bank_close_location = si.find_image_cv2('python_bots/image_library/bank_close.png', threshold=0.9)
     if bank_close_location:
         print("Bank is already open")
         # Move mouse away from bank interface
@@ -270,7 +270,7 @@ def bank_items(si):
                 time.sleep(random.uniform(0.3, 0.5))
                 
                 # Click "Use bank"
-                use_bank_location = si.find_image_cv2('python_bots/images/use_bank.png', threshold=0.9)
+                use_bank_location = si.find_image_cv2('python_bots/image_library/use_bank.png', threshold=0.9)
                 if use_bank_location:
                     pyautogui.moveTo(use_bank_location[0], use_bank_location[1])
                     time.sleep(random.uniform(0.2, 0.4))
@@ -288,7 +288,7 @@ def bank_items(si):
         bank_chest_monitor.stop()
     
     # Deposit all
-    deposit_all_location = si.find_image_cv2('python_bots/images/deposit_all_inventory.png', threshold=0.9)
+    deposit_all_location = si.find_image_cv2('python_bots/image_library/deposit_all_inventory.png', threshold=0.9)
     if deposit_all_location:
         pyautogui.moveTo(deposit_all_location[0], deposit_all_location[1])
         time.sleep(random.uniform(0.2, 0.4))
@@ -296,8 +296,8 @@ def bank_items(si):
         print("Deposited all items")
         
         # Check if we can continue (items still available)
-        ash_location = si.find_image_cv2('python_bots/images/volcanic_ash.png', threshold=0.98)
-        potion_location = si.find_image_cv2('python_bots/images/harralander_potion_unf.png', threshold=0.99)
+        ash_location = si.find_image_cv2('python_bots/image_library/volcanic_ash.png', threshold=0.98)
+        potion_location = si.find_image_cv2('python_bots/image_library/harralander_potion_unf.png', threshold=0.99)
         
         if not ash_location or not potion_location:
             print("Out of materials. Stopping script.")
@@ -315,7 +315,7 @@ def bank_items(si):
         pyautogui.click()
         
         # Close bank
-        bank_close_location = si.find_image_cv2('python_bots/images/bank_close.png', threshold=0.9)
+        bank_close_location = si.find_image_cv2('python_bots/image_library/bank_close.png', threshold=0.9)
         if bank_close_location:
             pyautogui.moveTo(bank_close_location[0], bank_close_location[1])
             time.sleep(random.uniform(0.2, 0.4))

@@ -32,7 +32,7 @@ def main_loop(max_loops=50):
             time.sleep(random.uniform(1.5, 2.5))
 
             # Step 1: Click on the fishing spot using the raw karambwan image.
-            fishing_spot_image = 'Karambwans/raw_karambwan.png'
+            fishing_spot_image = 'python_bots/image_library/raw_karambwan.png'
             # Use the "center" area for the top-middle of the screen.
             center_region = si.get_scan_area("v2")
             fishing_spot_click = si.click_image_cv2_without_moving(fishing_spot_image, region=center_region, confidence=0.98, offset_range=(0, 3))
@@ -80,10 +80,10 @@ def main_loop(max_loops=50):
 
             # Step 7: Deposit items by clicking on the fish barrel and raw karambwans in the bag.
             bag_region = si.get_scan_area("bag")
-            fish_barrel_click = si.click_image_without_moving('Karambwans/fish_barrel.png', region=bag_region, confidence=0.8, offset_range=(0, 3))
+            fish_barrel_click = si.click_image_without_moving('python_bots/image_library/fish_barrel.png', region=bag_region, confidence=0.8, offset_range=(0, 3))
             print(f"Fish barrel clicked at {fish_barrel_click}.")
             time.sleep(random.uniform(0.2, 0.3))
-            raw_karambwan_click = si.click_image_without_moving('Karambwans/raw_karambwan.png', region=bag_region, confidence=0.88, offset_range=(0, 3))
+            raw_karambwan_click = si.click_image_without_moving('python_bots/image_library/raw_karambwan.png', region=bag_region, confidence=0.88, offset_range=(0, 3))
             print(f"Raw karambwan clicked at {raw_karambwan_click}.")
             time.sleep(random.uniform(0.2, 0.3))
 

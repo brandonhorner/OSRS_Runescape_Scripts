@@ -21,7 +21,7 @@ def create_bank_close_monitor(si):
     """Helper function to create a new ImageMonitor instance for the bank close button"""
     return ImageMonitor(
         screen_interactor=si,
-        image_path='python_bots/images/bank_close.png',
+        image_path='python_bots/image_library/bank_close.png',
         region="game_screen",
         confidence=0.9,
         check_interval=0.2,
@@ -54,7 +54,7 @@ def setup_bank(si):
     print("Starting setup...")
     
     # First check if bank is already open
-    bank_close_location = si.find_image_cv2('python_bots/images/bank_close.png', threshold=0.9)
+    bank_close_location = si.find_image_cv2('python_bots/image_library/bank_close.png', threshold=0.9)
     if bank_close_location:
         print("Bank is already open")
         # Move mouse away from bank interface
@@ -87,7 +87,7 @@ def setup_bank(si):
                     
                     # Wait for context menu and click "Use bank"
                     time.sleep(random.uniform(0.3, 0.5))
-                    use_bank_location = si.find_image_cv2('python_bots/images/use_bank.png', threshold=0.9)
+                    use_bank_location = si.find_image_cv2('python_bots/image_library/use_bank.png', threshold=0.9)
                     if use_bank_location:
                         pyautogui.moveTo(use_bank_location[0], use_bank_location[1])
                         time.sleep(random.uniform(0.2, 0.4))
@@ -115,15 +115,15 @@ def setup_bank(si):
     print("Checking for required items...")
     
     # Check for compost potion and compost
-    potion_location = si.find_image_cv2('python_bots/images/compost_potion.png', threshold=0.99)
-    compost_location = si.find_image_cv2('python_bots/images/compost.png', threshold=0.99)
+    potion_location = si.find_image_cv2('python_bots/image_library/compost_potion.png', threshold=0.99)
+    compost_location = si.find_image_cv2('python_bots/image_library/compost.png', threshold=0.99)
     
     if not potion_location or not compost_location:
         print("Required items not found in bank. Stopping script.")
         return False
     
     # Check and activate "Withdraw all" if needed
-    withdraw_all_inactive = si.find_image_cv2('python_bots/images/bank_all_quantity_is_inactive.png', threshold=0.98)
+    withdraw_all_inactive = si.find_image_cv2('python_bots/image_library/bank_all_quantity_is_inactive.png', threshold=0.98)
     if withdraw_all_inactive:
         print("Activating 'Withdraw all' mode...")
         pyautogui.moveTo(withdraw_all_inactive[0], withdraw_all_inactive[1])
@@ -139,7 +139,7 @@ def setup_bank(si):
     time.sleep(random.uniform(0.3, 0.5))
     
     # Try to find and click "Withdraw-7" first
-    withdraw_7_location = si.find_image_cv2('python_bots/images/withdraw-7.png', threshold=0.98)
+    withdraw_7_location = si.find_image_cv2('python_bots/image_library/withdraw-7.png', threshold=0.98)
     if withdraw_7_location:
         pyautogui.moveTo(withdraw_7_location[0], withdraw_7_location[1])
         time.sleep(random.uniform(0.2, 0.4))
@@ -147,7 +147,7 @@ def setup_bank(si):
         print("Clicked 'Withdraw-7'")
     else:
         # Try withdraw-x option
-        withdraw_x_location = si.find_image_cv2('python_bots/images/withdraw-x.png', threshold=0.9)
+        withdraw_x_location = si.find_image_cv2('python_bots/image_library/withdraw-x.png', threshold=0.9)
         if withdraw_x_location:
             pyautogui.moveTo(withdraw_x_location[0], withdraw_x_location[1])
             time.sleep(random.uniform(1, 1.4))
@@ -169,7 +169,7 @@ def setup_bank(si):
     
     # Close bank
     print("Closing bank...")
-    bank_close_location = si.find_image_cv2('python_bots/images/bank_close.png', threshold=0.9)
+    bank_close_location = si.find_image_cv2('python_bots/image_library/bank_close.png', threshold=0.9)
     if bank_close_location:
         pyautogui.moveTo(bank_close_location[0], bank_close_location[1])
         time.sleep(random.uniform(0.2, 0.4))
@@ -178,7 +178,7 @@ def setup_bank(si):
         time.sleep(random.uniform(0.5, 1.5))
         
         # Check if bag interface is present
-        bag_is_closed_location = si.find_image_cv2('python_bots/images/bag_is_closed.png', threshold=0.98)
+        bag_is_closed_location = si.find_image_cv2('python_bots/image_library/bag_is_closed.png', threshold=0.98)
         if bag_is_closed_location:
             print("Closed bag icon still present, clicking bag to open...")
             pyautogui.moveTo(bag_is_closed_location[0], bag_is_closed_location[1])
@@ -194,7 +194,7 @@ def make_super_compost(si):
     time.sleep(random.uniform(0.2, 0.3))  # Reduced initial delay
     
     # Find all compost potions in inventory
-    potion_locations = si.find_all_images_cv2('python_bots/images/compost_potion.png', region="bag", threshold=0.99)
+    potion_locations = si.find_all_images_cv2('python_bots/image_library/compost_potion.png', region="bag", threshold=0.99)
     if not potion_locations:
         print("No more compost potions in inventory")
         return True
@@ -218,7 +218,7 @@ def make_super_compost(si):
             
             # Find and click next available compost bucket
             si.click_image_cv2(
-                'python_bots/images/compost.png',
+                'python_bots/image_library/compost.png',
                 region="bag",
                 confidence=0.99,
                 offset_range_x=(-7, 7),
@@ -226,12 +226,12 @@ def make_super_compost(si):
                 sleep_after=(0.4, 0.7)  # Animation wait time
             )
             
-            if not si.find_image_cv2('python_bots/images/compost.png', region="bag", threshold=0.99):
+            if not si.find_image_cv2('python_bots/image_library/compost.png', region="bag", threshold=0.99):
                 print("No more compost buckets available")
                 return True
         
         # Find all remaining potions and get the new bottom-right most one
-        potion_locations = si.find_all_images_cv2('python_bots/images/compost_potion.png', region="bag", threshold=0.99)
+        potion_locations = si.find_all_images_cv2('python_bots/image_library/compost_potion.png', region="bag", threshold=0.99)
         if potion_locations:
             bottom_right_potion = max(potion_locations, key=lambda loc: (loc[1], loc[0]))
     
@@ -242,7 +242,7 @@ def bank_items(si):
     print("Banking items...")
     
     # First check if bank is already open
-    bank_close_location = si.find_image_cv2('python_bots/images/bank_close.png', threshold=0.9)
+    bank_close_location = si.find_image_cv2('python_bots/image_library/bank_close.png', threshold=0.9)
     if bank_close_location:
         print("Bank is already open")
         # Move mouse away from bank interface
@@ -264,7 +264,7 @@ def bank_items(si):
                 time.sleep(random.uniform(0.3, 0.5))
                 
                 # Click "Use bank"
-                use_bank_location = si.find_image_cv2('python_bots/images/use_bank.png', threshold=0.9)
+                use_bank_location = si.find_image_cv2('python_bots/image_library/use_bank.png', threshold=0.9)
                 if use_bank_location:
                     pyautogui.moveTo(use_bank_location[0], use_bank_location[1])
                     time.sleep(random.uniform(0.2, 0.4))
@@ -282,7 +282,7 @@ def bank_items(si):
         bank_chest_monitor.stop()
     
     # Deposit all
-    deposit_all_location = si.find_image_cv2('python_bots/images/deposit_all_inventory.png', threshold=0.9)
+    deposit_all_location = si.find_image_cv2('python_bots/image_library/deposit_all_inventory.png', threshold=0.9)
     if deposit_all_location:
         pyautogui.moveTo(deposit_all_location[0], deposit_all_location[1])
         time.sleep(random.uniform(0.2, 0.4))
@@ -290,8 +290,8 @@ def bank_items(si):
         print("Deposited all items")
         
         # Check if we can continue (items still available)
-        potion_location = si.find_image_cv2('python_bots/images/compost_potion.png', threshold=0.99)
-        compost_location = si.find_image_cv2('python_bots/images/compost.png', threshold=0.99)
+        potion_location = si.find_image_cv2('python_bots/image_library/compost_potion.png', threshold=0.99)
+        compost_location = si.find_image_cv2('python_bots/image_library/compost.png', threshold=0.99)
         
         if not potion_location or not compost_location:
             print("Out of materials. Stopping script.")
@@ -306,13 +306,13 @@ def bank_items(si):
         pyautogui.click(button='right')
         time.sleep(random.uniform(0.3, 0.5))
         
-        withdraw_7_location = si.find_image_cv2('python_bots/images/withdraw-7.png', threshold=0.98)
+        withdraw_7_location = si.find_image_cv2('python_bots/image_library/withdraw-7.png', threshold=0.98)
         if withdraw_7_location:
             pyautogui.moveTo(withdraw_7_location[0], withdraw_7_location[1])
             time.sleep(random.uniform(0.2, 0.4))
             pyautogui.click()
         else:
-            withdraw_x_location = si.find_image_cv2('python_bots/images/withdraw-x.png', threshold=0.9)
+            withdraw_x_location = si.find_image_cv2('python_bots/image_library/withdraw-x.png', threshold=0.9)
             if withdraw_x_location:
                 pyautogui.moveTo(withdraw_x_location[0], withdraw_x_location[1])
                 time.sleep(random.uniform(1, 1.4))
@@ -332,7 +332,7 @@ def bank_items(si):
         pyautogui.click()
         
         # Close bank
-        bank_close_location = si.find_image_cv2('python_bots/images/bank_close.png', threshold=0.9)
+        bank_close_location = si.find_image_cv2('python_bots/image_library/bank_close.png', threshold=0.9)
         if bank_close_location:
             pyautogui.moveTo(bank_close_location[0], bank_close_location[1])
             time.sleep(random.uniform(0.2, 0.4))

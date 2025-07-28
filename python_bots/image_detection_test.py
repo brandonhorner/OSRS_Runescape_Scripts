@@ -6,7 +6,7 @@ import os
 from screen_interactor import ScreenInteractor
 
 class ImageDetectionTest:
-    def __init__(self, template_path="Karambwans/take_seaweed_spore.png"):
+    def __init__(self, template_path="python_bots/image_library/take_seaweed_spore.png"):
         self.si = ScreenInteractor()
         self.template_path = template_path
         
@@ -14,7 +14,7 @@ class ImageDetectionTest:
         if not os.path.exists(template_path):
             print(f"ERROR: Template image not found at: {template_path}")
             print(f"Current working directory: {os.getcwd()}")
-            print(f"Files in directory: {os.listdir('Karambwans/' if os.path.exists('Karambwans/') else '.')}")
+            print(f"Files in directory: {os.listdir('python_bots/image_library/' if os.path.exists('python_bots/image_library/') else '.')}")
             return
             
         # Load the template for testing
