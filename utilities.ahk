@@ -147,7 +147,8 @@ global pixel_color := {
     npc_dark : 0x84CD00,
     tick : 0x00908D,
     tick_2 : 0x1580AD,
-    tick_3 : 0x01E0E11
+    tick_3 : 0x01E0E1,
+    tick_4 : 0x1A6E80
 }
 
 ; put this back after you look up how to override these
@@ -272,7 +273,7 @@ open_bag()
         if !ImageExists(open_bag_pic, coord.bag.x1, coord.bag.y1, coord.bag.x2, coord.bag.y2)
         {
             ; open bag was not found, open the bag with F3 by default (I changed it to 1)
-            SendInput(1)
+            SendInput("b")
         } 
         return true
     }
@@ -720,7 +721,7 @@ WaitForTick()
 {
     while (A_Index < 10000 )
     {   ;1700, 119, 1704, 123
-        if (pixel_search_and_click(1700, 119, 1706, 123, pixel_color.tick)) {
+        if (pixel_search_and_click(1700, 119, 1706, 123, pixel_color.tick_4)) {
             return true
         }
                                                                                 ToolTip("5. WaitForTick(): " A_Index " tries. Can't find the color...", X_TOOLTIP.5, Y_TOOLTIP.5, 5)
@@ -739,80 +740,7 @@ MenuIsOpen()
     }
     return true
 }
-/*
-; click the first available lobster in your inventory
-EatLobster()
-{
-                                                                            ToolTip "Eating lobster...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-    open_bag()
-    sleep_random(500, 1500)
-    if ImageSearchAndClick(images.lobster_cooked, "bag", "mouseover", "item") {
-        sleep_random(500, 1500)
-        Click("Left")
-        sleep_random(500, 1500)
-        return true
-    }
-                                                                            ToolTip "...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-    return false
-}
 
-
-HealthIsLow()
-{
-    if ImageExists(images.healthbar, 1400, 820, 1700, 850)
-    {
-        return false
-    }
-                                                                            ToolTip "Health is low...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-    return true
-}
-
-CheckIfStunned()
-{
-                                                                            ToolTip "Stunned. Waiting...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-    if ImageSearchAndClick(images.imstunned, "top_left",,,,,,,5)
-    {
-        sleep_random(100, 100)
-        return true
-    }
-                                                                            ToolTip "", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-    return false
-}
-
-CheckIfFullOnMoneyBags()
-{
-    SendKey("1")
-    if ImageSearchAndClick(images.money_bag_full, "bag", "mouseover", "item") {
-                                                                            ToolTip "Clicking the FULL money bag :')...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-        sleep_random(400, 900)
-        Click("Left")
-        sleep_random(500, 900)
-        return true
-    }
-    return false
-}
-
-; 1 in 4 chance to click the money bag in your inventory
-ClickMoneyBag()
-{
-    lucky_number := Random(1,5)
-    if !(lucky_number = 4)
-        return false    
-    
-    SendKey(1)
-    if ImageExists(images.open_bag) {                                       ;ensure bag is open
-        sleep_random(10, 100)
-        if ImageSearchAndClick(images.money_bag, "bag", "mouseover", "item")
-                                                                            ToolTip "Clicking the money bag...", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-            sleep_random(500, 1500)
-            Click("Left")
-            sleep_random(500, 1500)
-            return true
-    }
-                                                                            ToolTip "", X_TOOLTIP.1, Y_TOOLTIP.1, 1
-    return false
-}
-*/
 ; target is outlined with a solid line, this function checks for a pixel at 4 points around the outline
 ;   if 3 out of 4 points are found, we are going to return true, there is only one cardinal
 ;   direction that can produce these 3 points, so we know they standing up facing us
@@ -1289,9 +1217,9 @@ GetOffset(offset_item)
         ;"option" refers to when you "right" click in-game, the top "left" of the image is 0,0
         case "option":
             ;we want to move mouse to the right 52 to 92 pixels to click more in the center of the image
-            horizontal := Random(0, 200)
+            horizontal := Random(0, 0)
             ;we want to move mouse down 2 to 11 pixels to click randomly within the image
-            vertical := Random(1, 10)
+            vertical := Random(0, 0)
 
         ;"option_short" refers to when the right click menu is half sized from the usual
         case "option_short":
