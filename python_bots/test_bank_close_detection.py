@@ -1,26 +1,21 @@
 from screen_interactor import ScreenInteractor
 import time
 
-def test_bank_close_detection():
+def test_inventory_full_detection():
     si = ScreenInteractor()
     time.sleep(2)
     
-    # Test all withdraw options
-    withdraw_images = [
-        "withdraw-13.png",
-        "withdraw-14.png", 
-        "withdraw-27.png",
-        "withdraw-7.png",
-        "withdraw-X.png",
-        "withdraw-all.png"
-    ]
+    print("Testing inventory full detection...")
+    print("Make sure you have a full inventory of sandstone to test this.")
     
-    for image in withdraw_images:
-        result = si.find_image_cv2(f"python_bots/image_library/{image}", threshold=0.85)
-        if result:
-            print(f"{image} found at: {result}")
-        else:
-            print(f"{image} NOT found on the screen.")
+    # Test the inventory full detection
+    inventory_full = si.find_image_cv2("python_bots/image_library/inventory_full_sandstone.png", 
+                                       region="chat_area", threshold=0.85)
+    if inventory_full:
+        print(f"inventory_full_sandstone.png found at: {inventory_full}")
+    else:
+        print("inventory_full_sandstone.png NOT found on the screen.")
+        print("Make sure your inventory is full of sandstone and the image file exists.")
 
 if __name__ == "__main__":
-    test_bank_close_detection() 
+    test_inventory_full_detection() 

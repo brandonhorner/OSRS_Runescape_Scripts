@@ -28,7 +28,11 @@ class ScreenInteractor:
             "v3": (2 * screen_width // 3, 0, screen_width - 2 * (screen_width // 3), screen_height),
             "bag": (screen_width - 243, screen_height - 345, 183, 260),
             "chat": (0, screen_height - 200, 500, screen_height - 72),
-            "activity_pane": (0, 22, 150, 250)
+            "activity_pane": (0, 22, 150, 250),
+            "chat_area": (0, screen_height - 200, 500, screen_height - 72),
+            "game_screen_middle_horizontal": (0, 292, 2525, 950),
+            "bottom_of_char_zoom_8": (1245, 743, 1285, 779),
+            "left_of_char_zoom_8": (1183, 689, 1228, 723)
         }
         return areas.get(label, (0, 0, screen_width, screen_height))
         
@@ -369,3 +373,117 @@ class ScreenInteractor:
                 return (int(closest_x), int(closest_y))
         
         return None
+
+    def find_closest_pixel_without_moving(self, color_hex, tolerance=1, max_radius=1440, local_search_size=90, offset_range_x=(0, 20), offset_range_y=(0, 20)):
+        """Find the closest pixel of the specified color to the center of the screen and click it without moving mouse back.
+        
+        Args:
+            color_hex: The hex color to search for (e.g. "00FFFF" for teal)
+            tolerance: Color matching tolerance
+            max_radius: Maximum radius to search from center (default: 1440 for 2560x1440 screen)
+            local_search_size: Size of the local search area around the found pixel (default: 90x90)
+            offset_range_x: Tuple of (min, max) for random x offset from found pixel
+            offset_range_y: Tuple of (min, max) for random y offset from found pixel
+        
+        Returns:
+            Tuple of (x, y) coordinates where it clicked, or None if none found
+        """
+        screen_width, screen_height = pyautogui.size()
+        center_x, center_y = screen_width // 2, screen_height // 2
+        target_color = tuple(int(color_hex[i:i+2], 16) for i in (0, 2, 4))
+        
+        # Start with a small radius and expand
+        for radius in range(50, max_radius, 50):
+            # Calculate search area
+            left = max(0, center_x - radius)
+            right = min(screen_width, center_x + radius)
+            top = max(0, center_y - radius)
+            bottom = min(screen_height, center_y + radius)
+            
+            # Take screenshot of the current search area
+            screenshot = pyautogui.screenshot(region=(int(left), int(top), int(right - left), int(bottom - top)))
+            
+            # Convert to numpy array for faster processing
+            pixels = np.array(screenshot)
+            
+            # Find all pixels that match the target color within tolerance
+            matches = np.where(
+                (np.abs(pixels[:, :, 0] - target_color[0]) <= tolerance) &
+                (np.abs(pixels[:, :, 1] - target_color[1]) <= tolerance) &
+                (np.abs(pixels[:, :, 2] - target_color[2]) <= tolerance)
+            )
+            
+            if len(matches[0]) > 0:
+                # Calculate distances to center for all matches
+                distances = np.sqrt(
+                    (matches[0] + top - center_y) ** 2 +
+                    (matches[1] + left - center_x) ** 2
+                )
+                
+                # Find the closest match
+                closest_idx = np.argmin(distances)
+                closest_y = matches[0][closest_idx] + top
+                closest_x = matches[1][closest_idx] + left
+                
+                # If local_search_size is specified, perform a local search
+                if local_search_size > 0:
+                    # Calculate local search area
+                    local_left = max(0, closest_x - local_search_size // 2)
+                    local_right = min(screen_width, closest_x + local_search_size // 2)
+                    local_top = max(0, closest_y - local_search_size // 2)
+                    local_bottom = min(screen_height, closest_y + local_search_size // 2)
+                    
+                    # Take screenshot of local area
+                    local_screenshot = pyautogui.screenshot(region=(
+                        int(local_left), 
+                        int(local_top),
+                        int(local_right - local_left),
+                        int(local_bottom - local_top)
+                    ))
+                    
+                    # Convert to numpy array
+                    local_pixels = np.array(local_screenshot)
+                    
+                    # Find all matching pixels in local area
+                    local_matches = np.where(
+                        (np.abs(local_pixels[:, :, 0] - target_color[0]) <= tolerance) &
+                        (np.abs(local_pixels[:, :, 1] - target_color[1]) <= tolerance) &
+                        (np.abs(local_pixels[:, :, 2] - target_color[2]) <= tolerance)
+                    )
+                    
+                    if len(local_matches[0]) > 0:
+                        # Find the top-left most pixel in the local area
+                        top_left_idx = np.argmin(local_matches[0] + local_matches[1])
+                        closest_x = int(local_matches[1][top_left_idx] + local_left)
+                        closest_y = int(local_matches[0][top_left_idx] + local_top)
+                
+                # Add random offset and click
+                offset_x = random.randint(*offset_range_x)
+                offset_y = random.randint(*offset_range_y)
+                click_x = closest_x + offset_x
+                click_y = closest_y + offset_y
+                
+                # Click without moving mouse back
+                pyautogui.moveTo(click_x, click_y)
+                time.sleep(random.uniform(0.05, 0.1))
+                self.click_without_moving(button='left')
+                
+                return (click_x, click_y)
+        
+        return None
+
+    def pixel_click_without_moving(self, color, region, tolerance=10, offset_range_x=(10, 30), offset_range_y=(10, 30), button='left'):
+        """Click on a pixel color without moving the mouse back to original position."""
+        region = self.resolve_region(region)
+        found_pixel = self.find_pixel(color, region=region, tolerance=tolerance)
+        if not found_pixel:
+            raise ValueError(f"{color} pixel not found in region {region}.")
+        offset_x = random.randint(*offset_range_x)
+        offset_y = random.randint(*offset_range_y)
+        target_x = found_pixel[0] + offset_x
+        target_y = found_pixel[1] + offset_y
+        original = pyautogui.position()
+        pyautogui.moveTo(target_x, target_y)
+        time.sleep(random.uniform(0.05, 0.1))
+        self.click_without_moving(button=button)
+        return (target_x, target_y)
