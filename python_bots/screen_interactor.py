@@ -4,38 +4,81 @@ import random
 from PIL import Image, ImageChops  # if needed for additional processing
 import cv2
 import numpy as np
+from math import floor  # Add this import
+import os
 
 class ScreenInteractor:
     def __init__(self):
-        pass
+        # Set working directory to python_bots folder (parent of this script)
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        os.chdir(script_dir)
+        print(f"ScreenInteractor working directory set to: {os.getcwd()}")
 
     def get_scan_area(self, label):
         screen_width, screen_height = pyautogui.size()
         # todo: Offset these in the x direction if menu is open (check if combat tab (active or not) is on screen)
+        runelite_top_margin = floor(screen_height // 62)
+        runelite_right_margin = floor(screen_width // 82)
+        windows_bottom_margin = floor(screen_height // 62)
+        
+        runelite_right_menu_area = (screen_width - runelite_right_margin, runelite_top_margin, runelite_right_margin, (screen_height // 2))
+
         areas = {
-            "game_screen": (0, 90, screen_width - 280, screen_height - 245),
-            "center": (screen_width // 3, 0, screen_width // 4, screen_height - 50),
-            "p1": (0, 0, screen_width // 3, screen_height // 2),
-            "p2": (screen_width // 3, 0, screen_width // 3, screen_height // 2),
-            "p3": (2 * screen_width // 3, 0, screen_width - 2 * (screen_width // 3), screen_height // 2),
-            "p4": (0, screen_height // 2, screen_width // 3, screen_height - screen_height // 2),
-            "p5": (screen_width // 3, screen_height // 2, screen_width // 3, screen_height - screen_height // 2),
-            "p6": (2 * screen_width // 3, screen_height // 2, screen_width - 2 * (screen_width // 3), screen_height - screen_height // 2),
-            "h1": (0, 0, screen_width, screen_height // 2),
-            "h2": (0, screen_height // 2, screen_width, screen_height - screen_height // 2),
-            "v1": (0, 0, screen_width // 3, screen_height),
-            "v2": (screen_width // 3, 0, screen_width // 3, screen_height),
-            "v3": (2 * screen_width // 3, 0, screen_width - 2 * (screen_width // 3), screen_height),
-            "bag": (screen_width - 243, screen_height - 345, 183, 260),
-            "chat": (0, screen_height - 200, 500, screen_height - 72),
+            "game_screen": (0, 90, screen_width - floor(screen_width // 6.7), screen_height - floor(screen_height // 4)),
+            "center": (screen_width // 3, runelite_top_margin, screen_width // 3, screen_height - runelite_top_margin - windows_bottom_margin),
+            "p1": (0, runelite_top_margin, screen_width // 3, screen_height // 2),
+            "p2": (screen_width // 3, runelite_top_margin, screen_width // 3, screen_height // 2),
+            "p3": (2 * screen_width // 3, runelite_top_margin, (screen_width // 3) - runelite_right_margin, screen_height // 2),
+            "p4": (0, (screen_height // 2) - 1, screen_width // 3, (screen_height // 2) - windows_bottom_margin),
+            "p5": (screen_width // 3, (screen_height // 2) - 1, screen_width // 3, (screen_height // 2) - windows_bottom_margin),
+            "p6": (2 * screen_width // 3, (screen_height // 2) - 1, (screen_width // 3) - runelite_right_margin, (screen_height // 2) - windows_bottom_margin),
+            "h1": (0, windows_bottom_margin, screen_width - runelite_right_margin, screen_height // 2),
+            "h2": (0, (screen_height // 2) - 1, screen_width - runelite_right_margin, (screen_height // 2) - windows_bottom_margin),
+            "v1": (0, runelite_top_margin, screen_width // 3, screen_height - runelite_top_margin - windows_bottom_margin),
+            "v2": (screen_width // 3, runelite_top_margin, screen_width // 3, screen_height - runelite_top_margin - windows_bottom_margin),
+            "v3": (2 * screen_width // 3, runelite_top_margin, (screen_width // 3) - runelite_right_margin, screen_height - runelite_top_margin - windows_bottom_margin),
+            "bag": (screen_width - 306, screen_height - floor(screen_height // 3.34), floor(screen_width // 10.9), floor(screen_height // 4.05)),
+            "chat": (floor(screen_width // 320), screen_height - floor(screen_height// 5.69), (screen_width // 4), floor(screen_height // 8.47)),
             "activity_pane": (0, 22, 150, 250),
-            "chat_area": (0, screen_height - 200, 500, screen_height - 72),
+            "chat_area": (floor(screen_width // 320), screen_height - floor(screen_height// 5.69), (screen_width // 4), floor(screen_height // 8.47)),
+            "runelite_right_menu": (screen_width - runelite_right_margin, runelite_top_margin, runelite_right_margin, (screen_height // 2)),
             "game_screen_middle_horizontal": (0, 292, 2525, 950),
             "bottom_of_char_zoom_8": (1245, 743, 1285, 779),
             "left_of_char_zoom_8": (1183, 689, 1228, 723)
         }
-        return areas.get(label, (0, 0, screen_width, screen_height))
         
+        # Get the base area
+        base_area = areas.get(label, (0, 0, screen_width, screen_height))
+        
+        # Apply dynamic adjustments for right-side areas that need menu offset
+        if label in ["bag"]:  # Add other right-side areas here as needed
+            # Check if RuneLite menu is open
+            menu_offset = 0
+            
+            menu_found = None
+            for attempt in range(3):
+                try:
+                    # Use existing find_image_cv2 function to check for menu
+                    menu_found = self.find_image_cv2(
+                        'image_library/runelite_menu_is_open.png',
+                        region=runelite_right_menu_area,
+                        threshold=0.98
+                    )
+                    if menu_found:
+                        menu_offset = -243
+                        print(f"RuneLite menu OPEN - applying {menu_offset} offset to {label} search area (attempt {attempt+1}/3)")
+                        break
+                except Exception as e:
+                    print(f"RuneLite menu check failed on attempt {attempt+1}/3 - treating as CLOSED (no offset)")
+                    menu_offset = 0
+            
+            # Apply offset to X coordinate
+            if menu_offset != 0:
+                adjusted_area = (base_area[0] + menu_offset, base_area[1], base_area[2], base_area[3])
+                return adjusted_area
+        
+        return base_area
+    
     def resolve_region(self, region):
         """If region is a string, look it up using get_scan_area; otherwise return it directly."""
         if isinstance(region, str):
@@ -158,7 +201,7 @@ class ScreenInteractor:
         
         return matches
 
-    def click_image_cv2_without_moving(self, image_path, region=None, confidence=0.8, offset_range=(-10, 10)):
+    def click_image_cv2_without_moving(self, image_path, region=None, confidence=0.95, offset_range=(-10, 10)):
         center = self.find_image_cv2(image_path, region=region, threshold=confidence)
         if center is None:
             print(f"Image not found: {image_path}")
@@ -173,7 +216,7 @@ class ScreenInteractor:
         pyautogui.moveTo(original)
         return target
 
-    def click_image_cv2(self, image_path, region=None, confidence=0.8, offset_range_x=(-7, 7), offset_range_y=(-7, 7), sleep_after=None, click_type='left'):
+    def click_image_cv2(self, image_path, region=None, confidence=0.95, offset_range_x=(-7, 7), offset_range_y=(-7, 7), sleep_after=None, click_type='left'):
         """Click on an image with separate x and y offset ranges and optional sleep after clicking.
         
         Args:
@@ -245,7 +288,7 @@ class ScreenInteractor:
             return all(abs(center_color[i] - expected_color[i]) <= tolerance for i in range(3))
 
 
-    def click_image_without_moving(self, image_path, region=None, confidence=0.8, offset_range=(-10, 10),
+    def click_image_without_moving(self, image_path, region=None, confidence=0.95, offset_range=(-10, 10),
                                    expected_color=None, color_tolerance=10, color_samples=3):
         try:
             location = pyautogui.locateOnScreen(image_path, region=region, confidence=confidence)
@@ -487,3 +530,43 @@ class ScreenInteractor:
         time.sleep(random.uniform(0.05, 0.1))
         self.click_without_moving(button=button)
         return (target_x, target_y)
+
+    def click_on_compass(self, region="p3", confidence=0.90):
+        """Click on the compass by finding the world map and applying an offset.
+        
+        This function finds the world map icon and clicks with a calculated offset
+        to land on the compass, which is more reliable than trying to find the
+        compass directly due to rotation variations.
+        
+        Args:
+            region: Region to search in (default: "p3" for top-right area)
+            confidence: Confidence threshold for world map detection (default: 0.90)
+            
+        Returns:
+            Tuple of (x, y) coordinates where the compass was clicked, or None if failed
+        """
+        try:
+            # Get the search region
+            search_region = self.get_scan_area(region)
+            
+            # Find world map and click with offset to land on compass
+            # World map at (2262, 204), compass at (2079, 51)
+            # Offset: -183 (left), -153 (up)
+            world_map_click = self.click_image_cv2(
+                'image_library/world_map.png', 
+                region=search_region, 
+                confidence=confidence,
+                offset_range_x=(-185, -181),  # -183 ± 2
+                offset_range_y=(-155, -151)   # -153 ± 2
+            )
+            
+            if world_map_click:
+                print(f"World map found and compass clicked at {world_map_click}")
+                return world_map_click
+            else:
+                print(f"Warning: Could not find world map in region {region}")
+                return None
+                
+        except Exception as e:
+            print(f"Error clicking on compass: {e}")
+            return None

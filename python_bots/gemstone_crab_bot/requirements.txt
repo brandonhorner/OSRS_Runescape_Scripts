@@ -1,0 +1,15 @@
+# Python dependencies for Gemstone Crab Bot
+# Install with: pip install -r requirements.txt
+
+# Core automation and screen interaction
+pyautogui>=0.9.54
+
+# Computer vision and image processing
+opencv-python>=4.5.0
+numpy>=1.21.0
+
+# Image handling
+Pillow>=8.3.0
+
+# Note: screen_interactor.py and pixel_monitor.py are local modules
+# that should be in the parent python_bots directory
