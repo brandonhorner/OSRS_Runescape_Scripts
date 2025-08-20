@@ -7,6 +7,11 @@ from numpy import ma
 import pyautogui
 import sys
 
+# Add the parent directory to the path so we can import screen_interactor
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from screen_interactor import ScreenInteractor
+from pixel_monitor import PixelMonitor
+
 # Global flag for graceful shutdown
 shutdown_requested = False
 monitoring_active = False  # Track when pixel monitoring is active
@@ -384,7 +389,7 @@ def main():
         
         # Main loop
         # Run until N successful loops are completed; cap attempts to avoid infinite runs
-        main_loop(si, target_successes=78, max_attempts=300)
+        main_loop(si, target_successes=14, max_attempts=300)
         
     except KeyboardInterrupt:
         print("\n⚠ Manual interruption detected. Exiting immediately...")
