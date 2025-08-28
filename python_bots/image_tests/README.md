@@ -1,53 +1,159 @@
-# Image Testing Tools
+# Image Test Scripts
 
-This folder contains tools for testing and debugging image detection in the OSRS bots.
+This directory contains various scripts for testing and comparing image detection methods.
 
-## general_image_test.py
+## Available Test Scripts
 
-A comprehensive tool for testing image detection across different confidence levels and regions.
+### 1. `general_image_test_cv2.py` (Original CV2 Method)
+- **Purpose**: Tests the original CV2 template matching method
+- **Use Case**: General image detection, bank interface elements, non-food items
+- **Features**: 
+  - Traditional `cv2.TM_CCOEFF_NORMED` template matching
+  - Fast detection
+  - May confuse similar items with different colors
+  - Confidence can fluctuate based on item position
 
-### Usage
+### 2. `general_image_test_cv3.py` (Enhanced CV3 Method)
+- **Purpose**: Tests the new CV3 color-aware detection methods
+- **Use Case**: Food items, items where color matters, cooked vs raw discrimination
+- **Features**:
+  - Color-aware template matching
+  - Configurable shape and color weights
+  - Multi-layered validation
+  - Prevents confusion between similar items with different colors
+  - Stable confidence scoring
 
-```bash
-cd python_bots/image_tests
-python general_image_test.py
+### 3. `compare_cv2_cv3.py` (Side-by-Side Comparison)
+- **Purpose**: Compares CV2 and CV3 methods on the same image
+- **Use Case**: Understanding differences between methods, choosing the right method
+- **Features**:
+  - Runs both CV2 and CV3 tests sequentially
+  - Shows detection differences
+  - Provides recommendations for when to use each method
+
+### 4. `cv2_vs_cv3_comparison.py` (Advanced Comparison)
+- **Purpose**: More detailed comparison with multiple test scenarios
+- **Use Case**: In-depth analysis of detection differences
+- **Features**:
+  - Multiple confidence thresholds
+  - Performance metrics
+  - Detailed analysis output
+
+## When to Use Each Method
+
+### Use CV2 When:
+- **Speed is priority** over accuracy
+- **Bank interface elements** (close button, deposit button)
+- **Non-food items** where color doesn't matter
+- **General item finding** where false positives are acceptable
+
+### Use CV3 When:
+- **Accuracy is priority** over speed
+- **Food items** (raw vs cooked discrimination)
+- **Items where color matters** for identification
+- **Preventing false positives** is critical
+- **Stable confidence scoring** is needed
+
+## CV3 Weight Recommendations
+
+### Cooked vs Raw Discrimination (Recommended for Cooking Bot)
+```
+Shape Weight: 0.2 (low - avoids shape-based confusion)
+Color Weight: 0.8 (high - prioritizes color differences)
+Color Tolerance: 0-5 (very strict - nearly 1:1 color match)
 ```
 
-### What It Does
-
-1. **Takes Screenshots**: Captures the specified screen region or full screen
-2. **Tests Multiple Confidence Levels**: From 1.0 (exact match) down to 0.7
-3. **Visual Feedback**: Moves mouse to all found locations
-4. **Saves Results**: Creates annotated screenshots showing detection results
-5. **Comprehensive Testing**: Tests both raw CV2 and ScreenInteractor methods
-
-### Input Parameters
-
-- **Image Name**: Just the filename (e.g., `world_map.png`) - automatically prepends `image_library/`
-- **Region**: Screen region name (e.g., `p3`, `game_screen`, `bag`) or press Enter for full screen
-- **Confidence**: Threshold for testing (0.7-1.0, default 0.95)
-- **Visual Feedback**: Whether to move mouse to found locations (y/n, default y)
-
-### Output Files
-
-- **Screenshots**: `region_[name]_screenshot.png` or `full_screen_screenshot.png`
-- **Annotated**: `annotated_[image_name].png` with green rectangles around matches
-
-### Use Cases
-
-- **Debug Image Detection**: See exactly what the bot is finding
-- **Test New Images**: Verify new image templates work correctly
-- **Troubleshoot Failures**: Understand why certain images aren't being detected
-- **Optimize Confidence**: Find the right confidence threshold for your images
-
-### Example
-
-```bash
-Enter image name (e.g., 'world_map.png'): runelite_menu_is_open.png
-Full image path: image_library/runelite_menu_is_open.png
-Enter region name (e.g., 'p3', 'game_screen', 'bag') or press Enter for full screen: p6
-Enter confidence threshold (0.7-1.0, default 0.95): 0.9
-Show visual feedback (mouse movement)? (y/n, default y): y
+### General Item Finding
+```
+Shape Weight: 0.5 (balanced)
+Color Weight: 0.5 (balanced)
+Color Tolerance: 30
 ```
 
-This will test the `runelite_menu_is_open.png` image in the `p6` region with 0.9 confidence and show visual feedback.
+### Shape-Based Detection
+```
+Shape Weight: 0.8 (high - prioritizes structural similarity)
+Color Weight: 0.2 (low - ignores color differences)
+Color Tolerance: 50
+```
+
+### Color-Based Detection
+```
+Shape Weight: 0.1 (very low - minimal shape consideration)
+Color Weight: 0.9 (very high - prioritizes exact color matching)
+Color Tolerance: 0-10 (strict - exact color matching)
+```
+
+### Ultra-Strict Color Matching
+```
+Shape Weight: 0.1 (very low)
+Color Weight: 0.9 (very high)
+Color Tolerance: 0-2 (nearly pixel-perfect color match)
+```
+Use case: Distinguishing between very similar items with slight color differences
+
+## Usage Examples
+
+### Test CV2 Method Only
+```bash
+python general_image_test_cv2.py
+```
+
+### Test CV3 Method Only
+```bash
+python general_image_test_cv3.py
+```
+
+### Compare Both Methods
+```bash
+python compare_cv2_cv3.py
+```
+
+### Advanced Comparison
+```bash
+python cv2_vs_cv3_comparison.py
+```
+
+## Input Parameters
+
+All scripts accept similar parameters:
+- **Image name**: Name of the image file (e.g., 'raw_karambwan.png')
+- **Region**: Screen region to search in (e.g., 'p3', 'game_screen', 'bag')
+- **Confidence**: Detection threshold (0.7-1.0)
+- **Visual feedback**: Whether to show mouse movement
+
+CV3 scripts also accept:
+- **Shape weight**: Weight for structural similarity (0.0-1.0)
+- **Color weight**: Weight for color similarity (0.0-1.0)
+- **Color tolerance**: RGB color difference tolerance (0-100)
+
+## Output Files
+
+Each test generates:
+- **Screenshot**: Captured search area
+- **Annotated screenshot**: With detection results highlighted
+- **Console output**: Detailed detection information and recommendations
+
+## Troubleshooting
+
+### CV3 Detection Fails
+1. **Check weights**: Ensure shape_weight + color_weight = 1.0
+2. **Adjust color tolerance**: 
+   - 0-2: Ultra-strict (nearly pixel-perfect color match)
+   - 5-10: Strict (exact color matching)
+   - 20-30: Moderate (allows some color variation)
+   - 50-100: Lenient (allows significant color variation)
+3. **Use weight tuning**: Run with different weight combinations
+4. **Check image quality**: Ensure template image is clear and representative
+
+### CV2 Detection Fails
+1. **Lower confidence**: Try 0.9 or 0.85
+2. **Check region**: Ensure search area includes the target
+3. **Verify image**: Ensure template image exists and is readable
+
+## Performance Notes
+
+- **CV2**: Faster, ~10-50ms per detection
+- **CV3**: Slower, ~50-200ms per detection (due to additional validation)
+- **Trade-off**: CV3 provides better accuracy at the cost of speed
+- **Recommendation**: Use CV3 for critical operations, CV2 for routine tasks

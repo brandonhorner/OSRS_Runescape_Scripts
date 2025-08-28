@@ -5,9 +5,9 @@ Pre-requisites for scripts before <2023 are likely to be AutoHotkey (AHK) V1 and
 For later 2024 into 2025 we had the advent of smarter LLMs and I started making Python bots because there is a lot more training data on how Python works versus AHK.
 
 If you use some of the Python scripts, obv you'll need Python 3+
-  + I implemented OCR (Tesseract) in some scripts which you'll have to install and point to in scripts (if ya get an error)
+  + I implemented OCR (Tesseract) in some scripts which you'll have to install and point to in scripts (if ya get an error). Make sure it's in your %PATH%.
   + I use OpenCV for image detection (you probably have to pip install it)
-  + There are several other dependencies that I probably installed but you'll know when you try to run code :)
+  + There are several other dependencies that I probably installed but you'll know when you try to run code, or check out the requirements and ask your llm to install them.
 
 Most every (non utilities) script will have a line pointing to the window title (oughtta switch this to a config file read). This window title can be found with AutoHotkey Window Spy tool which comes with AHK, however you likely just need to replace your character's name.
 

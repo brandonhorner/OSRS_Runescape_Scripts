@@ -23,6 +23,15 @@ class ScreenInteractor:
         
         runelite_right_menu_area = (screen_width - runelite_right_margin, runelite_top_margin, runelite_right_margin, (screen_height // 2))
 
+        # when adding areas.. calculate them like this:                            y1____________
+        # find the top left corner of the area, that will be the x1, y1           x1|        |   |
+        # then find the width of the area, that will be w = x2 - x1                 |---w----h---|
+        # then find the height of the area, that will be h = y2 - y1                |________|___|  
+        # now say your area is starts at 1/3 of the screen's width, you'd want to say screen_width // 3 versus 2560/3,
+        # you should also express your width and height in terms of screen_width and screen_height
+        # Example: center below, we want to start at 1/3 of the screen's width, and go to 2/3 of the screen's width, it should extend to the height of the screen
+        # so we'd say x1:screen_width // 3, y1:runelite_top_margin, width:screen_width // 3, height:screen_height - runelite_top_margin - windows_bottom_margin)
+        # use the floor function when you're dividing by numbers with decimals, so the coordinate is a flat integer.
         areas = {
             "game_screen": (0, 90, screen_width - floor(screen_width // 6.7), screen_height - floor(screen_height // 4)),
             "center": (screen_width // 3, runelite_top_margin, screen_width // 3, screen_height - runelite_top_margin - windows_bottom_margin),
@@ -35,10 +44,12 @@ class ScreenInteractor:
             "h1": (0, windows_bottom_margin, screen_width - runelite_right_margin, screen_height // 2),
             "h2": (0, (screen_height // 2) - 1, screen_width - runelite_right_margin, (screen_height // 2) - windows_bottom_margin),
             "v1": (0, runelite_top_margin, screen_width // 3, screen_height - runelite_top_margin - windows_bottom_margin),
-            "v2": (screen_width // 3, runelite_top_margin, screen_width // 3, screen_height - runelite_top_margin - windows_bottom_margin),
-            "v3": (2 * screen_width // 3, runelite_top_margin, (screen_width // 3) - runelite_right_margin, screen_height - runelite_top_margin - windows_bottom_margin),
-            "bag": (screen_width - 306, screen_height - floor(screen_height // 3.34), floor(screen_width // 10.9), floor(screen_height // 4.05)),
+            "v2": (screen_width // 3 - runelite_right_margin, runelite_top_margin, screen_width // 3, screen_height - runelite_top_margin - windows_bottom_margin),
+            "v3": (2 * screen_width // 3 - runelite_right_margin, runelite_top_margin, (screen_width // 3) - runelite_right_margin, screen_height - runelite_top_margin - windows_bottom_margin),
+            "bag": (screen_width - 306, screen_height - floor(screen_height // 3.34), floor(screen_width // 10.9), floor(screen_height // 4.27)),
             "chat": (floor(screen_width // 320), screen_height - floor(screen_height// 5.69), (screen_width // 4), floor(screen_height // 8.47)),
+            "bank_pane": ((screen_width // 3), floor(screen_height // 8.08), floor(screen_width // 5.30), floor(screen_height // 1.62)),
+            "bank_pane_with_menus": ((screen_width // 3) - floor(screen_width // 37), floor(screen_height // 18.04), floor(screen_width // 4.03), floor(screen_height // 1.38)),
             "activity_pane": (0, 22, 150, 250),
             "chat_area": (floor(screen_width // 320), screen_height - floor(screen_height// 5.69), (screen_width // 4), floor(screen_height // 8.47)),
             "runelite_right_menu": (screen_width - runelite_right_margin, runelite_top_margin, runelite_right_margin, (screen_height // 2)),
@@ -51,7 +62,7 @@ class ScreenInteractor:
         base_area = areas.get(label, (0, 0, screen_width, screen_height))
         
         # Apply dynamic adjustments for right-side areas that need menu offset
-        if label in ["bag"]:  # Add other right-side areas here as needed
+        if label in ["bag", "bank_pane", "bank_pane_with_menus"]:  # Add other right-side areas here as needed
             # Check if RuneLite menu is open
             menu_offset = 0
             
@@ -65,8 +76,11 @@ class ScreenInteractor:
                         threshold=0.98
                     )
                     if menu_found:
-                        menu_offset = -243
-                        print(f"RuneLite menu OPEN - applying {menu_offset} offset to {label} search area (attempt {attempt+1}/3)")
+                        if label == "bank_pane" or label == "bank_pane_with_menus":
+                            menu_offset = -floor(screen_width // 21)
+                        else:
+                            menu_offset = -floor(screen_width // 10.6)
+                        print(f"RuneLite menu OPEN - applying {menu_offset} offset to {label} search area")
                         break
                 except Exception as e:
                     print(f"RuneLite menu check failed on attempt {attempt+1}/3 - treating as CLOSED (no offset)")
@@ -76,7 +90,6 @@ class ScreenInteractor:
             if menu_offset != 0:
                 adjusted_area = (base_area[0] + menu_offset, base_area[1], base_area[2], base_area[3])
                 return adjusted_area
-        
         return base_area
     
     def resolve_region(self, region):
@@ -98,6 +111,140 @@ class ScreenInteractor:
                         return (region_x + x, region_y + y)
                     return (x, y)
         return None
+
+    def find_pixel_right_click_confirm(self, pixel_color, confirm_image_path, attempts=10, 
+                                     pixel_offset_range_x=(5, 20), pixel_offset_range_y=(5, 20)):
+        """
+        Find a pixel of specified color, right-click on it, and confirm the right-click menu 
+        appears by finding a specific image. This provides more reliable interaction than 
+        just assuming a left-click worked.
+        
+        Args:
+            pixel_color: Hex color string to search for (e.g., "00FFFF" for teal)
+            confirm_image_path: Path to image that should appear in right-click menu
+            attempts: Number of attempts to find and right-click the pixel (default: 5)
+            pixel_offset_range_x: Tuple of (min, max) for random x offset from found pixel (default: (5, 20))
+            pixel_offset_range_y: Tuple of (min, max) for random y offset from found pixel (default: (5, 20))
+        
+        Returns:
+            True if successful (pixel found, right-clicked, and confirmation image found and clicked)
+            False if failed after all attempts
+        """
+        print(f"find_pixel_right_click_confirm: Searching for {pixel_color} pixel with {confirm_image_path} confirmation")
+        
+        for attempt in range(1, attempts + 1):
+            print(f"  Attempt {attempt}/{attempts}")
+            
+            # Step 1: Find the pixel
+            found_pixel = self.find_pixel(pixel_color, tolerance=5)
+            if not found_pixel:
+                print(f"    Pixel {pixel_color} not found on attempt {attempt}")
+                continue
+            
+            print(f"    Found {pixel_color} pixel at {found_pixel}")
+            
+            # Step 2: Calculate offset position and right-click
+            offset_x = random.randint(*pixel_offset_range_x)
+            offset_y = random.randint(*pixel_offset_range_y)
+            target_x = found_pixel[0] + offset_x
+            target_y = found_pixel[1] + offset_y
+            
+            # Ensure target coordinates are within screen bounds
+            screen_width, screen_height = pyautogui.size()
+            target_x = max(0, min(target_x, screen_width - 1))
+            target_y = max(0, min(target_y, screen_height - 1))
+            
+            # Store original mouse position
+            original_pos = pyautogui.position()
+            
+            # Move to target and right-click
+            pyautogui.moveTo(target_x, target_y)
+            time.sleep(random.uniform(0.2, 0.4))
+            pyautogui.click(button='right')
+            
+            # Step 3: Search for confirmation image in area below and around mouse
+            # Search area: x direction ±300, y direction 0 to +300 below mouse
+            screen_width, screen_height = pyautogui.size()
+            
+            # Calculate search region bounds
+            left = max(0, target_x - 300)
+            right = min(screen_width, target_x + 300)
+            top = target_y
+            bottom = min(screen_height, target_y + 300)
+            
+            # Ensure valid region dimensions
+            width = right - left
+            height = bottom - top
+            
+            if width <= 0 or height <= 0:
+                print(f"    Invalid search region calculated: left={left}, right={right}, top={top}, bottom={bottom}")
+                print(f"    Adjusting to valid region...")
+                # Fallback to a smaller, guaranteed valid region
+                left = max(0, target_x - 100)
+                right = min(screen_width, target_x + 100)
+                top = target_y
+                bottom = min(screen_height, target_y + 200)
+                width = right - left
+                height = bottom - top
+            
+            search_region = (left, top, width, height)
+            
+            print(f"    Searching for confirmation image in region: {search_region}")
+            
+            # Look for the confirmation image
+            try:
+                confirm_location = self.find_image_cv2(
+                    confirm_image_path, 
+                    region=search_region, 
+                    threshold=0.95
+                )
+            except Exception as e:
+                print(f"    Error searching for confirmation image: {e}")
+                confirm_location = None
+            
+            if confirm_location:
+                print(f"    Confirmation image found at {confirm_location}")
+                
+                # Step 4: Left-click on the confirmation image with small offset
+                click_offset_x = random.randint(-10, 10)
+                click_offset_y = random.randint(-4, 4)
+                click_x = confirm_location[0] + click_offset_x
+                click_y = confirm_location[1] + click_offset_y
+                
+                # Click on the confirmation option
+                pyautogui.moveTo(click_x, click_y)
+                time.sleep(random.uniform(0.05, 0.1))
+                pyautogui.click()
+                
+                # Return mouse to original position
+                pyautogui.moveTo(original_pos)
+                
+                print(f"    Successfully clicked confirmation image at ({click_x}, {click_y})")
+                return True
+                
+            else:
+                print(f"    Confirmation image not found on attempt {attempt}")
+                
+                # Step 5: Reset mouse position to close any open right-click menus
+                # Move up and to the right to close menus
+                reset_x = target_x + random.randint(200, 500)
+                reset_y = target_y + random.randint(-500, -200)
+                
+                # Ensure we stay within screen bounds
+                screen_width, screen_height = pyautogui.size()
+                reset_x = max(0, min(reset_x, screen_width - 1))
+                reset_y = max(0, min(reset_y, screen_height - 1))
+                
+                print(f"    Resetting mouse to ({reset_x}, {reset_y}) to close menus")
+                pyautogui.moveTo(reset_x, reset_y)
+                time.sleep(random.uniform(0.1, 0.2))
+                
+                # Return mouse to original position
+                pyautogui.moveTo(original_pos)
+        
+        # If we get here, all attempts failed
+        print(f"  Failed to find and confirm {pixel_color} pixel after {attempts} attempts")
+        return False
 
     def pixel_click(self, color, region, tolerance=10, offset_range_x=(10, 30), offset_range_y=(10, 30), button='left'):
         region = self.resolve_region(region)
@@ -201,7 +348,7 @@ class ScreenInteractor:
         
         return matches
 
-    def click_image_cv2_without_moving(self, image_path, region=None, confidence=0.95, offset_range=(-10, 10)):
+    def click_image_cv2_without_moving(self, image_path, region=None, confidence=0.95, offset_range=(0, 3)):
         center = self.find_image_cv2(image_path, region=region, threshold=confidence)
         if center is None:
             print(f"Image not found: {image_path}")
@@ -570,3 +717,431 @@ class ScreenInteractor:
         except Exception as e:
             print(f"Error clicking on compass: {e}")
             return None
+
+    def find_image_cv3(self, image_path, region=None, threshold=0.98, color_tolerance=30, 
+                       shape_weight=0.7, color_weight=0.3, shape_threshold=None, color_threshold=None):
+        """
+        Enhanced image finding with color-aware template matching and multiple validation techniques.
+        This method finds all structural matches and continues searching until a color-validated match is found.
+        
+        Args:
+            image_path: Path to the template image
+            region: Region to search in
+            threshold: Overall confidence threshold
+            color_tolerance: RGB color difference tolerance for validation
+            shape_weight: Weight for structural similarity (0.0-1.0)
+            color_weight: Weight for color similarity (0.0-1.0)
+            shape_threshold: Minimum shape similarity threshold (if None, uses threshold)
+            color_threshold: Minimum color similarity threshold (if None, uses threshold)
+        
+        Returns:
+            Center coordinates if found, None otherwise
+        """
+        # Use provided thresholds or fall back to main threshold
+        if shape_threshold is None:
+            shape_threshold = threshold
+        if color_threshold is None:
+            color_threshold = threshold
+            
+        # Resolve the region if it's given as a label
+        region = self.resolve_region(region) if region is not None else None
+        
+        # Load the template image
+        target = cv2.imread(image_path)
+        if target is None:
+            print(f"Failed to load image: {image_path}")
+            return None
+
+        # Debug: Show template dimensions
+        target_h, target_w = target.shape[:2]
+        
+        if region:
+            screenshot = pyautogui.screenshot(region=region)
+            region_offset = (region[0], region[1])
+        else:
+            screenshot = pyautogui.screenshot()
+            region_offset = (0, 0)
+            
+        # Convert screenshot to BGR format
+        screenshot_cv = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+        
+        # Ensure both images are in the same format
+        if target.shape[2] != screenshot_cv.shape[2]:
+            if target.shape[2] == 4:  # If template has alpha channel
+                target = cv2.cvtColor(target, cv2.COLOR_BGRA2BGR)
+            elif screenshot_cv.shape[2] == 4:
+                screenshot_cv = cv2.cvtColor(screenshot_cv, cv2.COLOR_BGRA2BGR)
+        
+        target_h, target_w = target.shape[:2]
+        
+        # Find all structural matches above a lower threshold for candidates
+        result_structural = cv2.matchTemplate(screenshot_cv, target, cv2.TM_CCOEFF_NORMED)
+        # Use a high candidate threshold to only consider good structural matches
+        # This prevents checking thousands of low-quality candidates
+        candidate_threshold = 0.9  # High threshold to only consider good structural matches
+        locations = np.where(result_structural >= candidate_threshold)
+        
+        # Sort candidates by structural score (highest first)
+        candidates = []
+        for pt in zip(*locations[::-1]):
+            x, y = pt
+            structural_score = result_structural[y, x]
+            candidates.append((x, y, structural_score))
+        
+        # Sort by structural score descending
+        candidates.sort(key=lambda x: x[2], reverse=True)
+        
+        print(f"CV3: Found {len(candidates)} structural candidates above threshold {candidate_threshold}")
+        
+        # Test each candidate with color validation
+        for x, y, structural_score in candidates:
+            # Extract the region around this candidate
+            if (x + target_w <= screenshot_cv.shape[1] and 
+                y + target_h <= screenshot_cv.shape[0]):
+                
+                matched_region = screenshot_cv[y:y + target_h, x:x + target_w]
+                
+                # Calculate color similarity using mean squared error
+                color_diff = cv2.absdiff(target, matched_region)
+                color_mse = np.mean(color_diff ** 2)
+                max_possible_mse = 255 ** 2  # Maximum possible difference
+                color_similarity = 1.0 - (color_mse / max_possible_mse)
+                
+                # Additional validation: Check if the matched region has similar color distribution
+                target_mean_color = np.mean(target, axis=(0, 1))
+                matched_mean_color = np.mean(matched_region, axis=(0, 1))
+                color_distance = np.linalg.norm(target_mean_color - matched_mean_color)
+                max_color_distance = np.sqrt(3 * 255**2)  # Maximum possible color distance
+                color_distribution_score = 1.0 - (color_distance / max_color_distance)
+                
+                # STRICT COLOR TOLERANCE VALIDATION
+                # Check if any pixel exceeds the color tolerance threshold
+                color_tolerance_passed = True
+                if color_tolerance < 255:  # Only apply if tolerance is set
+                    # Calculate per-pixel color differences
+                    pixel_diff = np.abs(target.astype(np.int16) - matched_region.astype(np.int16))
+                    max_pixel_diff = np.max(pixel_diff, axis=(0, 1))  # Max difference per channel
+                    
+                    # Check if any channel exceeds tolerance
+                    if np.any(max_pixel_diff > color_tolerance):
+                        color_tolerance_passed = False
+                        # Penalize the color scores if tolerance is exceeded
+                        color_similarity *= 0.3
+                        color_distribution_score *= 0.3
+                
+                # Calculate weighted composite score
+                composite_score = (shape_weight * structural_score + 
+                                  color_weight * (color_similarity * 0.5 + color_distribution_score * 0.5))
+                
+                # STRICT COLOR THRESHOLD VALIDATION
+                # The color similarity must meet a minimum threshold regardless of composite score
+                color_passed = color_similarity >= color_threshold and color_tolerance_passed
+                
+                # Show only near matches with essential info
+                if structural_score >= 0.8 or color_similarity >= 0.8:  # Only show good candidates
+                    screen_x = int(x + region_offset[0])
+                    screen_y = int(y + region_offset[1])
+                    print(f"CV3: Candidate at ({screen_x},{screen_y}) - S:{structural_score:.3f}, C:{color_similarity:.3f}, Score:{composite_score:.3f}")
+                
+                # If this candidate meets BOTH the composite threshold AND the color threshold, return it
+                if composite_score >= threshold and color_passed:
+                    center = (x + target_w // 2, y + target_h // 2)
+                    # Convert numpy integers to regular integers to clean up logs
+                    center = (int(center[0] + region_offset[0]), int(center[1] + region_offset[1]))
+                    print(f"CV3: Found valid match at {center} (Score: {composite_score:.3f})")
+                    return center
+        
+        # If we get here, no valid match was found
+        print(f"CV3: No valid match found above threshold {threshold}")
+        return None
+
+    def find_all_images_cv3(self, image_path, region=None, threshold=0.98, color_tolerance=30, 
+                           shape_weight=0.7, color_weight=0.3):
+        """
+        Enhanced image finding that returns all matches with color-aware validation.
+        """
+        # Resolve the region if it's given as a label
+        region = self.resolve_region(region) if region is not None else None
+        
+        # Load the template image
+        target = cv2.imread(image_path)
+        if target is None:
+            print(f"Failed to load image: {image_path}")
+            return []
+
+        if region:
+            screenshot = pyautogui.screenshot(region=region)
+            region_offset = (region[0], region[1])
+        else:
+            screenshot = pyautogui.screenshot()
+            region_offset = (0, 0)
+            
+        # Convert screenshot to BGR format
+        screenshot_cv = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+        
+        # Ensure both images are in the same format
+        if target.shape[2] != screenshot_cv.shape[2]:
+            if target.shape[2] == 4:  # If template has alpha channel
+                target = cv2.cvtColor(target, cv2.COLOR_BGRA2BGR)
+            elif screenshot_cv.shape[2] == 4:
+                screenshot_cv = cv2.cvtColor(screenshot_cv, cv2.COLOR_BGRA2BGR)
+        
+        target_h, target_w = target.shape[:2]
+        matches = []
+        
+        # Use structural matching to find candidate locations
+        result_structural = cv2.matchTemplate(screenshot_cv, target, cv2.TM_CCOEFF_NORMED)
+        locations = np.where(result_structural >= threshold * 0.8)  # Lower threshold for candidates
+        
+        for pt in zip(*locations[::-1]):
+            x, y = pt
+            
+            # Extract the region around this candidate
+            if (x + target_w <= screenshot_cv.shape[1] and 
+                y + target_h <= screenshot_cv.shape[0]):
+                
+                matched_region = screenshot_cv[y:y + target_h, x:x + target_w]
+                
+                # Calculate color similarity
+                color_diff = cv2.absdiff(target, matched_region)
+                color_mse = np.mean(color_diff ** 2)
+                max_possible_mse = 255 ** 2
+                color_similarity = 1.0 - (color_mse / max_possible_mse)
+                
+                # Calculate mean color distance
+                target_mean_color = np.mean(target, axis=(0, 1))
+                matched_mean_color = np.mean(matched_region, axis=(0, 1))
+                color_distance = np.linalg.norm(target_mean_color - matched_mean_color)
+                max_color_distance = np.sqrt(3 * 255**2)
+                color_distribution_score = 1.0 - (color_distance / max_color_distance)
+                
+                # STRICT COLOR TOLERANCE VALIDATION
+                # Check if any pixel exceeds the color tolerance threshold
+                color_tolerance_passed = True
+                if color_tolerance < 255:  # Only apply if tolerance is set
+                    # Calculate per-pixel color differences
+                    pixel_diff = np.abs(target.astype(np.int16) - matched_region.astype(np.int16))
+                    max_pixel_diff = np.max(pixel_diff, axis=(0, 1))  # Max difference per channel
+                    
+                    # Check if any channel exceeds tolerance
+                    if np.any(max_pixel_diff > color_tolerance):
+                        color_tolerance_passed = False
+                        # Penalize the color scores if tolerance is exceeded
+                        color_similarity *= 0.3
+                        color_distribution_score *= 0.3
+                
+                # Calculate composite score
+                structural_score = result_structural[y, x]
+                composite_score = (shape_weight * structural_score + 
+                                  color_weight * (color_similarity * 0.5 + color_distribution_score * 0.5))
+                
+                if composite_score >= threshold:
+                    center = (x + target_w // 2, y + target_h // 2)
+                    center = (center[0] + region_offset[0], center[1] + region_offset[1])
+                    matches.append(center)
+        
+        return matches
+
+    def click_image_cv3_without_moving(self, image_path, region=None, confidence=0.95, 
+                                     offset_range=(0, 3), color_tolerance=30,
+                                     shape_weight=0.7, color_weight=0.3,
+                                     shape_threshold=None, color_threshold=None):
+        """
+        Enhanced click method using CV3 image finding with color-aware validation.
+        """
+        center = self.find_image_cv3(image_path, region=region, threshold=confidence,
+                                   color_tolerance=color_tolerance, shape_weight=shape_weight,
+                                   color_weight=color_weight, shape_threshold=shape_threshold,
+                                   color_threshold=color_threshold)
+        if center is None:
+            print(f"Image not found: {image_path}")
+            return None
+        offset_x = random.randint(*offset_range)
+        offset_y = random.randint(*offset_range)
+        target = (center[0] + offset_x, center[1] + offset_y)
+        original = pyautogui.position()
+        pyautogui.moveTo(target)
+        time.sleep(random.uniform(0.05, 0.1))
+        self.click_without_moving(button='left')
+        pyautogui.moveTo(original)
+        return target
+
+    def click_image_cv3(self, image_path, region=None, confidence=0.95, 
+                       offset_range_x=(-7, 7), offset_range_y=(-7, 7), 
+                       sleep_after=None, click_type='left', color_tolerance=30,
+                       shape_weight=0.7, color_weight=0.3,
+                       shape_threshold=None, color_threshold=None):
+        """
+        Enhanced click method using CV3 image finding with color-aware validation.
+        """
+        center = self.find_image_cv3(image_path, region=region, threshold=confidence,
+                                   color_tolerance=color_tolerance, shape_weight=shape_weight,
+                                   color_weight=color_weight, shape_threshold=shape_threshold,
+                                   color_threshold=color_threshold)
+        if center is None:
+            print(f"Image not found: {image_path}")
+            return None
+            
+        offset_x = random.randint(*offset_range_x)
+        offset_y = random.randint(*offset_range_y)
+        target = (center[0] + offset_x, center[1] + offset_y)
+        pyautogui.moveTo(target)
+        time.sleep(random.uniform(0.05, 0.1))
+        
+        if click_type == 'right':
+            pyautogui.click(button='right')
+        elif click_type == 'double':
+            pyautogui.click()
+            # Human-like delay between double clicks (typically 100-200ms)
+            time.sleep(random.uniform(0.1, 0.2))
+            pyautogui.click()
+        else:  # default to left click
+            pyautogui.click()
+        
+        if sleep_after is not None:
+            time.sleep(random.uniform(*sleep_after))
+            
+        return target
+
+    def get_cv3_weight_recommendations(self):
+        """
+        Get recommendations for CV3 weight configurations based on use case.
+        
+        Returns:
+            Dictionary of recommended configurations for different scenarios
+        """
+        return {
+            "cooked_vs_raw_discrimination": {
+                "description": "Strictly distinguish between cooked and raw items",
+                "shape_weight": 0.2,
+                "color_weight": 0.8,
+                "threshold": 0.95,
+                "use_case": "When you need to avoid false positives between similar items with different colors"
+            },
+            "general_item_finding": {
+                "description": "Balanced approach for general item detection",
+                "shape_weight": 0.7,
+                "color_weight": 0.3,
+                "threshold": 0.95,
+                "use_case": "Standard item detection with some color validation"
+            },
+            "color_critical": {
+                "description": "When color is the primary identifier",
+                "shape_weight": 0.1,
+                "color_weight": 0.9,
+                "threshold": 0.95,
+                "use_case": "For items where color is more important than shape (e.g., different potion types)"
+            },
+            "shape_critical": {
+                "description": "When shape is the primary identifier",
+                "shape_weight": 0.9,
+                "color_weight": 0.1,
+                "threshold": 0.95,
+                "use_case": "For items where shape is more important than color (e.g., different tool types)"
+            },
+            "ultra_strict": {
+                "description": "Maximum precision with minimal false positives",
+                "shape_weight": 0.1,
+                "color_weight": 0.9,
+                "threshold": 0.98,
+                "use_case": "When you absolutely cannot afford false positives"
+            }
+        }
+
+    def tune_cv3_weights(self, image_path, region=None, target_threshold=0.95):
+        """
+        Automatically tune CV3 weights for a specific image and region.
+        
+        Args:
+            image_path: Path to the template image
+            region: Region to search in
+            target_threshold: Target confidence threshold
+            
+        Returns:
+            Dictionary with recommended weights and performance metrics
+        """
+        print(f"Tuning CV3 weights for: {image_path}")
+        print(f"Region: {region}")
+        print(f"Target threshold: {target_threshold}")
+        print("=" * 50)
+        
+        # Test different weight combinations with improved CV3 logic
+        weight_combinations = [
+            (0.1, 0.9), (0.2, 0.8), (0.3, 0.7), (0.4, 0.6), (0.5, 0.5),
+            (0.6, 0.4), (0.7, 0.3), (0.8, 0.2), (0.9, 0.1)
+        ]
+        
+        results = []
+        
+        for shape_w, color_w in weight_combinations:
+            print(f"\nTesting weights - Shape: {shape_w:.1f}, Color: {color_w:.1f}")
+            
+            # Test with improved CV3 logic using separate shape and color thresholds
+            start_time = time.time()
+            result = self.find_image_cv3(
+                image_path, region=region, threshold=target_threshold,
+                shape_weight=shape_w, color_weight=color_w,
+                shape_threshold=0.95,  # High shape threshold for accuracy
+                color_threshold=0.95   # High color threshold for validation
+            )
+            test_time = time.time() - start_time
+            
+            if result:
+                print(f"  ✓ Found at: {result}")
+                success = True
+            else:
+                print(f"  ✗ Not found")
+                success = False
+            
+            results.append({
+                "shape_weight": shape_w,
+                "color_weight": color_w,
+                "success": success,
+                "time": test_time,
+                "result": result
+            })
+        
+        # Analyze results
+        successful_combinations = [r for r in results if r["success"]]
+        failed_combinations = [r for r in results if not r["success"]]
+        
+        print(f"\n{'='*50}")
+        print("TUNING RESULTS")
+        print(f"{'='*50}")
+        
+        if successful_combinations:
+            print(f"✓ Successful combinations: {len(successful_combinations)}")
+            fastest_success = min(successful_combinations, key=lambda x: x["time"])
+            print(f"  Fastest successful: Shape {fastest_success['shape_weight']:.1f}, "
+                  f"Color {fastest_success['color_weight']:.1f} ({fastest_success['time']:.3f}s)")
+            
+            # Recommend balanced approach if multiple successful
+            if len(successful_combinations) > 1:
+                balanced = [r for r in successful_combinations if abs(r["shape_weight"] - r["color_weight"]) <= 0.2]
+                if balanced:
+                    recommended = balanced[0]
+                    print(f"  Recommended balanced: Shape {recommended['shape_weight']:.1f}, "
+                          f"Color {recommended['color_weight']:.1f}")
+                else:
+                    recommended = successful_combinations[0]
+                    print(f"  Recommended: Shape {recommended['shape_weight']:.1f}, "
+                          f"Color {recommended['color_weight']:.1f}")
+            else:
+                recommended = successful_combinations[0]
+                print(f"  Only successful: Shape {recommended['shape_weight']:.1f}, "
+                      f"Color {recommended['color_weight']:.1f}")
+        else:
+            print("✗ No successful combinations found")
+            print("  Try lowering the threshold or using different weights")
+        
+        if failed_combinations:
+            print(f"\n✗ Failed combinations: {len(failed_combinations)}")
+            # Show a few examples
+            for r in failed_combinations[:3]:
+                print(f"  Shape {r['shape_weight']:.1f}, Color {r['color_weight']:.1f}")
+        
+        return {
+            "successful_combinations": successful_combinations,
+            "failed_combinations": failed_combinations,
+            "recommended_weights": recommended if successful_combinations else None
+        }
