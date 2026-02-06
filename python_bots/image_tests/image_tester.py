@@ -235,7 +235,38 @@ class CombinedImageTesterPyQt6(QMainWindow):
         
         main_layout.addLayout(panels_layout)
         
-        # Run button at bottom
+        # Run button and delay toggle at bottom
+        bottom_layout = QHBoxLayout()
+        
+        # Delay toggle checkbox
+        self.delay_toggle = QCheckBox("Wait 3 seconds before starting test")
+        self.delay_toggle.setChecked(True)  # Default to waiting
+        self.delay_toggle.setStyleSheet("""
+            QCheckBox {
+                color: white;
+                font-size: 14px;
+                font-weight: bold;
+                background: transparent;
+                border: none;
+            }
+            QCheckBox::indicator {
+                width: 20px;
+                height: 20px;
+                border: 2px solid rgba(255, 255, 255, 0.8);
+                border-radius: 4px;
+                background: rgba(255, 255, 255, 0.2);
+            }
+            QCheckBox::indicator:checked {
+                background: rgba(34, 139, 34, 0.9);
+                border: 2px solid rgba(34, 139, 34, 1.0);
+            }
+        """)
+        bottom_layout.addWidget(self.delay_toggle)
+        
+        # Add some spacing
+        bottom_layout.addStretch()
+        
+        # Run button
         run_button = QPushButton("Run Image Test")
         run_button.setStyleSheet("""
             QPushButton {
@@ -253,7 +284,9 @@ class CombinedImageTesterPyQt6(QMainWindow):
             }
         """)
         run_button.clicked.connect(self.run_image_test)
-        main_layout.addWidget(run_button, alignment=Qt.AlignmentFlag.AlignCenter)
+        bottom_layout.addWidget(run_button)
+        
+        main_layout.addLayout(bottom_layout)
         
     def create_images_panel(self):
         """Create the images selection panel."""
@@ -357,6 +390,7 @@ class CombinedImageTesterPyQt6(QMainWindow):
         # Get all available areas
         areas = {
             "game_screen": "Main game area (excludes UI)",
+            "game_screen_center": "Center game screen area",
             "center": "Center vertical strip",
             "p1": "Top-left quadrant",
             "p2": "Top-center quadrant", 
@@ -370,10 +404,12 @@ class CombinedImageTesterPyQt6(QMainWindow):
             "v2": "Center third of screen",
             "v3": "Right third of screen",
             "bag": "Inventory/bag area",
+            "bag_last_slot": "Last slot in inventory/bag area",
             "chat": "Chat box area",
             "activity_pane": "Activity panel area",
             "bank_pane": "Bank pane area",
             "bank_pane_with_menus": "Bank pane area with menus",
+            "bank_deposit_box": "Bank deposit box area",
             "chat_area": "Chat area (alternative)",
             "runelite_right_menu": "RuneLite right menu area",
             "game_screen_middle_horizontal": "Middle horizontal game area",
@@ -672,6 +708,22 @@ class CombinedImageTesterPyQt6(QMainWindow):
         """Run the image test with selected parameters."""
         print("\n" + "="*60)
         print("STARTING IMAGE TEST")
+        print("="*60)
+        
+        # Check if delay is enabled
+        if self.delay_toggle.isChecked():
+            print("Delay enabled - waiting 3 seconds before starting...")
+            print("You can now switch to your game window or prepare for the test.")
+            print("Starting in 3...")
+            time.sleep(1)
+            print("2...")
+            time.sleep(1)
+            print("1...")
+            time.sleep(1)
+            print("Starting test now!")
+        else:
+            print("No delay - starting test immediately.")
+        
         print("="*60)
         
         # Get selected areas

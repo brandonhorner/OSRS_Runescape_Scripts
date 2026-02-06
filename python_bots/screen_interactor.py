@@ -17,11 +17,18 @@ class ScreenInteractor:
     def get_scan_area(self, label):
         screen_width, screen_height = pyautogui.size()
         # todo: Offset these in the x direction if menu is open (check if combat tab (active or not) is on screen)
+        # Note: Some areas need both X and width adjustment, others only X adjustment
+        # Use the width_adjustment_areas dictionary below to control this behavior
         runelite_top_margin = floor(screen_height // 62)
         runelite_right_margin = floor(screen_width // 82)
         windows_bottom_margin = floor(screen_height // 62)
         
         runelite_right_menu_area = (screen_width - runelite_right_margin, runelite_top_margin, runelite_right_margin, (screen_height // 2))
+        
+        # Cache menu status to avoid multiple checks in the same execution
+        if not hasattr(self, '_menu_cache_time') or time.time() - self._menu_cache_time > 5:
+            self._cached_menu_offset = None
+            self._menu_cache_time = time.time()
 
         # when adding areas.. calculate them like this:                            y1____________
         # find the top left corner of the area, that will be the x1, y1           x1|        |   |
@@ -34,6 +41,7 @@ class ScreenInteractor:
         # use the floor function when you're dividing by numbers with decimals, so the coordinate is a flat integer.
         areas = {
             "game_screen": (0, 90, screen_width - floor(screen_width // 6.7), screen_height - floor(screen_height // 4)),
+            "game_screen_center": (floor(screen_width * 0.2637), floor(screen_height * 0.0167), floor(screen_width * 0.6016), floor(screen_height * 0.9493)),
             "center": (screen_width // 3, runelite_top_margin, screen_width // 3, screen_height - runelite_top_margin - windows_bottom_margin),
             "p1": (0, runelite_top_margin, screen_width // 3, screen_height // 2),
             "p2": (screen_width // 3, runelite_top_margin, screen_width // 3, screen_height // 2),
@@ -47,10 +55,12 @@ class ScreenInteractor:
             "v2": (screen_width // 3 - runelite_right_margin, runelite_top_margin, screen_width // 3, screen_height - runelite_top_margin - windows_bottom_margin),
             "v3": (2 * screen_width // 3 - runelite_right_margin, runelite_top_margin, (screen_width // 3) - runelite_right_margin, screen_height - runelite_top_margin - windows_bottom_margin),
             "bag": (screen_width - 306, screen_height - floor(screen_height // 3.34), floor(screen_width // 10.9), floor(screen_height // 4.27)),
+            "bag_last_slot": (floor(screen_width * 0.9492), floor(screen_height * 0.8986), floor(screen_width * 0.0187), floor(screen_height * 0.0319)),            
             "chat": (floor(screen_width // 320), screen_height - floor(screen_height// 5.69), (screen_width // 4), floor(screen_height // 8.47)),
             "bank_pane": ((screen_width // 3), floor(screen_height // 8.08), floor(screen_width // 5.30), floor(screen_height // 1.62)),
             "bank_pane_with_menus": ((screen_width // 3) - floor(screen_width // 37), floor(screen_height // 18.04), floor(screen_width // 4.03), floor(screen_height // 1.38)),
-            "activity_pane": (0, 22, 150, 250),
+            "bank_deposit_box": (floor(screen_width * 0.3219), floor(screen_height * 0.2757), floor(screen_width * 0.2164), floor(screen_height * 0.2812)),
+            "activity_pane": (floor(screen_width * 0.0023), floor(screen_height * 0.0340), floor(screen_width * 0.0844), floor(screen_height * 0.1514)),                
             "chat_area": (floor(screen_width // 320), screen_height - floor(screen_height// 5.69), (screen_width // 4), floor(screen_height // 8.47)),
             "runelite_right_menu": (screen_width - runelite_right_margin, runelite_top_margin, runelite_right_margin, (screen_height // 2)),
             "game_screen_middle_horizontal": (0, 292, 2525, 950),
@@ -62,33 +72,55 @@ class ScreenInteractor:
         base_area = areas.get(label, (0, 0, screen_width, screen_height))
         
         # Apply dynamic adjustments for right-side areas that need menu offset
-        if label in ["bag", "bank_pane", "bank_pane_with_menus"]:  # Add other right-side areas here as needed
-            # Check if RuneLite menu is open
-            menu_offset = 0
-            
-            menu_found = None
-            for attempt in range(3):
+        # Define which areas need width adjustment vs X-only adjustment
+        width_adjustment_areas = {
+            "game_screen_center": True,  # Adjust width only
+            "bag": False,                 # Adjust X only
+            "bank_pane": False,           # Adjust X only
+            "bank_pane_with_menus": False, # Adjust X only
+            "bag_last_slot": False,         # Adjust X only
+            "bank_deposit_box": False         # Adjust X only
+        }
+        
+        if label in width_adjustment_areas:
+            # Check if RuneLite menu is open (use cached result if available)
+            if hasattr(self, '_cached_menu_offset') and self._cached_menu_offset is not None:
+                menu_offset = self._cached_menu_offset
+            else:
+                menu_offset = 0
+                menu_found = None
                 try:
-                    # Use existing find_image_cv2 function to check for menu
-                    menu_found = self.find_image_cv2(
+                    # Use existing find_image_cv2 function to check for menu (silently)
+                    menu_found = self.find_image_cv2_silent(
                         'image_library/runelite_menu_is_open.png',
                         region=runelite_right_menu_area,
                         threshold=0.98
                     )
                     if menu_found:
-                        if label == "bank_pane" or label == "bank_pane_with_menus":
+                        if label in ["bank_pane", "bank_pane_with_menus", "bank_deposit_box"]:
                             menu_offset = -floor(screen_width // 21)
                         else:
                             menu_offset = -floor(screen_width // 10.6)
                         print(f"RuneLite menu OPEN - applying {menu_offset} offset to {label} search area")
-                        break
+                    # Cache the result
+                    self._cached_menu_offset = menu_offset
                 except Exception as e:
-                    print(f"RuneLite menu check failed on attempt {attempt+1}/3 - treating as CLOSED (no offset)")
+                    print(f"RuneLite menu check failed - treating as CLOSED (no offset)")
                     menu_offset = 0
+                    self._cached_menu_offset = menu_offset
             
-            # Apply offset to X coordinate
+            # Apply offset based on area type
             if menu_offset != 0:
-                adjusted_area = (base_area[0] + menu_offset, base_area[1], base_area[2], base_area[3])
+                needs_width_adjustment = width_adjustment_areas.get(label, False)
+                
+                if needs_width_adjustment:
+                    # Adjust width only to maintain proper area size (keep same X position)
+                    adjusted_area = (base_area[0], base_area[1], base_area[2] + menu_offset, base_area[3])
+                    print(f"Applied width adjustment for {label}: W={base_area[2]}->{base_area[2] + menu_offset}")
+                else:
+                    # Adjust X coordinate only (applies to menu items)
+                    adjusted_area = (base_area[0] + menu_offset, base_area[1], base_area[2], base_area[3])
+                    print(f"Applied X-only adjustment for {label}: X={base_area[0]}->{base_area[0] + menu_offset}")
                 return adjusted_area
         return base_area
     
@@ -113,10 +145,12 @@ class ScreenInteractor:
         return None
 
     def find_pixel_right_click_confirm(self, pixel_color, confirm_image_path, attempts=10, 
-                                     pixel_offset_range_x=(5, 20), pixel_offset_range_y=(5, 20)):
+                                      pixel_offset_range_x=(5, 20), pixel_offset_range_y=(5, 20)):
+        # FUNCTION 1 - find_pixel_right_click_confirm
         """
         Find a pixel of specified color, right-click on it, and confirm the right-click menu 
-        appears by finding a specific image. This provides more reliable interaction than 
+        appears by finding a specific image. Uses CV2 for finding the confirmation image 
+        (better for UI elements like menu options). This provides more reliable interaction than 
         just assuming a left-click worked.
         
         Args:
@@ -162,15 +196,16 @@ class ScreenInteractor:
             time.sleep(random.uniform(0.2, 0.4))
             pyautogui.click(button='right')
             
-            # Step 3: Search for confirmation image in area below and around mouse
-            # Search area: x direction ±300, y direction 0 to +300 below mouse
+            # Step 3: Search for confirmation image in area around mouse - FUNCTION 1
+            # Search area: x direction ±300, y direction ±(screen_height/2) centered on mouse
             screen_width, screen_height = pyautogui.size()
             
-            # Calculate search region bounds
+            # Calculate search region bounds - centered on mouse position
             left = max(0, target_x - 300)
             right = min(screen_width, target_x + 300)
-            top = target_y
-            bottom = min(screen_height, target_y + 300)
+            y_search_height = screen_height // 2  # Half screen height for comprehensive menu search
+            top = max(0, target_y - y_search_height)
+            bottom = min(screen_height, target_y + y_search_height)
             
             # Ensure valid region dimensions
             width = right - left
@@ -182,8 +217,9 @@ class ScreenInteractor:
                 # Fallback to a smaller, guaranteed valid region
                 left = max(0, target_x - 100)
                 right = min(screen_width, target_x + 100)
-                top = target_y
-                bottom = min(screen_height, target_y + 200)
+                y_search_height = screen_height // 4  # Quarter screen height as fallback
+                top = max(0, target_y - y_search_height)
+                bottom = min(screen_height, target_y + y_search_height)
                 width = right - left
                 height = bottom - top
             
@@ -191,19 +227,32 @@ class ScreenInteractor:
             
             print(f"    Searching for confirmation image in region: {search_region}")
             
-            # Look for the confirmation image
-            try:
-                confirm_location = self.find_image_cv2(
-                    confirm_image_path, 
-                    region=search_region, 
-                    threshold=0.95
-                )
-            except Exception as e:
-                print(f"    Error searching for confirmation image: {e}")
-                confirm_location = None
+            # Look for the confirmation image using CV2 for better menu option detection
+            # Try with adaptive confidence - start high and lower each attempt
+            confirm_location = None
+            start_confidence = 0.90
+            confidence_step = 0.02
+            
+            for confirm_attempt in range(6):
+                current_confidence = start_confidence - (confirm_attempt * confidence_step)
+                current_confidence = max(0.70, current_confidence)  # Don't go below 0.70
+                
+                try:
+                    confirm_location = self.find_image_cv2(
+                        confirm_image_path, 
+                        region=search_region, 
+                        threshold=current_confidence
+                    )
+                    if confirm_location:
+                        break  # Found it, exit the retry loop
+                    # Wait a bit before retrying
+                    time.sleep(0.1)
+                except Exception as e:
+                    print(f"    Error searching for confirmation image (attempt {confirm_attempt + 1}): {e}")
+                    time.sleep(0.1)
             
             if confirm_location:
-                print(f"    Confirmation image found at {confirm_location}")
+                print(f"    Confirmation image found at {confirm_location} (attempt {confirm_attempt + 1}, confidence: {current_confidence:.2f})")
                 
                 # Step 4: Left-click on the confirmation image with small offset
                 click_offset_x = random.randint(-10, 10)
@@ -223,7 +272,158 @@ class ScreenInteractor:
                 return True
                 
             else:
-                print(f"    Confirmation image not found on attempt {attempt}")
+                print(f"    Confirmation image not found after 6 attempts on attempt {attempt}")
+                
+                # Step 5: Reset mouse position to close any open right-click menus
+                # Move up and to the right to close menus
+                reset_x = target_x + random.randint(200, 500)
+                reset_y = target_y + random.randint(-500, -200)
+                
+                # Ensure we stay within screen bounds
+                screen_width, screen_height = pyautogui.size()
+                reset_x = max(0, min(reset_x, screen_width - 1))
+                reset_y = max(0, min(reset_y, screen_height - 1))
+                
+                print(f"    Resetting mouse to ({reset_x}, {reset_y}) to close menus")
+                pyautogui.moveTo(reset_x, reset_y)
+                time.sleep(random.uniform(0.1, 0.2))
+                
+                # Return mouse to original position
+                pyautogui.moveTo(original_pos)
+        
+        # If we get here, all attempts failed
+        print(f"  Failed to find and confirm {pixel_color} pixel after {attempts} attempts")
+        return False
+
+    def find_pixel_right_click_confirm_new(self, pixel_color, confirm_image_path, attempts=10, 
+                                      pixel_offset_range_x=(5, 20), pixel_offset_range_y=(5, 20)):
+        # FUNCTION 2 - find_pixel_right_click_confirm_new
+        """
+        Find a pixel of specified color, right-click on it, and confirm the right-click menu 
+        appears by finding a specific image. Uses CV2 for finding the confirmation image 
+        (better for UI elements like menu options). This provides more reliable interaction than 
+        just assuming a left-click worked.
+        
+        Args:
+            pixel_color: Hex color string to search for (e.g., "00FFFF" for teal)
+            confirm_image_path: Path to image that should appear in right-click menu
+            attempts: Number of attempts to find and right-click the pixel (default: 5)
+            pixel_offset_range_x: Tuple of (min, max) for random x offset from found pixel (default: (5, 20))
+            pixel_offset_range_y: Tuple of (min, max) for random y offset from found pixel (default: (5, 20))
+        
+        Returns:
+            True if successful (pixel found, right-clicked, and confirmation image found and clicked)
+            False if failed after all attempts
+        """
+        print(f"find_pixel_right_click_confirm: Searching for {pixel_color} pixel with {confirm_image_path} confirmation")
+        
+        for attempt in range(1, attempts + 1):
+            print(f"  Attempt {attempt}/{attempts}")
+            
+            # Step 1: Find the pixel
+            found_pixel = self.find_pixel(pixel_color, tolerance=5)
+            if not found_pixel:
+                print(f"    Pixel {pixel_color} not found on attempt {attempt}")
+                continue
+            
+            print(f"    Found {pixel_color} pixel at {found_pixel}")
+            
+            # Step 2: Calculate offset position and right-click
+            offset_x = random.randint(*pixel_offset_range_x)
+            offset_y = random.randint(*pixel_offset_range_y)
+            target_x = found_pixel[0] + offset_x
+            target_y = found_pixel[1] + offset_y
+            
+            # Ensure target coordinates are within screen bounds
+            screen_width, screen_height = pyautogui.size()
+            target_x = max(0, min(target_x, screen_width - 1))
+            target_y = max(0, min(target_y, screen_height - 1))
+            
+            # Store original mouse position
+            original_pos = pyautogui.position()
+            
+            # Move to target and right-click
+            pyautogui.moveTo(target_x, target_y)
+            time.sleep(random.uniform(0.2, 0.4))
+            pyautogui.click(button='right')
+            
+            # Step 3: Search for confirmation image in area around mouse - FUNCTION 2
+            # Search area: x direction ±300, y direction ±(screen_height/2) centered on mouse
+            screen_width, screen_height = pyautogui.size()
+            
+            # Calculate search region bounds - centered on mouse position
+            left = max(0, target_x - 300)
+            right = min(screen_width, target_x + 300)
+            y_search_height = screen_height // 2  # Half screen height for comprehensive menu search
+            top = max(0, target_y - y_search_height)
+            bottom = min(screen_height, target_y + y_search_height)
+            
+            # Ensure valid region dimensions
+            width = right - left
+            height = bottom - top
+            
+            if width <= 0 or height <= 0:
+                print(f"    Invalid search region calculated: left={left}, right={right}, top={top}, bottom={bottom}")
+                print(f"    Adjusting to valid region...")
+                # Fallback to a smaller, guaranteed valid region
+                left = max(0, target_x - 100)
+                right = min(screen_width, target_x + 100)
+                y_search_height = screen_height // 4  # Quarter screen height as fallback
+                top = max(0, target_y - y_search_height)
+                bottom = min(screen_height, target_y + y_search_height)
+                width = right - left
+                height = bottom - top
+            
+            search_region = (left, top, width, height)
+            
+            print(f"    Searching for confirmation image in region: {search_region}")
+            
+            # Look for the confirmation image using CV2 for better menu option detection
+            # Try with adaptive confidence - start high and lower each attempt
+            confirm_location = None
+            start_confidence = 0.90
+            confidence_step = 0.02
+            
+            for confirm_attempt in range(6):
+                current_confidence = start_confidence - (confirm_attempt * confidence_step)
+                current_confidence = max(0.70, current_confidence)  # Don't go below 0.70
+                
+                try:
+                    confirm_location = self.find_image_cv2(
+                        confirm_image_path, 
+                        region=search_region, 
+                        threshold=current_confidence
+                    )
+                    if confirm_location:
+                        break  # Found it, exit the retry loop
+                    # Wait a bit before retrying
+                    time.sleep(0.1)
+                except Exception as e:
+                    print(f"    Error searching for confirmation image (attempt {confirm_attempt + 1}): {e}")
+                    time.sleep(0.1)
+            
+            if confirm_location:
+                print(f"    Confirmation image found at {confirm_location} (attempt {confirm_attempt + 1}, confidence: {current_confidence:.2f})")
+                
+                # Step 4: Left-click on the confirmation image with small offset
+                click_offset_x = random.randint(-10, 10)
+                click_offset_y = random.randint(-4, 4)
+                click_x = confirm_location[0] + click_offset_x
+                click_y = confirm_location[1] + click_offset_y
+                
+                # Click on the confirmation option
+                pyautogui.moveTo(click_x, click_y)
+                time.sleep(random.uniform(0.05, 0.1))
+                pyautogui.click()
+                
+                # Return mouse to original position
+                pyautogui.moveTo(original_pos)
+                
+                print(f"    Successfully clicked confirmation image at ({click_x}, {click_y})")
+                return True
+                
+            else:
+                print(f"    Confirmation image not found after 6 attempts on attempt {attempt}")
                 
                 # Step 5: Reset mouse position to close any open right-click menus
                 # Move up and to the right to close menus
@@ -270,6 +470,46 @@ class ScreenInteractor:
         target = cv2.imread(image_path)
         if target is None:
             print(f"Failed to load image: {image_path}")
+            return None
+
+        if region:
+            screenshot = pyautogui.screenshot(region=region)
+            region_offset = (region[0], region[1])
+        else:
+            screenshot = pyautogui.screenshot()
+            region_offset = (0, 0)
+            
+        # Convert screenshot to BGR format
+        screenshot_cv = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+        
+        # Ensure both images are in the same format
+        if target.shape[2] != screenshot_cv.shape[2]:
+            if target.shape[2] == 4:  # If template has alpha channel
+                target = cv2.cvtColor(target, cv2.COLOR_BGRA2BGR)
+            elif screenshot_cv.shape[2] == 4:
+                screenshot_cv = cv2.cvtColor(screenshot_cv, cv2.COLOR_BGRA2BGR)
+        
+        result = cv2.matchTemplate(screenshot_cv, target, cv2.TM_CCOEFF_NORMED)
+        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+        if max_val >= threshold:
+            target_h, target_w = target.shape[:2]
+            top_left = max_loc
+            center = (top_left[0] + target_w // 2, top_left[1] + target_h // 2)
+            center = (center[0] + region_offset[0], center[1] + region_offset[1])
+            print(f"CV2: ✓ Found {os.path.basename(image_path)} at {center} (Score: {max_val:.3f})")
+            return center
+        else:
+            print(f"CV2: ✗ No match found for {os.path.basename(image_path)} (Best score: {max_val:.3f} < {threshold})")
+            return None
+
+    def find_image_cv2_silent(self, image_path, region=None, threshold=0.98):
+        """Silent version of find_image_cv2 that doesn't output anything - for internal checks."""
+        # Resolve the region if it's given as a label
+        region = self.resolve_region(region) if region is not None else None
+        
+        # Load the template image and convert to BGR
+        target = cv2.imread(image_path)
+        if target is None:
             return None
 
         if region:
@@ -355,6 +595,23 @@ class ScreenInteractor:
             return None
         offset_x = random.randint(*offset_range)
         offset_y = random.randint(*offset_range)
+        target = (center[0] + offset_x, center[1] + offset_y)
+        original = pyautogui.position()
+        pyautogui.moveTo(target)
+        time.sleep(random.uniform(0.05, 0.1))
+        self.click_without_moving(button='left')
+        pyautogui.moveTo(original)
+        return target
+    
+    def click_image_cv2_without_moving_xy(self, image_path, region=None, confidence=0.95, 
+                                         offset_range_x=(0, 3), offset_range_y=(0, 3)):
+        """Click on an image with separate x and y offset ranges, without moving mouse after."""
+        center = self.find_image_cv2(image_path, region=region, threshold=confidence)
+        if center is None:
+            print(f"Image not found: {image_path}")
+            return None
+        offset_x = random.randint(*offset_range_x)
+        offset_y = random.randint(*offset_range_y)
         target = (center[0] + offset_x, center[1] + offset_y)
         original = pyautogui.position()
         pyautogui.moveTo(target)
@@ -457,6 +714,163 @@ class ScreenInteractor:
         self.click_without_moving(button='left')
         pyautogui.moveTo(original)
         return (x_target, y_target)
+
+    def find_image_right_click_confirm(self, image_path, confirm_image_path, region=None, 
+                                      confidence=0.95, attempts=5, offset_range_x=(2, 10), 
+                                      offset_range_y=(2, 10)):
+        # FUNCTION 3 - find_image_right_click_confirm
+        """
+        Find an image, right-click on it, and confirm the right-click menu appears by finding a specific image.
+        Uses CV3 for finding the main image (enhanced color-aware detection) and CV2 for finding the 
+        confirmation image (better for UI elements like menu options).
+        
+        Args:
+            image_path: Path to image to find and right-click
+            confirm_image_path: Path to image that should appear in right-click menu
+            region: Region to search in
+            confidence: Confidence threshold for image matching
+            attempts: Number of attempts
+            offset_range_x: Tuple of (min, max) for random x offset
+            offset_range_y: Tuple of (min, max) for random y offset
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        print(f"find_image_right_click_confirm: Searching for {image_path} with {confirm_image_path} confirmation")
+        
+        for attempt in range(1, attempts + 1):
+            print(f"  Attempt {attempt}/{attempts}")
+            
+            # Step 1: Find the image using CV3 for enhanced color-aware detection
+            found_image = self.find_image_cv3(
+                image_path, 
+                region=region, 
+                threshold=confidence,
+                color_tolerance=30,  # Allow some color variation
+                shape_weight=0.7,    # Balanced approach
+                color_weight=0.3
+            )
+            if not found_image:
+                print(f"    Image {image_path} not found on attempt {attempt}")
+                continue
+            
+            print(f"    Found {image_path} at {found_image}")
+            
+            # Step 2: Calculate offset position and right-click
+            offset_x = random.randint(*offset_range_x)
+            offset_y = random.randint(*offset_range_y)
+            target_x = found_image[0] + offset_x
+            target_y = found_image[1] + offset_y
+            
+            # Ensure target coordinates are within screen bounds
+            screen_width, screen_height = pyautogui.size()
+            target_x = max(0, min(target_x, screen_width - 1))
+            target_y = max(0, min(target_y, screen_height - 1))
+            
+            # Store original mouse position
+            original_pos = pyautogui.position()
+            
+            # Move to target and right-click
+            pyautogui.moveTo(target_x, target_y)
+            time.sleep(random.uniform(0.2, 0.4))
+            pyautogui.click(button='right')
+            
+            # Step 3: Search for confirmation image in area around mouse - FUNCTION 3
+            # Search area: x direction ±300, y direction ±(screen_height/2) centered on mouse
+            left = max(0, target_x - 300)
+            right = min(screen_width, target_x + 300)
+            y_search_height = screen_height // 2  # Half screen height for comprehensive menu search
+            top = max(0, target_y - y_search_height)
+            bottom = min(screen_height, target_y + y_search_height)
+            
+            # Ensure valid region dimensions
+            width = right - left
+            height = bottom - top
+            
+            if width <= 0 or height <= 0:
+                print(f"    Invalid search region calculated: left={left}, right={right}, top={top}, bottom={bottom}")
+                print(f"    Adjusting to valid region...")
+                # Fallback to a smaller, guaranteed valid region
+                left = max(0, target_x - 100)
+                right = min(screen_width, target_x + 100)
+                y_search_height = screen_height // 4  # Quarter screen height as fallback
+                top = max(0, target_y - y_search_height)
+                bottom = min(screen_height, target_y + y_search_height)
+                width = right - left
+                height = bottom - top
+            
+            search_region = (left, top, width, height)
+            
+            print(f"    Searching for confirmation image in region: {search_region}")
+            # Sleep randomly for .2 to .4 seconds
+            time.sleep(random.uniform(0.4, 0.7))
+
+            # Look for the confirmation image using CV2 for better menu option detection
+            # Try with adaptive confidence - start high and lower each attempt
+            confirm_location = None
+            start_confidence = 0.90
+            confidence_step = 0.02
+            
+            for confirm_attempt in range(6):
+                current_confidence = start_confidence - (confirm_attempt * confidence_step)
+                current_confidence = max(0.70, current_confidence)  # Don't go below 0.70
+                
+                try:
+                    confirm_location = self.find_image_cv2(
+                        confirm_image_path, 
+                        region=search_region, 
+                        threshold=current_confidence
+                    )
+                    if confirm_location:
+                        break  # Found it, exit the retry loop
+                    # Wait a bit before retrying
+                    time.sleep(0.1)
+                except Exception as e:
+                    print(f"    Error searching for confirmation image (attempt {confirm_attempt + 1}): {e}")
+                    time.sleep(0.1)
+            
+            if confirm_location:
+                print(f"    Confirmation image found at {confirm_location} (attempt {confirm_attempt + 1}, confidence: {current_confidence:.2f})")
+                
+                # Step 4: Left-click on the confirmation image with small offset
+                click_offset_x = random.randint(-10, 10)
+                click_offset_y = random.randint(-4, 4)
+                click_x = confirm_location[0] + click_offset_x
+                click_y = confirm_location[1] + click_offset_y
+                
+                # Click on the confirmation option
+                pyautogui.moveTo(click_x, click_y)
+                time.sleep(random.uniform(0.05, 0.1))
+                pyautogui.click()
+                
+                # Return mouse to original position
+                pyautogui.moveTo(original_pos)
+                
+                print(f"    Successfully clicked confirmation image at ({click_x}, {click_y})")
+                return True
+                
+            else:
+                print(f"    Confirmation image not found after 6 attempts on attempt {attempt}")
+                
+                # Step 5: Reset mouse position to close any open right-click menus
+                # Move up and to the right to close menus
+                reset_x = target_x + random.randint(200, 500)
+                reset_y = target_y + random.randint(-500, -200)
+                
+                # Ensure we stay within screen bounds
+                reset_x = max(0, min(reset_x, screen_width - 1))
+                reset_y = max(0, min(reset_y, screen_height - 1))
+                
+                print(f"    Resetting mouse to ({reset_x}, {reset_y}) to close menus")
+                pyautogui.moveTo(reset_x, reset_y)
+                time.sleep(random.uniform(0.1, 0.2))
+                
+                # Return mouse to original position
+                pyautogui.moveTo(original_pos)
+        
+        # If we get here, all attempts failed
+        print(f"  Failed to find and confirm {image_path} after {attempts} attempts")
+        return False
 
     def zoom_out(self, times=3, delay_low=0.005, delay_high=0.01, scroll_amount=-400):
         screen_width, screen_height = pyautogui.size()
@@ -699,7 +1113,7 @@ class ScreenInteractor:
             # Find world map and click with offset to land on compass
             # World map at (2262, 204), compass at (2079, 51)
             # Offset: -183 (left), -153 (up)
-            world_map_click = self.click_image_cv2(
+            world_map_click = self.click_image_cv2_without_moving_xy(
                 'image_library/world_map.png', 
                 region=search_region, 
                 confidence=confidence,
@@ -791,8 +1205,6 @@ class ScreenInteractor:
         # Sort by structural score descending
         candidates.sort(key=lambda x: x[2], reverse=True)
         
-        print(f"CV3: Found {len(candidates)} structural candidates above threshold {candidate_threshold}")
-        
         # Test each candidate with color validation
         for x, y, structural_score in candidates:
             # Extract the region around this candidate
@@ -837,22 +1249,16 @@ class ScreenInteractor:
                 # The color similarity must meet a minimum threshold regardless of composite score
                 color_passed = color_similarity >= color_threshold and color_tolerance_passed
                 
-                # Show only near matches with essential info
-                if structural_score >= 0.8 or color_similarity >= 0.8:  # Only show good candidates
-                    screen_x = int(x + region_offset[0])
-                    screen_y = int(y + region_offset[1])
-                    print(f"CV3: Candidate at ({screen_x},{screen_y}) - S:{structural_score:.3f}, C:{color_similarity:.3f}, Score:{composite_score:.3f}")
-                
-                # If this candidate meets BOTH the composite threshold AND the color threshold, return it
+                                # If this candidate meets BOTH the composite threshold AND the color threshold, return it
                 if composite_score >= threshold and color_passed:
                     center = (x + target_w // 2, y + target_h // 2)
                     # Convert numpy integers to regular integers to clean up logs
                     center = (int(center[0] + region_offset[0]), int(center[1] + region_offset[1]))
-                    print(f"CV3: Found valid match at {center} (Score: {composite_score:.3f})")
+                    print(f"CV3: ✓ Found {os.path.basename(image_path)} at {center} (Score: {composite_score:.3f})")
                     return center
         
         # If we get here, no valid match was found
-        print(f"CV3: No valid match found above threshold {threshold}")
+        print(f"CV3: ✗ No valid match found for {os.path.basename(image_path)} above threshold {threshold}")
         return None
 
     def find_all_images_cv3(self, image_path, region=None, threshold=0.98, color_tolerance=30, 
@@ -1145,3 +1551,908 @@ class ScreenInteractor:
             "failed_combinations": failed_combinations,
             "recommended_weights": recommended if successful_combinations else None
         }
+
+    def find_closest_image_region(self, image_path, region=None, confidence=0.95, 
+                                 max_radius=1440, color_tolerance=30,
+                                 shape_weight=0.7, color_weight=0.3,
+                                 shape_threshold=None, color_threshold=None):
+        """
+        Find the closest image to the screen center (character) by expanding search radius outward,
+        but only search within the specified region boundaries.
+        Returns the coordinates of the closest matching image center.
+        
+        Args:
+            image_path: Path to the template image to find
+            region: Region to search in (if None, searches entire screen)
+            confidence: Confidence threshold for image matching
+            max_radius: Maximum radius to search from center (default: 1440 for 2560x1440 screen)
+            color_tolerance: RGB color difference tolerance for CV3 validation
+            shape_weight: Weight for structural similarity (0.0-1.0) for CV3
+            color_weight: Weight for color similarity (0.0-1.0) for CV3
+            shape_threshold: Minimum shape similarity threshold for CV3 (if None, uses confidence)
+            color_threshold: Minimum color similarity threshold for CV3 (if None, uses confidence)
+        
+        Returns:
+            Tuple of (x, y) coordinates of the closest matching image center, or None if none found
+        """
+        # Get screen dimensions first (needed for bounds checking)
+        screen_width, screen_height = pyautogui.size()
+        
+        # Always use screen center for distance calculations (character position)
+        center_x, center_y = screen_width // 2, screen_height // 2
+        
+        # Resolve the region if it's given as a label
+        region = self.resolve_region(region) if region is not None else None
+        
+        if region:
+            # Get region boundaries for constraining search
+            region_x, region_y, region_width, region_height = region
+            # Limit max_radius to the region size
+            max_radius = min(max_radius, max(region_width, region_height) // 2)
+        
+        # Start with a small radius and expand
+        for radius in range(50, max_radius, 50):
+            # Calculate search area centered on screen center (character)
+            left = max(0, center_x - radius)
+            right = min(screen_width, center_x + radius)
+            top = max(0, center_y - radius)
+            bottom = min(screen_height, center_y + radius)
+            
+            # If we have a specific region, constrain the search to that region
+            if region:
+                left = max(left, region_x)
+                right = min(right, region_x + region_width)
+                top = max(top, region_y)
+                bottom = min(bottom, region_y + region_height)
+            
+            # Create region tuple for this search area
+            search_region = (left, top, right - left, bottom - top)
+            
+            # Use CV3 for enhanced color-aware detection
+            try:
+                found_image = self.find_image_cv3(
+                    image_path,
+                    region=search_region,
+                    threshold=confidence,
+                    color_tolerance=color_tolerance,
+                    shape_weight=shape_weight,
+                    color_weight=color_weight,
+                    shape_threshold=shape_threshold,
+                    color_threshold=color_threshold
+                )
+                
+                if found_image:
+                    print(f"Found {os.path.basename(image_path)} at radius {radius} - closest to character")
+                    return found_image
+                    
+            except Exception as e:
+                print(f"Error searching at radius {radius}: {e}")
+                continue
+        
+        print(f"No {os.path.basename(image_path)} found within max radius {max_radius}")
+        return None
+
+    def find_closest_image_cv2_region(self, image_path, region=None, confidence=0.95, 
+                                     max_radius=1440):
+        """
+        Find the closest image to the screen center (character) using CV2 (faster but less accurate).
+        Expands search radius outward from screen center, but only searches within the specified region.
+        
+        Args:
+            image_path: Path to the template image to find
+            region: Region to search in (if None, searches entire screen)
+            confidence: Confidence threshold for image matching
+            max_radius: Maximum radius to search from center (default: 1440 for 2560x1440 screen)
+        
+        Returns:
+            Tuple of (x, y) coordinates of the closest matching image center, or None if none found
+        """
+        # Get screen dimensions first (needed for bounds checking)
+        screen_width, screen_height = pyautogui.size()
+        
+        # Always use screen center for distance calculations (character position)
+        center_x, center_y = screen_width // 2, screen_height // 2
+        
+        # Resolve the region if it's given as a label
+        region = self.resolve_region(region) if region is not None else None
+        
+        if region:
+            # Get region boundaries for constraining search
+            region_x, region_y, region_width, region_height = region
+            # Limit max_radius to the region size
+            max_radius = min(max_radius, max(region_width, region_height) // 2)
+        
+        # Start with a small radius and expand
+        for radius in range(50, max_radius, 50):
+            # Calculate search area centered on screen center (character)
+            left = max(0, center_x - radius)
+            right = min(screen_width, center_x + radius)
+            top = max(0, center_y - radius)
+            bottom = min(screen_height, center_y + radius)
+            
+            # If we have a specific region, constrain the search to that region
+            if region:
+                left = max(left, region_x)
+                right = min(right, region_x + region_width)
+                top = max(top, region_y)
+                bottom = min(bottom, region_y + region_height)
+            
+            # Create region tuple for this search area
+            search_region = (left, top, right - left, bottom - top)
+            
+            # Use CV2 for faster detection
+            try:
+                found_image = self.find_image_cv2(
+                    image_path,
+                    region=search_region,
+                    threshold=confidence
+                )
+                
+                if found_image:
+                    print(f"Found {os.path.basename(image_path)} at radius {radius} - closest to character")
+                    return found_image
+                    
+            except Exception as e:
+                print(f"Error searching at radius {radius}: {e}")
+                continue
+        
+        print(f"No {os.path.basename(image_path)} found within max radius {max_radius}")
+        return None
+
+    def close_runelite_client(self):
+        """
+        Close the RuneLite client window.
+        
+        Returns:
+            True if RuneLite was closed successfully, False otherwise
+        """
+        print("Attempting to close RuneLite client...")
+        
+        try:
+            import win32gui
+            import win32con
+            
+            def enum_windows_callback(hwnd, windows):
+                if win32gui.IsWindowVisible(hwnd):
+                    window_title = win32gui.GetWindowText(hwnd)
+                    if "runelite" in window_title.lower() or "runescape" in window_title.lower():
+                        windows.append((hwnd, window_title))
+                return True
+            
+            windows = []
+            win32gui.EnumWindows(enum_windows_callback, windows)
+            
+            if windows:
+                print(f"Found RuneLite windows: {windows}")
+                # Close all RuneLite windows
+                for hwnd, title in windows:
+                    print(f"Closing window: {title}")
+                    win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
+                
+                # Wait a moment for windows to close
+                time.sleep(3)
+                print("RuneLite client closed successfully")
+                return True
+            else:
+                print("No RuneLite windows found")
+                return False
+                
+        except ImportError:
+            print("win32gui not available. Trying alternative method...")
+            return self.try_alternative_runelite_close()
+        except Exception as e:
+            print(f"Error closing RuneLite client: {e}")
+            return self.try_alternative_runelite_close()
+    
+    def try_alternative_runelite_close(self):
+        """Alternative method to close RuneLite using taskkill."""
+        print("Trying to close RuneLite via taskkill...")
+        
+        try:
+            import subprocess
+            
+            # Try to kill RuneLite processes
+            result = subprocess.run(
+                ["taskkill", "/f", "/im", "RuneLite.exe"],
+                capture_output=True,
+                text=True
+            )
+            
+            if result.returncode == 0:
+                print("RuneLite closed successfully via taskkill")
+                time.sleep(2)
+                return True
+            else:
+                print(f"taskkill failed: {result.stderr}")
+                return False
+                
+        except Exception as e:
+            print(f"Error with taskkill: {e}")
+            return False
+
+    def handle_servers_updated_restart(self, post_login_callback=None):
+        """
+        Handle the special case when game servers are being updated.
+        This requires waiting 3 minutes, closing RuneLite, and restarting via Jagex Launcher.
+        
+        Returns:
+            True if restart process completed successfully, False otherwise
+        """
+        print("=" * 60)
+        print("HANDLING GAME SERVERS BEING UPDATED")
+        print("=" * 60)
+        
+        # Step 1: Wait 3 minutes
+        print("Waiting 3 minutes for servers to update...")
+        wait_seconds = 3 * 60  # 3 minutes
+        
+        # Show progress every 30 seconds
+        for remaining in range(wait_seconds, 0, -30):
+            minutes_left = remaining // 60
+            seconds_left = remaining % 60
+            print(f"Waiting... {minutes_left:02d}:{seconds_left:02d} remaining")
+            time.sleep(30)
+        
+        print("Wait period completed. Proceeding with client restart...")
+        
+        # Step 2: Close RuneLite client
+        print("Closing RuneLite client...")
+        runelite_closed = self.close_runelite_client()
+        if not runelite_closed:
+            print("Warning: Could not close RuneLite client, proceeding anyway...")
+        
+        # Step 3: Try to find and activate Jagex Launcher
+        launcher_found = self.find_jagex_launcher_window()
+        if not launcher_found:
+            print("Failed to find/activate Jagex Launcher")
+            return False
+        
+        # Step 4: Click play button in launcher
+        play_clicked = self.click_launcher_play_button()
+        if not play_clicked:
+            print("Failed to click play button in launcher")
+            return False
+        
+        # Step 5: Monitor for login screen and complete login
+        login_completed = self.monitor_for_login_screen_after_restart(post_login_callback=post_login_callback)
+        
+        if login_completed:
+            print("=" * 60)
+            print("SERVERS UPDATE RESTART COMPLETED SUCCESSFULLY!")
+            print("=" * 60)
+            return True
+        else:
+            print("=" * 60)
+            print("SERVERS UPDATE RESTART FAILED")
+            print("=" * 60)
+            return False
+    
+    def find_jagex_launcher_window(self):
+        """Try to find and activate the Jagex Launcher window."""
+        print("Attempting to find Jagex Launcher window...")
+        
+        try:
+            # Try to find the launcher using Windows API
+            import win32gui
+            import win32con
+            
+            def enum_windows_callback(hwnd, windows):
+                if win32gui.IsWindowVisible(hwnd):
+                    window_title = win32gui.GetWindowText(hwnd)
+                    if "jagex" in window_title.lower() or "launcher" in window_title.lower():
+                        windows.append((hwnd, window_title))
+                return True
+            
+            windows = []
+            win32gui.EnumWindows(enum_windows_callback, windows)
+            
+            if windows:
+                print(f"Found Jagex Launcher windows: {windows}")
+                # Use the first found window
+                hwnd, title = windows[0]
+                print(f"Activating window: {title}")
+                win32gui.SetForegroundWindow(hwnd)
+                win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+                time.sleep(2)
+                return True
+            else:
+                print("No Jagex Launcher window found")
+                return False
+                
+        except ImportError:
+            print("win32gui not available. Trying alternative method...")
+            return self.try_alternative_launcher_activation()
+        except Exception as e:
+            print(f"Error finding Jagex Launcher window: {e}")
+            return self.try_alternative_launcher_activation()
+    
+    def try_alternative_launcher_activation(self):
+        """Alternative method to activate Jagex Launcher using subprocess."""
+        print("Trying to launch Jagex Launcher via subprocess...")
+        
+        import subprocess
+        
+        # Common Jagex Launcher paths
+        possible_paths = [
+            r"C:\Users\%USERNAME%\AppData\Local\Jagex Launcher\JagexLauncher.exe",
+            r"C:\Program Files\Jagex Launcher\JagexLauncher.exe",
+            r"C:\Program Files (x86)\Jagex Launcher\JagexLauncher.exe",
+            r"C:\Users\%USERNAME%\AppData\Roaming\Jagex Launcher\JagexLauncher.exe"
+        ]
+        
+        for path in possible_paths:
+            expanded_path = os.path.expandvars(path)
+            if os.path.exists(expanded_path):
+                print(f"Found Jagex Launcher at: {expanded_path}")
+                try:
+                    # Launch the launcher
+                    subprocess.Popen([expanded_path])
+                    print("Jagex Launcher launched successfully")
+                    time.sleep(5)  # Wait for launcher to load
+                    return True
+                except Exception as e:
+                    print(f"Error launching Jagex Launcher: {e}")
+                    continue
+        
+        print("Could not find or launch Jagex Launcher")
+        return False
+    
+    def click_launcher_play_button(self):
+        """Click the play button in Jagex Launcher."""
+        print("Looking for Jagex Launcher play button...")
+        
+        # Try to find the play button in the launcher
+        play_button_found = self.find_image_cv2(
+            "image_library/jagex_launcher_play_button.png",
+            region=None,  # Search entire screen since launcher might be anywhere
+            threshold=0.90
+        )
+        
+        if play_button_found:
+            print(f"Found play button at {play_button_found}. Clicking...")
+            click_result = self.click_image_cv2_without_moving(
+                "image_library/jagex_launcher_play_button.png",
+                region=None,
+                confidence=0.90,
+                offset_range=(0, 3)
+            )
+            
+            if click_result:
+                print("Play button clicked successfully")
+                time.sleep(5)  # Wait for game to start loading
+                return True
+            else:
+                print("Failed to click play button")
+                return False
+        else:
+            print("Play button not found in Jagex Launcher")
+            return False
+    
+    def monitor_for_login_screen_after_restart(self, timeout=120, post_login_callback=None):
+        """Monitor for login screen after launcher restart."""
+        print("Monitoring for login screen after launcher restart...")
+        
+        p2_region = self.get_scan_area("p2")
+        
+        # Import ImageMonitor here to avoid circular imports
+        from image_monitor import ImageMonitor
+        
+        # Create image monitor for login_play_now.png
+        login_monitor = ImageMonitor(
+            self,
+            "image_library/login_play_now.png",
+            region=p2_region,
+            confidence=0.90,
+            wait_for="appear"
+        )
+        
+        print(f"Waiting up to {timeout} seconds for login screen...")
+        login_monitor.start()  # Start the monitoring thread
+        login_found = login_monitor.wait_for_condition(timeout=timeout)
+        login_monitor.stop()  # Clean up the thread
+        
+        if login_found:
+            print("Login screen detected! Proceeding with login process...")
+            # Use the existing resolveLogin logic but skip the initial error checks
+            # since we're already past the launcher restart
+            return self.complete_login_after_restart(post_login_callback)
+        else:
+            print("Login screen not detected within timeout period")
+            return False
+    
+    def complete_login_after_restart(self, post_login_callback=None):
+        """Complete the login process after launcher restart."""
+        print("Completing login process after restart...")
+        
+        # Track whether we actually perform a login action
+        login_action_performed = False
+        
+        p2_region = self.get_scan_area("p2")
+        
+        # Check for login_play_now.png and click it
+        play_now_found = self.find_image_cv2(
+            "image_library/login_play_now.png",
+            region=p2_region,
+            threshold=0.90
+        )
+        
+        if play_now_found:
+            print("Play Now button found. Clicking it...")
+            login_action_performed = True  # Mark that we're performing a login action
+            play_now_click = self.click_image_cv2_without_moving(
+                "image_library/login_play_now.png",
+                region=p2_region,
+                confidence=0.90,
+                offset_range=(0, 3)
+            )
+            if play_now_click:
+                print("Play Now button clicked successfully.")
+                time.sleep(random.uniform(2, 4))  # Wait for next screen
+            else:
+                print("Failed to click Play Now button.")
+                return False
+        else:
+            print("Play Now button not found.")
+            return False
+        
+        # Wait and click "Click here to play" button
+        print("Waiting for 'Click here to play' button...")
+        start_time = time.time()
+        while time.time() - start_time < 60:
+            click_here_found = self.find_image_cv2(
+                "image_library/login_click_here_to_play.png",
+                region=p2_region,
+                threshold=0.90
+            )
+            if click_here_found:
+                print("Click here to play button found. Clicking it...")
+                click_here_click = self.click_image_cv2_without_moving(
+                    "image_library/login_click_here_to_play.png",
+                    region=p2_region,
+                    confidence=0.90,
+                    offset_range=(0, 3)
+                )
+                if click_here_click:
+                    print("Click here to play button clicked successfully.")
+                    print("Login process completed after restart. Waiting for game to load...")
+                    time.sleep(random.uniform(5, 10))  # Wait for game to load
+                    # Call post-login callback if provided and we actually performed a login action
+                    if post_login_callback and login_action_performed:
+                        print("Running post-login setup...")
+                        post_login_callback()
+                    return True
+                else:
+                    print("Failed to click Click here to play button.")
+                    return False
+            time.sleep(2)
+        else:
+            print("Click here to play button not found within 60 seconds.")
+            return False
+
+    def check_internet_connectivity(self, timeout_minutes=5):
+        """
+        Check internet connectivity by pinging Google.
+        
+        Args:
+            timeout_minutes: Maximum time to wait for internet connectivity (default: 5 minutes)
+            
+        Returns:
+            bool: True if internet is available, False if timeout reached
+        """
+        import subprocess
+        import time
+        
+        print(f"Checking internet connectivity (will try for up to {timeout_minutes} minutes)...")
+        start_time = time.time()
+        timeout_seconds = timeout_minutes * 60
+        
+        while time.time() - start_time < timeout_seconds:
+            try:
+                # Ping Google DNS (8.8.8.8) with 1 packet, 1 second timeout
+                result = subprocess.run(
+                    ["ping", "-n", "1", "-w", "1000", "8.8.8.8"],
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+                
+                if result.returncode == 0:
+                    print("✅ Internet connectivity restored!")
+                    return True
+                else:
+                    print("❌ Internet still down, retrying in 10 seconds...")
+                    time.sleep(10)
+                    
+            except subprocess.TimeoutExpired:
+                print("❌ Ping timeout, retrying in 10 seconds...")
+                time.sleep(10)
+            except Exception as e:
+                print(f"❌ Ping error: {e}, retrying in 10 seconds...")
+                time.sleep(10)
+        
+        print(f"⚠️ Internet connectivity check timed out after {timeout_minutes} minutes")
+        return False
+
+    def handle_account_logged_in_error(self, post_login_callback=None):
+        """
+        Handle the "Account logged in" error by checking internet connectivity
+        and restarting the launcher/client if needed.
+        
+        Returns:
+            bool: True if login process was completed successfully, False otherwise
+        """
+        print("Handling 'Account logged in' error (internet connectivity issue)...")
+        
+        # Step 1: Check internet connectivity for up to 5 minutes
+        internet_available = self.check_internet_connectivity(timeout_minutes=5)
+        
+        # Step 2: Restart launcher and client regardless of internet status
+        print("Restarting launcher and client for fresh session...")
+        
+        # Close RuneLite client
+        runelite_closed = self.close_runelite_client()
+        if runelite_closed:
+            print("RuneLite client closed successfully")
+        else:
+            print("Warning: Could not close RuneLite client, proceeding anyway...")
+        
+        # Close and reopen Jagex Launcher
+        print("Closing Jagex Launcher...")
+        try:
+            import win32gui
+            import win32con
+            
+            def enum_windows_callback(hwnd, windows):
+                if win32gui.IsWindowVisible(hwnd):
+                    window_title = win32gui.GetWindowText(hwnd)
+                    if "jagex" in window_title.lower() or "launcher" in window_title.lower():
+                        windows.append((hwnd, window_title))
+                return True
+            
+            windows = []
+            win32gui.EnumWindows(enum_windows_callback, windows)
+            
+            if windows:
+                for hwnd, title in windows:
+                    print(f"Closing window: {title}")
+                    win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
+                time.sleep(3)
+                print("Jagex Launcher closed successfully")
+            else:
+                print("No Jagex Launcher windows found")
+        except Exception as e:
+            print(f"Error closing Jagex Launcher: {e}")
+        
+        # Wait a moment before reopening
+        time.sleep(2)
+        
+        # Find and activate Jagex Launcher
+        launcher_found = self.find_jagex_launcher_window()
+        if not launcher_found:
+            print("Failed to find/activate Jagex Launcher")
+            return False
+        
+        # Click play button
+        play_clicked = self.click_launcher_play_button()
+        if not play_clicked:
+            print("Failed to click play button")
+            return False
+        
+        # Monitor for login screen and complete login
+        login_completed = self.monitor_for_login_screen_after_restart(
+            timeout=120, 
+            post_login_callback=post_login_callback
+        )
+        
+        if login_completed:
+            print("=" * 60)
+            print("ACCOUNT LOGGED IN ERROR RESOLVED SUCCESSFULLY!")
+            print("=" * 60)
+            return True
+        else:
+            print("Failed to complete login after restart")
+            return False
+
+    def ensure_bag_open_and_check_last_slot(self, image_path, confidence=0.95, color_tolerance=30, shape_weight=0.7, color_weight=0.3):
+        """
+        Ensure the bag is open and check if the last slot contains the specified image.
+        
+        Args:
+            image_path: Path to the image to look for in the last slot
+            confidence: Confidence threshold for image matching (default: 0.95)
+            color_tolerance: Color tolerance for CV3 matching (default: 30)
+            shape_weight: Shape weight for CV3 matching (default: 0.7)
+            color_weight: Color weight for CV3 matching (default: 0.3)
+            
+        Returns:
+            bool: True if the image is found in the last slot (bag is full), False otherwise
+        """
+        print(f"Ensuring bag is open and checking last slot for {image_path}...")
+        
+        # First, check if bag is closed and open it if necessary
+        bag_closed_region = self.get_scan_area("bag_closed")
+        bag_closed_found = self.find_image_cv2(
+            "image_library/bag_is_closed.png",
+            region=bag_closed_region,
+            threshold=0.90
+        )
+        
+        if bag_closed_found:
+            print("Bag is closed. Opening bag...")
+            bag_opened = self.click_image_cv2_without_moving(
+                "image_library/bag_is_closed.png",
+                region=bag_closed_region,
+                confidence=0.90,
+                offset_range=(0, 3)
+            )
+            if bag_opened:
+                print("Bag opened successfully.")
+                time.sleep(random.uniform(0.5, 1.0))  # Wait for bag to open
+            else:
+                print("Failed to open bag.")
+                return False
+        else:
+            print("Bag is already open.")
+        
+        # Now check the last slot for the specified image
+        bag_last_slot_region = self.get_scan_area("bag_last_slot")
+        image_found = self.find_image_cv3(
+            image_path,
+            region=bag_last_slot_region,
+            color_tolerance=color_tolerance,
+            shape_weight=shape_weight,
+            color_weight=color_weight
+        )
+        
+        if image_found:
+            print(f"Found {image_path} in last slot - bag is full.")
+            return True
+        else:
+            print(f"Did not find {image_path} in last slot - bag has space.")
+            return False
+
+    def resolveLogin(self, post_login_callback=None):
+        """
+        Automatically resolve login issues and reconnect to the game.
+        Handles various error scenarios and performs the complete login process.
+        Checks for errors and login screen prompts simultaneously.
+        
+        Returns:
+            True if login process was completed successfully, False otherwise
+        """
+        print("Checking for login issues and attempting to resolve...")
+        
+        # Track whether we actually perform a login action
+        login_action_performed = False
+        
+        # Get the p2 region for error detection and login interactions
+        p2_region = self.get_scan_area("p2")
+        
+        # Step 1: Check for all error scenarios and login prompts simultaneously
+        print("Checking for errors and login screen prompts...")
+        
+        # Check for "Failed to login" error
+        failed_login_error = self.find_image_cv2(
+            "image_library/error_failed_to_login.png",
+            region=p2_region,
+            threshold=0.90
+        )
+        
+        # Check for "Account logged in" error (internet connectivity issue)
+        account_logged_in_error = self.find_image_cv2(
+            "image_library/error_account_logged_in.png",
+            region=p2_region,
+            threshold=0.90
+        )
+        
+        # Check for "Disconnected from server" error
+        disconnected_error = self.find_image_cv2(
+            "image_library/error_you_were_disconnected_from_the_server.png",
+            region=p2_region,
+            threshold=0.90
+        )
+        
+        # Check for "Game servers being updated" error
+        servers_updated_error = self.find_image_cv2(
+            "image_library/error_game_servers_being_updated.png",
+            region=p2_region,
+            threshold=0.90
+        )
+        
+        # Check for login screen prompts
+        play_now_found = self.find_image_cv2(
+            "image_library/login_play_now.png",
+            region=p2_region,
+            threshold=0.90
+        )
+        
+        click_here_found = self.find_image_cv2(
+            "image_library/login_click_here_to_play.png",
+            region=p2_region,
+            threshold=0.90
+        )
+        
+        # Handle error scenarios
+        if failed_login_error:
+            print("Found 'Failed to login' error. Clicking try again button...")
+            try_again_click = self.click_image_cv2_without_moving(
+                "image_library/error_failed_to_login_try_again_button.png",
+                region=p2_region,
+                confidence=0.90,
+                offset_range=(0, 3)
+            )
+            if try_again_click:
+                print("Try again button clicked successfully.")
+                time.sleep(random.uniform(2, 4))  # Wait for error to clear
+            else:
+                print("Failed to click try again button.")
+        
+        if disconnected_error:
+            print("Found 'Disconnected from server' error. Clicking OK button...")
+            ok_button_click = self.click_image_cv2_without_moving(
+                "image_library/error_you_were_disconnected_from_the_server_ok_button.png",
+                region=p2_region,
+                confidence=0.90,
+                offset_range=(0, 3)
+            )
+            if ok_button_click:
+                print("OK button clicked successfully.")
+                time.sleep(random.uniform(2, 4))  # Wait for error to clear
+            else:
+                print("Failed to click OK button.")
+        
+        if account_logged_in_error:
+            print("Found 'Account logged in' error. This indicates an internet connectivity issue.")
+            print("Attempting to dismiss error and initiating connectivity check and restart process...")
+            
+            # Try to find and click an OK button, but if not found, proceed anyway
+            ok_button_click = self.click_image_cv2_without_moving(
+                "image_library/error_account_logged_in_ok_button.png",
+                region=p2_region,
+                confidence=0.90,
+                offset_range=(0, 3)
+            )
+            
+            if ok_button_click:
+                print("OK button clicked successfully.")
+                time.sleep(random.uniform(2, 4))  # Wait for error to clear
+            else:
+                print("No OK button found for account logged in error, proceeding with restart process...")
+                # Try pressing Escape key to dismiss the error dialog
+                import pyautogui
+                pyautogui.press('escape')
+                time.sleep(random.uniform(1, 2))
+            
+            # Handle the account logged in error (internet connectivity issue)
+            return self.handle_account_logged_in_error(post_login_callback)
+        
+        if servers_updated_error:
+            print("Found 'Game servers being updated' error. This requires a 3-minute wait and launcher restart.")
+            print("Clicking OK button and initiating restart process...")
+            ok_button_click = self.click_image_cv2_without_moving(
+                "image_library/error_game_servers_being_updated_ok_button.png",
+                region=p2_region,
+                confidence=0.90,
+                offset_range=(0, 3)
+            )
+            if ok_button_click:
+                print("OK button clicked successfully.")
+                time.sleep(random.uniform(2, 4))  # Wait for error to clear
+                
+                # Handle the special case of servers being updated
+                return self.handle_servers_updated_restart(post_login_callback)
+            else:
+                print("Failed to click OK button.")
+                return False
+        
+        # Check if we need to perform login process
+        any_error_found = failed_login_error or account_logged_in_error or disconnected_error or servers_updated_error
+        any_login_prompt_found = play_now_found or click_here_found
+        
+        if not any_error_found and not any_login_prompt_found:
+            # No errors or login prompts detected - we're already logged in
+            print("No login errors or prompts detected. Bot is already logged in and ready.")
+            # Don't call setup callback since we didn't actually log in
+            return True
+        
+        # Step 2: Handle "Play Now" button if found or if we had errors
+        if play_now_found:
+            print("Play Now button found. Clicking it...")
+            login_action_performed = True  # Mark that we're performing a login action
+            play_now_click = self.click_image_cv2_without_moving(
+                "image_library/login_play_now.png",
+                region=p2_region,
+                confidence=0.90,
+                offset_range=(0, 3)
+            )
+            if play_now_click:
+                print("Play Now button clicked successfully.")
+                time.sleep(random.uniform(2, 4))  # Wait for next screen
+            else:
+                print("Failed to click Play Now button.")
+                return False
+        elif any_error_found:
+            # If we had errors but no Play Now button, wait for it to appear
+            print("Waiting up to 20 seconds for Play Now button to appear after error resolution...")
+            start_time = time.time()
+            while time.time() - start_time < 20:
+                play_now_found = self.find_image_cv2(
+                    "image_library/login_play_now.png",
+                    region=p2_region,
+                    threshold=0.90
+                )
+                if play_now_found:
+                    print("Play Now button found. Clicking it...")
+                    play_now_click = self.click_image_cv2_without_moving(
+                        "image_library/login_play_now.png",
+                        region=p2_region,
+                        confidence=0.90,
+                        offset_range=(0, 3)
+                    )
+                    if play_now_click:
+                        print("Play Now button clicked successfully.")
+                        time.sleep(random.uniform(2, 4))  # Wait for next screen
+                        break
+                    else:
+                        print("Failed to click Play Now button.")
+                        return False
+                time.sleep(1)
+            else:
+                print("Play Now button not found after waiting for errors. Login resolution failed.")
+                return False
+        
+        # Step 3: Handle "Click here to play" button
+        if click_here_found:
+            print("Click here to play button found. Clicking it...")
+            click_here_click = self.click_image_cv2_without_moving(
+                "image_library/login_click_here_to_play.png",
+                region=p2_region,
+                confidence=0.90,
+                offset_range=(0, 3)
+            )
+            if click_here_click:
+                print("Click here to play button clicked successfully.")
+                print("Login process completed. Waiting for game to load...")
+                time.sleep(random.uniform(5, 10))  # Wait for game to load
+                # Call post-login callback if provided and we actually performed a login action
+                if post_login_callback and login_action_performed:
+                    print("Running post-login setup...")
+                    post_login_callback()
+                return True
+            else:
+                print("Failed to click Click here to play button.")
+                return False
+        else:
+            # Wait for "Click here to play" button to appear
+            print("Waiting for 'Click here to play' button...")
+            start_time = time.time()
+            while time.time() - start_time < 60:
+                click_here_found = self.find_image_cv2(
+                    "image_library/login_click_here_to_play.png",
+                    region=p2_region,
+                    threshold=0.90
+                )
+                if click_here_found:
+                    print("Click here to play button found. Clicking it...")
+                    click_here_click = self.click_image_cv2_without_moving(
+                        "image_library/login_click_here_to_play.png",
+                        region=p2_region,
+                        confidence=0.90,
+                        offset_range=(0, 3)
+                    )
+                    if click_here_click:
+                        print("Click here to play button clicked successfully.")
+                        print("Login process completed. Waiting for game to load...")
+                        time.sleep(random.uniform(5, 10))  # Wait for game to load
+                        # Call post-login callback if provided and we actually performed a login action
+                        if post_login_callback and login_action_performed:
+                            print("Running post-login setup...")
+                            post_login_callback()
+                        return True
+                    else:
+                        print("Failed to click Click here to play button.")
+                        return False
+                time.sleep(2)
+            else:
+                print("Click here to play button not found within 60 seconds.")
+                return False

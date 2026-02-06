@@ -1,0 +1,17 @@
+# Requirements for the Fishing Bot GUI
+# Install with: pip install -r requirements_gui.txt
+
+# Core dependencies
+pyautogui>=0.9.54
+opencv-python>=4.8.0
+numpy>=1.24.0
+Pillow>=10.0.0
+
+# GUI dependencies
+PyQt6>=6.4.0
+
+# For creating executable
+pyinstaller>=5.13.0
+
+# Optional: For better image processing
+scikit-image>=0.21.0

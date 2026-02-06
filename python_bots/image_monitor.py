@@ -64,4 +64,26 @@ class ImageMonitor(threading.Thread):
         Blocks until the image has appeared/disappeared (or until timeout).
         Returns True if condition was met, False otherwise.
         """
-        return self.condition_met.wait(timeout)
+        if timeout is None:
+            # Wait indefinitely with interruptible checks
+            while not self.condition_met.is_set() and not self._stop_event.is_set():
+                try:
+                    time.sleep(0.1)  # Short sleep to allow interruption
+                except KeyboardInterrupt:
+                    print("Keyboard interrupt detected in ImageMonitor, stopping...")
+                    self.stop()
+                    return False
+        else:
+            # Wait with timeout using interruptible approach
+            start_time = time.time()
+            while not self.condition_met.is_set() and not self._stop_event.is_set():
+                if time.time() - start_time >= timeout:
+                    return False
+                try:
+                    time.sleep(0.1)  # Short sleep to allow interruption
+                except KeyboardInterrupt:
+                    print("Keyboard interrupt detected in ImageMonitor, stopping...")
+                    self.stop()
+                    return False
+        
+        return self.condition_met.is_set()
