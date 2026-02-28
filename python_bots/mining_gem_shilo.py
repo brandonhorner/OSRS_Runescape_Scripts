@@ -834,21 +834,21 @@ def test_zoom_in():
     si.zoom_out(times=5, delay_low=delay[0], delay_high=delay[1], scroll_amount=-400)
     time.sleep(wait)
 
-    print("Test 1: zoom_in(times=6, delay_low=.1, delay_high=.12, scroll_amount=2)")
+    print("Test 1: zoom_in(times=5, delay_low=.2, delay_high=.3, scroll_amount=2)")
     si.zoom_in(times=6, delay_low=delay[0], delay_high=delay[1], scroll_amount=2)
     time.sleep(wait)
     print("  Resetting: zoom out...")
     si.zoom_out(times=5, delay_low=delay[0], delay_high=delay[1], scroll_amount=-400)
     time.sleep(wait)
 
-    print("Test 2: zoom_in(times=12, delay_low=.1, delay_high=.12, scroll_amount=1)")
+    print("Test 2: zoom_in(times=15, delay_low=.2, delay_high=.3, scroll_amount=1)")
     si.zoom_in(times=2, delay_low=delay[0], delay_high=delay[1], scroll_amount=5)
     time.sleep(wait)
     print("  Resetting: zoom out...")
     si.zoom_out(times=5, delay_low=delay[0], delay_high=delay[1], scroll_amount=-400)
     time.sleep(wait)
 
-    print("Test 3: zoom_in(times=15, delay_low=.1, delay_high=.12, scroll_amount=1)")
+    print("Test 3: zoom_in(times=20, delay_low=.2, delay_high=.3, scroll_amount=1)")
     si.zoom_in(times=5, delay_low=delay[0], delay_high=delay[1], scroll_amount=1)
     time.sleep(wait)
 
