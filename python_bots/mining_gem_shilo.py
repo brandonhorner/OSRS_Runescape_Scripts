@@ -237,8 +237,8 @@ def _run_to_mining_pi(si):
         return False
 
     print("Zooming in a little (so you can zoom up from there)...")
-    # Pi-friendly zoom: small scroll amount, slower delay (test_zoom Test 3)
-    si.zoom_in(times=5, delay_low=0.2, delay_high=0.3, scroll_amount=1)
+    # Pi-friendly zoom: small scroll amount, slower delay
+    si.zoom_in(times=24, delay_low=0.2, delay_high=0.3, scroll_amount=1)
     time.sleep(random.uniform(0.4, 0.8))
 
     wait = random.uniform(3.0, 5.0)
