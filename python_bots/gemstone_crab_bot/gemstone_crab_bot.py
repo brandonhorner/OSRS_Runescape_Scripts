@@ -292,7 +292,7 @@ def wait_for_crab_burrow(si):
         # Always reset monitoring flag when function exits
         monitoring_active = False
 
-def main_loop(si, target_successes=45, max_attempts=None):
+def main_loop(si, target_successes=40, max_attempts=None):
 	"""Run until a target number of successful loops is reached.
 
 	A successful loop is counted only when the crab is attacked and the pink
@@ -389,7 +389,7 @@ def main():
         
         # Main loop
         # Run until N successful loops are completed; cap attempts to avoid infinite runs
-        main_loop(si, target_successes=14, max_attempts=300)
+        main_loop(si, target_successes=40, max_attempts=300)
         
     except KeyboardInterrupt:
         print("\n⚠ Manual interruption detected. Exiting immediately...")

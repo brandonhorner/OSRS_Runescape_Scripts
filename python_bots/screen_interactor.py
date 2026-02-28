@@ -145,7 +145,8 @@ class ScreenInteractor:
         return None
 
     def find_pixel_right_click_confirm(self, pixel_color, confirm_image_path, attempts=10, 
-                                      pixel_offset_range_x=(5, 20), pixel_offset_range_y=(5, 20)):
+                                      pixel_offset_range_x=(5, 20), pixel_offset_range_y=(5, 20),
+                                      region=None):
         # FUNCTION 1 - find_pixel_right_click_confirm
         """
         Find a pixel of specified color, right-click on it, and confirm the right-click menu 
@@ -159,6 +160,7 @@ class ScreenInteractor:
             attempts: Number of attempts to find and right-click the pixel (default: 5)
             pixel_offset_range_x: Tuple of (min, max) for random x offset from found pixel (default: (5, 20))
             pixel_offset_range_y: Tuple of (min, max) for random y offset from found pixel (default: (5, 20))
+            region: Optional (x, y, w, h) to limit pixel search to that area (e.g. get_scan_area label).
         
         Returns:
             True if successful (pixel found, right-clicked, and confirmation image found and clicked)
@@ -169,8 +171,8 @@ class ScreenInteractor:
         for attempt in range(1, attempts + 1):
             print(f"  Attempt {attempt}/{attempts}")
             
-            # Step 1: Find the pixel
-            found_pixel = self.find_pixel(pixel_color, tolerance=5)
+            # Step 1: Find the pixel (optionally within region)
+            found_pixel = self.find_pixel(pixel_color, region=region, tolerance=5)
             if not found_pixel:
                 print(f"    Pixel {pixel_color} not found on attempt {attempt}")
                 continue
@@ -1698,6 +1700,56 @@ class ScreenInteractor:
         
         print(f"No {os.path.basename(image_path)} found within max radius {max_radius}")
         return None
+
+    def activate_game_window(self):
+        """
+        Find the RuneLite/game window and bring it to the foreground so key inputs are received.
+        Returns True if a window was found and activated, False otherwise.
+        """
+        # First try via Win32 APIs if available
+        try:
+            import win32gui
+            import win32con
+
+            def enum_windows_callback(hwnd, windows):
+                if win32gui.IsWindowVisible(hwnd):
+                    window_title = win32gui.GetWindowText(hwnd)
+                    if "runelite" in window_title.lower() or "runescape" in window_title.lower():
+                        windows.append((hwnd, window_title))
+                return True
+
+            windows = []
+            win32gui.EnumWindows(enum_windows_callback, windows)
+
+            if windows:
+                hwnd, title = windows[0]
+                win32gui.SetForegroundWindow(hwnd)
+                win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+                time.sleep(0.3)
+                return True
+        except ImportError:
+            # Fall through to pyautogui-click fallback
+            pass
+        except Exception as e:
+            print(f"Error activating game window via Win32: {e}")
+
+        # Fallback: click near the RuneLite window title bar (top toolbar) to bring it to foreground
+        try:
+            screen_width, _ = pyautogui.size()
+            # Title bar is usually at very top of the screen, just below OS chrome
+            x = screen_width // 2
+            y = 15  # small y so we stay on the toolbar, not in the game area
+            print(f"Fallback activate: clicking top toolbar at ({x}, {y})")
+            original = pyautogui.position()
+            pyautogui.moveTo(x, y)
+            time.sleep(0.1)
+            pyautogui.click()
+            pyautogui.moveTo(original)
+            time.sleep(0.3)
+            return True
+        except Exception as e:
+            print(f"Error activating game window via click fallback: {e}")
+            return False
 
     def close_runelite_client(self):
         """

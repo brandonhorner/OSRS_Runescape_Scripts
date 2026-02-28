@@ -207,9 +207,9 @@ def process_inventory(si):
     return True
 
 def check_inventory_full(si):
-    """Check if inventory is full by looking for inventory_full_sandstone.png in chat area"""
+    """Check if inventory is full by looking for inventory_full.png in chat area"""
     print("Checking inventory status...")
-    inventory_full = si.find_image_cv2("python_bots/image_library/inventory_full_sandstone.png", 
+    inventory_full = si.find_image_cv2("python_bots/image_library/inventory_full.png",
                                        region="chat_area", threshold=0.85)
     if inventory_full:
         print(f"Inventory full detected at coordinates: {inventory_full}")
