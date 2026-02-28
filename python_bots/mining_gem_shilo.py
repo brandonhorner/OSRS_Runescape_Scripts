@@ -277,7 +277,7 @@ def run_to_mining_via_pink_node(si, low_visibility=False):
     time.sleep(random.uniform(0.2, 0.4))
 
     print("Zooming in a little (so you can zoom up from there)...")
-    si.zoom_in(times=1, scroll_amount=80)
+    si.zoom_in(times=1, scroll_amount=400)
     time.sleep(random.uniform(0.4, 0.8))
 
     elapsed = time.time() - start
