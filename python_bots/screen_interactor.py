@@ -193,9 +193,9 @@ class ScreenInteractor:
             # Store original mouse position
             original_pos = pyautogui.position()
             
-            # Move to target and right-click
+            # Move to target and right-click (minimal delay: move and click together)
             pyautogui.moveTo(target_x, target_y)
-            time.sleep(random.uniform(0.2, 0.4))
+            time.sleep(random.uniform(0.01, 0.02))
             pyautogui.click(button='right')
             
             # Step 3: Search for confirmation image in area around mouse - FUNCTION 1
@@ -344,9 +344,9 @@ class ScreenInteractor:
             # Store original mouse position
             original_pos = pyautogui.position()
             
-            # Move to target and right-click
+            # Move to target and right-click (minimal delay: move and click together)
             pyautogui.moveTo(target_x, target_y)
-            time.sleep(random.uniform(0.2, 0.4))
+            time.sleep(random.uniform(0.01, 0.02))
             pyautogui.click(button='right')
             
             # Step 3: Search for confirmation image in area around mouse - FUNCTION 2
@@ -772,9 +772,9 @@ class ScreenInteractor:
             # Store original mouse position
             original_pos = pyautogui.position()
             
-            # Move to target and right-click
+            # Move to target and right-click (minimal delay: move and click together)
             pyautogui.moveTo(target_x, target_y)
-            time.sleep(random.uniform(0.2, 0.4))
+            time.sleep(random.uniform(0.01, 0.02))
             pyautogui.click(button='right')
             
             # Step 3: Search for confirmation image in area around mouse - FUNCTION 3

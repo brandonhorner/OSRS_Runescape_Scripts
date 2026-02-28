@@ -182,7 +182,7 @@ def click_tile_randomly(si, color_hex, region, tolerance=5, offset_range=(-18, 1
     x = max(0, min(found[0] + ox, pyautogui.size()[0] - 1))
     y = max(0, min(found[1] + oy, pyautogui.size()[1] - 1))
     pyautogui.moveTo(x, y)
-    time.sleep(random.uniform(0.05, 0.12))
+    time.sleep(random.uniform(0.01, 0.02))  # minimal delay: move and click together
     pyautogui.click()
     return (x, y)
 
@@ -215,7 +215,7 @@ def _run_to_mining_pi(si):
         print("Red tile not found in p1 or p2.")
         return False
 
-    wait = random.uniform(6.0, 7.0)
+    wait = random.uniform(9.0, 11.0)  # longer so we're fully at red tile before right-clicking pink
     print(f"Waiting {wait:.1f}s...")
     time.sleep(wait)
     _maybe_afk()
@@ -589,7 +589,7 @@ def _right_click_pixel_with_directional_converge(si, pixel_xy, confirm_image_pat
         target_y = max(0, min(y + offset_y, screen_h - 1))
 
         pyautogui.moveTo(target_x, target_y)
-        time.sleep(random.uniform(0.08, 0.15))
+        time.sleep(random.uniform(0.01, 0.02))  # minimal: move and click together
         pyautogui.click(button="right")
 
         left = max(0, target_x - 300)
@@ -623,20 +623,28 @@ def _right_click_pixel_with_directional_converge(si, pixel_xy, confirm_image_pat
     return False
 
 
+PINK_NODE_RESEARCH_ATTEMPTS = 7  # re-search for pink node each time confirm menu fails, then give up
+
+
 def _right_click_closest_pink_and_confirm(si, confirm_image_path):
     """
-    Find the closest pink pixel to the character (exact color match), then right-click with
-    directional converge (only valid when pixel is truly closest to us, e.g. while at mining nodes).
+    Re-search for the closest pink pixel each time we fail to get the right-click menu.
+    Try up to PINK_NODE_RESEARCH_ATTEMPTS times (each attempt = fresh find + a few offset clicks).
     """
-    coords = si.find_closest_pixel(
-        COLOR_PINK,
-        tolerance=0,  # exact match so we don't click gray/other pixels
-        max_radius=800,
-        local_search_size=15,
-    )
-    if not coords:
-        return False
-    return _right_click_pixel_with_directional_converge(si, coords, confirm_image_path)
+    for attempt in range(PINK_NODE_RESEARCH_ATTEMPTS):
+        coords = si.find_closest_pixel(
+            COLOR_PINK,
+            tolerance=0,  # exact match so we don't click gray/other pixels
+            max_radius=800,
+            local_search_size=15,
+        )
+        if not coords:
+            continue
+        if _right_click_pixel_with_directional_converge(
+            si, coords, confirm_image_path, max_attempts=3
+        ):
+            return True
+    return False
 
 
 def _right_click_at_and_confirm(si, pixel_xy, confirm_image_path, max_attempts=15):
@@ -659,7 +667,7 @@ def _right_click_at_and_confirm(si, pixel_xy, confirm_image_path, max_attempts=1
         target_y = max(0, min(y + offset_y, screen_h - 1))
 
         pyautogui.moveTo(target_x, target_y)
-        time.sleep(random.uniform(0.08, 0.15))
+        time.sleep(random.uniform(0.01, 0.02))  # minimal: move and click together
         pyautogui.click(button="right")
 
         left = max(0, target_x - 300)
