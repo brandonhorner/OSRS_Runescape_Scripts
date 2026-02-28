@@ -3,7 +3,13 @@ Gem mining bot for OSRS.
 Starts at bank deposit box (image 1). Trip to gem nodes: right-click a pink node in p1 or p2
 (random), wait 18-30s to run there, zoom in, then mine until full (inventory full = chat message; monitor mining_inactive in p1).
 Returns to bank via red/yellow tiles, deposits, repeat.
+
+Supports two modes via config (mining_gem_config.json):
+- Normal: full visibility (e.g. 117 HD), direct pink click + long run, camera angle in setup.
+- Low visibility (Pi / no 117 HD): first-run prompt; setup skips camera angle; run to mining
+  uses intermediate tiles (yellow p1/p2 → 7-9s → red p1/p2 → 6-7s → pink → zoom → 3-5s).
 """
+import json
 import os
 import time
 import random
@@ -14,6 +20,8 @@ from screen_interactor import ScreenInteractor
 from image_monitor import ImageMonitor
 
 DEBUG_SCREENSHOTS_DIR = "debug_screenshots"
+CONFIG_FILENAME = "mining_gem_config.json"
+CONFIG_KEY_LOW_VISIBILITY = "low_visibility"
 
 
 # Image library paths
@@ -37,6 +45,49 @@ AFK_MAX = 90.0  # 1.5 min
 # Bell curve centered near 25th percentile of [AFK_MIN, AFK_MAX] so most AFKs are short
 _AFK_MEAN = AFK_MIN + 0.25 * (AFK_MAX - AFK_MIN)  # ~24.75s
 _AFK_SIGMA = 20.0  # spread; result is clipped to [AFK_MIN, AFK_MAX]
+
+
+def _config_path():
+    """Path to config file (same directory as this script)."""
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), CONFIG_FILENAME)
+
+
+def load_config():
+    """Load config dict. Returns {} if file missing or invalid."""
+    path = _config_path()
+    if not os.path.isfile(path):
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def save_config(config):
+    """Overwrite config file with given dict."""
+    path = _config_path()
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(config, f, indent=2)
+
+
+def get_low_visibility_config():
+    """
+    Return low_visibility flag. If config doesn't exist or key missing, prompt once
+    ('Running on low visibility / Pi (no 117 HD)? [y/N]:'), save config, and return.
+    """
+    config = load_config()
+    if CONFIG_KEY_LOW_VISIBILITY in config:
+        return config[CONFIG_KEY_LOW_VISIBILITY]
+    try:
+        answer = input("Running on low visibility / Pi (no 117 HD)? [y/N]: ").strip().lower()
+    except EOFError:
+        answer = "n"
+    low = answer in ("y", "yes")
+    config[CONFIG_KEY_LOW_VISIBILITY] = low
+    save_config(config)
+    print(f"Saved config: {CONFIG_FILENAME} -> low_visibility = {low}")
+    return low
 
 
 def _random_afk_duration():
@@ -68,9 +119,11 @@ def save_debug_screenshot(reason="failure"):
         print(f"Could not save debug screenshot: {e}")
 
 
-def setup_gem_mining(si):
-    """Initial setup: activate game window, zoom out, camera up (hold w) then down a bit (hold s), compass, inventory."""
+def setup_gem_mining(si, low_visibility=False):
+    """Initial setup: activate game window, zoom out; if not low_visibility, camera up (w) then down (s); compass, inventory."""
     print("Starting gem mining setup...")
+    if low_visibility:
+        print("Low visibility mode: skipping camera angle (w/s).")
 
     print("Activating game window...")
     if si.activate_game_window():
@@ -82,17 +135,18 @@ def setup_gem_mining(si):
     si.zoom_out(times=5, delay_low=0.005, delay_high=0.01, scroll_amount=-400)
     time.sleep(random.uniform(0.5, 1.0))
 
-    print("Holding 'w' to put camera up...")
-    pyautogui.keyDown("w")
-    time.sleep(random.uniform(1.5, 2.0))
-    pyautogui.keyUp("w")
-    time.sleep(random.uniform(0.2, 0.4))
+    if not low_visibility:
+        print("Holding 'w' to put camera up...")
+        pyautogui.keyDown("w")
+        time.sleep(random.uniform(1.5, 2.0))
+        pyautogui.keyUp("w")
+        time.sleep(random.uniform(0.2, 0.4))
 
-    print("Holding 's' 0.7-0.9s to bring camera down a bit...")
-    pyautogui.keyDown("s")
-    time.sleep(random.uniform(0.7, 0.9))
-    pyautogui.keyUp("s")
-    time.sleep(random.uniform(0.3, 0.5))
+        print("Holding 's' 0.7-0.9s to bring camera down a bit...")
+        pyautogui.keyDown("s")
+        time.sleep(random.uniform(0.7, 0.9))
+        pyautogui.keyUp("s")
+        time.sleep(random.uniform(0.3, 0.5))
 
     print("Clicking compass to correct north...")
     compass_clicked = si.click_on_compass(region="p3", confidence=0.90)
@@ -128,12 +182,75 @@ def click_tile_randomly(si, color_hex, region, tolerance=5, offset_range=(-18, 1
     return (x, y)
 
 
-def run_to_mining_via_pink_node(si):
+def _run_to_mining_pi(si):
     """
-    Skip yellow/red tile clicks: right-click a pink gem node in p1 or p2 (randomly pick one
-    region to keep the bot looking fresh), left-click mine option, wait 18-30s to run there,
-    then zoom in a little. Ready for mining loop (monitor for not mining).
+    Low-visibility path: yellow tile (p1 or p2) → 7-9s → red tile (p1 or p2) → 6-7s →
+    interact with first pink node → zoom in → wait 3-5s. Then ready for mining loop.
     """
+    for region_label in ["p1", "p2"]:
+        click = click_tile_randomly(si, COLOR_YELLOW, region_label)
+        if click:
+            print(f"Clicked yellow tile in {region_label}.")
+            break
+    else:
+        print("Yellow tile not found in p1 or p2.")
+        return False
+
+    wait = random.uniform(7.0, 9.0)
+    print(f"Waiting {wait:.1f}s...")
+    time.sleep(wait)
+    _maybe_afk()
+
+    for region_label in ["p1", "p2"]:
+        click = click_tile_randomly(si, COLOR_RED, region_label)
+        if click:
+            print(f"Clicked red tile in {region_label}.")
+            break
+    else:
+        print("Red tile not found in p1 or p2.")
+        return False
+
+    wait = random.uniform(6.0, 7.0)
+    print(f"Waiting {wait:.1f}s...")
+    time.sleep(wait)
+    _maybe_afk()
+
+    regions = ["p1", "p2"]
+    random.shuffle(regions)
+    clicked_mine = False
+    for region_label in regions:
+        print(f"Looking for pink node in {region_label}...")
+        region = si.get_scan_area(region_label)
+        found = si.find_pixel(COLOR_PINK, region=region, tolerance=0)
+        if found:
+            print(f"Found pink node in {region_label}, right-clicking and selecting mine...")
+            if _right_click_at_and_confirm(si, found, MINE_GEM_ROCKS_OPTION_IMAGE):
+                clicked_mine = True
+                break
+    if not clicked_mine:
+        print("No pink node found in p1 or p2, or failed to click mine option.")
+        return False
+
+    print("Zooming in a little...")
+    si.zoom_in(times=2, delay_low=0.005, delay_high=0.01, scroll_amount=350)
+    time.sleep(random.uniform(0.4, 0.8))
+
+    wait = random.uniform(3.0, 5.0)
+    print(f"Waiting {wait:.1f}s before monitoring for NOT mining...")
+    time.sleep(wait)
+
+    return True
+
+
+def run_to_mining_via_pink_node(si, low_visibility=False):
+    """
+    If low_visibility: use intermediate tiles (yellow → red → pink) then zoom and short wait.
+    Else: right-click a pink gem node in p1 or p2, wait 18-30s (camera adjust during run),
+    zoom in. Ready for mining loop.
+    """
+    if low_visibility:
+        return _run_to_mining_pi(si)
+
     regions = ["p1", "p2"]
     random.shuffle(regions)
     clicked_mine = False
@@ -575,9 +692,12 @@ def _right_click_at_and_confirm(si, pixel_xy, confirm_image_path, max_attempts=1
 def main_loop(max_runs=10):
     """Run until we have max_runs successful deposits (each deposit = one full mining run + bank)."""
     si = ScreenInteractor()
+    low_visibility = get_low_visibility_config()
+    if low_visibility:
+        print("Using low visibility / Pi path (intermediate tiles to mining).")
     print("Starting gem mining bot in 3 seconds...")
     time.sleep(3)
-    if not setup_gem_mining(si):
+    if not setup_gem_mining(si, low_visibility=low_visibility):
         print("Setup failed. Exiting.")
         save_debug_screenshot("setup_failed")
         return
@@ -589,7 +709,7 @@ def main_loop(max_runs=10):
     while completed_deposits < max_runs:
         print(f"\n--- Run (target: {completed_deposits + 1}/{max_runs} successful deposits) ---")
 
-        if not run_to_mining_via_pink_node(si):
+        if not run_to_mining_via_pink_node(si, low_visibility=low_visibility):
             print("Failed to run to mining (pink node in p1/p2). Retrying...")
             save_debug_screenshot("run_to_mining_failed")
             failed_runs += 1
