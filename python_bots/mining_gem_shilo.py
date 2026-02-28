@@ -384,13 +384,14 @@ def mine_until_inventory_full(si):
     return True
 
 
-def return_to_bank_and_deposit(si):
+def return_to_bank_and_deposit(si, low_visibility=False):
     """
     Zoom out, walk to red tile (wait 7-9s), walk to yellow tile (wait 5-7s).
     From yellow tile, first try to right-click bank deposit box in p6 and confirm deposit option.
     If that fails (teal box not loaded / off-screen), walk to the fallback red tile and then try to
     right-click the bank deposit box in p5 instead. After success, wait ~4.5s for pane to open.
-    ImageMonitor for deposit all inventory button, then left-click it, then bank close, then camera down.
+    ImageMonitor for deposit all inventory button, then left-click it, then bank close.
+    If not low_visibility, point camera back down (hold s).
     """
     print("Zooming out...")
     si.zoom_out(times=5, delay_low=0.005, delay_high=0.01, scroll_amount=-400)
@@ -520,11 +521,12 @@ def return_to_bank_and_deposit(si):
         print("Warning: Bank close button not found. Continuing.")
     _maybe_afk()
 
-    print("Pointing camera back down (hold s 0.7-0.9s)...")
-    pyautogui.keyDown("s")
-    time.sleep(random.uniform(0.7, 0.9))
-    pyautogui.keyUp("s")
-    time.sleep(random.uniform(0.2, 0.4))
+    if not low_visibility:
+        print("Pointing camera back down (hold s 0.7-0.9s)...")
+        pyautogui.keyDown("s")
+        time.sleep(random.uniform(0.7, 0.9))
+        pyautogui.keyUp("s")
+        time.sleep(random.uniform(0.2, 0.4))
 
     return True
 
@@ -729,7 +731,7 @@ def main_loop(max_runs=10):
 
         mine_until_inventory_full(si)
 
-        if not return_to_bank_and_deposit(si):
+        if not return_to_bank_and_deposit(si, low_visibility=low_visibility):
             print("Failed to bank. Retrying...")
             save_debug_screenshot("bank_failed")
             continue
