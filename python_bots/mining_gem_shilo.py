@@ -278,8 +278,8 @@ def run_to_mining_via_pink_node(si, low_visibility=False):
     pyautogui.keyUp("w")
     time.sleep(random.uniform(0.2, 0.4))
 
-    print("Zooming out a little (so you can zoom up from there)...")
-    si.zoom_out(times=1, delay_low=0.005, delay_high=0.01, scroll_amount=-10)
+    print("Zooming in a little (so you can zoom up from there)...")
+    si.zoom_in(times=1, scroll_amount=10)
     time.sleep(random.uniform(0.4, 0.8))
 
     elapsed = time.time() - start
