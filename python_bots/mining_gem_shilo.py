@@ -821,41 +821,6 @@ def main_loop(max_runs=10):
     print(f"Gem mining bot finished. Completed {completed_deposits} deposits.")
 
 
-def test_zoom_in():
-    """
-    Test zoom_in levels without running the bot. Zooms all the way out, then tries:
-    times=1 amount=20, times=1 amount=10, times=2 amount=10 (with 2s wait and zoom-out reset between each).
-    Run with: python mining_gem_shilo.py test_zoom
-    """
-    si = ScreenInteractor()
-    delay = (0.005, 0.01)
-    wait = 2.0
-
-    print("Zooming all the way out (like normal setup)...")
-    si.zoom_out(times=5, delay_low=delay[0], delay_high=delay[1], scroll_amount=-400)
-    time.sleep(wait)
-
-    print("Test 1: zoom_in(times=6, delay_low=.2, delay_high=.3, scroll_amount=4)")
-    si.zoom_in(times=6, delay_low=delay[0], delay_high=delay[1], scroll_amount=2)
-    time.sleep(wait)
-    print("  Resetting: zoom out...")
-    si.zoom_out(times=5, delay_low=delay[0], delay_high=delay[1], scroll_amount=-400)
-    time.sleep(wait)
-
-    print("Test 2: zoom_in(times=12, delay_low=.2, delay_high=.3, scroll_amount=2)")
-    si.zoom_in(times=12, delay_low=delay[0], delay_high=delay[1], scroll_amount=1)
-    time.sleep(wait)
-    print("  Resetting: zoom out...")
-    si.zoom_out(times=5, delay_low=delay[0], delay_high=delay[1], scroll_amount=-400)
-    time.sleep(wait)
-
-    print("Test 3: zoom_in(times=24, delay_low=.2, delay_high=.3, scroll_amount=1)")
-    si.zoom_in(times=5, delay_low=delay[0], delay_high=delay[1], scroll_amount=1)
-    time.sleep(wait)
-
-    print("Zoom test done.")
-
-
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1].lower() == "test_zoom":
         test_zoom_in()
