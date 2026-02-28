@@ -125,11 +125,16 @@ def setup_gem_mining(si, low_visibility=False):
     if low_visibility:
         print("Low visibility mode: skipping camera angle (w/s).")
 
-    print("Activating game window...")
-    if si.activate_game_window():
+    if low_visibility:
+        # Pi/Linux: skip Win32 activate; user must focus the game window before starting
+        print("Low visibility mode: skipping window activate (ensure game window is focused).")
         time.sleep(0.5)
     else:
-        print("Warning: Could not activate game window. Key inputs may go to the wrong app.")
+        print("Activating game window...")
+        if si.activate_game_window():
+            time.sleep(0.5)
+        else:
+            print("Warning: Could not activate game window. Key inputs may go to the wrong app.")
 
     print("Zooming out for better visibility...")
     si.zoom_out(times=5, delay_low=0.005, delay_high=0.01, scroll_amount=-400)
@@ -231,8 +236,8 @@ def _run_to_mining_pi(si):
         print("No pink node found in p1 or p2, or failed to click mine option.")
         return False
 
-    print("Zooming in a little...")
-    si.zoom_in(times=2, delay_low=0.005, delay_high=0.01, scroll_amount=350)
+    # Pi: zoom in only a quarter (low visibility = less zoom needed)
+    si.zoom_in(times=2, delay_low=0.005, delay_high=0.01, scroll_amount=87)  # 350/4
     time.sleep(random.uniform(0.4, 0.8))
 
     wait = random.uniform(3.0, 5.0)
