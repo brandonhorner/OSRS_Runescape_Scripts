@@ -235,6 +235,10 @@ def _run_to_mining_pi(si):
         print("No pink node found in p1 or p2, or failed to click mine option.")
         return False
 
+    print("Zooming in a little (so you can zoom up from there)...")
+    si.zoom_in(times=1, scroll_amount=400)
+    time.sleep(random.uniform(0.4, 0.8))
+
     wait = random.uniform(3.0, 5.0)
     print(f"Waiting {wait:.1f}s before monitoring for NOT mining...")
     time.sleep(wait)
@@ -278,7 +282,7 @@ def run_to_mining_via_pink_node(si, low_visibility=False):
     time.sleep(random.uniform(0.2, 0.4))
 
     print("Zooming in a little (so you can zoom up from there)...")
-    si.zoom_in(times=2, scroll_amount=400)
+    si.zoom_in(times=1, scroll_amount=400)
     time.sleep(random.uniform(0.4, 0.8))
 
     elapsed = time.time() - start
