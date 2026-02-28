@@ -296,10 +296,9 @@ def run_to_mining_via_pink_node(si, low_visibility=False):
 
 def is_inventory_full_message_in_chat(si):
     """
-    Return True if the inventory-full message appears in the chat area (e.g. from inventory_full.png).
-    Same idea as check_inventory_full in mining-sandstone-quarry.py.
+    Return True if the inventory-full message appears in the search area (p4).
     """
-    loc = si.find_image_cv2(INVENTORY_FULL_IMAGE, region="chat_area", threshold=0.85)
+    loc = si.find_image_cv2(INVENTORY_FULL_IMAGE, region="p4", threshold=0.85)
     return loc is not None
 
 
