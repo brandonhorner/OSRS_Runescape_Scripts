@@ -822,7 +822,4 @@ def main_loop(max_runs=10):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1].lower() == "test_zoom":
-        test_zoom_in()
-    else:
-        main_loop(max_runs=50)
+    main_loop(max_runs=50)
