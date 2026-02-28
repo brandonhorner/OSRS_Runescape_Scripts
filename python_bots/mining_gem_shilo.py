@@ -620,12 +620,44 @@ def _right_click_pixel_with_directional_converge(si, pixel_xy, confirm_image_pat
 
 
 PINK_NODE_RESEARCH_ATTEMPTS = 7  # re-search for pink node each time confirm menu fails, then give up
+_EXPAND_BOX_SIZE = 12  # search box 12x12 around each offset point
+_EXPAND_MAX_ROUNDS = 6  # expand offset up to 5 + 5*3 ≈ 20 px
+
+
+def _find_pink_expand_around(si, base_x, base_y):
+    """
+    After a miss, search for a definitive pink pixel in 4 directions from (base_x, base_y):
+    +offset in x, -offset in x, +offset in y, -offset in y. Start offset=5, then expand by 1–3 each round.
+    Returns (px, py) or None. Helps when node is horizontally aligned and offsets didn't vary y enough.
+    """
+    screen_w, screen_h = pyautogui.size()
+    box = _EXPAND_BOX_SIZE
+    offset = 5
+    for _ in range(_EXPAND_MAX_ROUNDS):
+        for dx, dy in [(offset, 0), (-offset, 0), (0, offset), (0, -offset)]:
+            cx = base_x + dx
+            cy = base_y + dy
+            left = max(0, cx - box // 2)
+            top = max(0, cy - box // 2)
+            right = min(screen_w, left + box)
+            bottom = min(screen_h, top + box)
+            w = right - left
+            h = bottom - top
+            if w <= 0 or h <= 0:
+                continue
+            region = (left, top, w, h)
+            found = si.find_pixel(COLOR_PINK, region=region, tolerance=0)
+            if found:
+                return found
+        offset += random.randint(1, 3)
+    return None
 
 
 def _right_click_closest_pink_and_confirm(si, confirm_image_path):
     """
     Re-search for the closest pink pixel each time we fail to get the right-click menu.
-    Try up to PINK_NODE_RESEARCH_ATTEMPTS times (each attempt = fresh find + a few offset clicks).
+    On miss, run expand-around search (4 directions ±x/±y from last position, expand until found)
+    then right-click that pixel. Up to PINK_NODE_RESEARCH_ATTEMPTS attempts.
     """
     for attempt in range(PINK_NODE_RESEARCH_ATTEMPTS):
         coords = si.find_closest_pixel(
@@ -638,6 +670,12 @@ def _right_click_closest_pink_and_confirm(si, confirm_image_path):
             continue
         if _right_click_pixel_with_directional_converge(
             si, coords, confirm_image_path, max_attempts=3
+        ):
+            return True
+        # Miss: expand search around where we thought the pixel was (handles horizontal alignment etc.)
+        expanded = _find_pink_expand_around(si, coords[0], coords[1])
+        if expanded and _right_click_at_and_confirm(
+            si, expanded, confirm_image_path, max_attempts=5
         ):
             return True
     return False
