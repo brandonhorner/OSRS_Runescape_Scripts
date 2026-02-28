@@ -11,6 +11,7 @@ Supports two modes via config (mining_gem_config.json):
 """
 import json
 import os
+import sys
 import time
 import random
 from datetime import datetime
@@ -236,7 +237,7 @@ def _run_to_mining_pi(si):
         return False
 
     print("Zooming in a little (so you can zoom up from there)...")
-    si.zoom_in(times=2, scroll_amount=20)
+    si.zoom_in(times=1, scroll_amount=20)
     time.sleep(random.uniform(0.4, 0.8))
 
     wait = random.uniform(3.0, 5.0)
@@ -819,5 +820,43 @@ def main_loop(max_runs=10):
     print(f"Gem mining bot finished. Completed {completed_deposits} deposits.")
 
 
+def test_zoom_in():
+    """
+    Test zoom_in levels without running the bot. Zooms all the way out, then tries:
+    times=1 amount=20, times=1 amount=10, times=2 amount=10 (with 2s wait and zoom-out reset between each).
+    Run with: python mining_gem_shilo.py test_zoom
+    """
+    si = ScreenInteractor()
+    delay = (0.005, 0.01)
+    wait = 2.0
+
+    print("Zooming all the way out (like normal setup)...")
+    si.zoom_out(times=5, delay_low=delay[0], delay_high=delay[1], scroll_amount=-400)
+    time.sleep(wait)
+
+    print("Test 1: zoom_in(times=1, scroll_amount=20)")
+    si.zoom_in(times=1, delay_low=delay[0], delay_high=delay[1], scroll_amount=20)
+    time.sleep(wait)
+    print("  Resetting: zoom out...")
+    si.zoom_out(times=5, delay_low=delay[0], delay_high=delay[1], scroll_amount=-400)
+    time.sleep(wait)
+
+    print("Test 2: zoom_in(times=1, scroll_amount=10)")
+    si.zoom_in(times=1, delay_low=delay[0], delay_high=delay[1], scroll_amount=10)
+    time.sleep(wait)
+    print("  Resetting: zoom out...")
+    si.zoom_out(times=5, delay_low=delay[0], delay_high=delay[1], scroll_amount=-400)
+    time.sleep(wait)
+
+    print("Test 3: zoom_in(times=2, scroll_amount=10)")
+    si.zoom_in(times=2, delay_low=delay[0], delay_high=delay[1], scroll_amount=10)
+    time.sleep(wait)
+
+    print("Zoom test done.")
+
+
 if __name__ == "__main__":
-    main_loop(max_runs=50)
+    if len(sys.argv) > 1 and sys.argv[1].lower() == "test_zoom":
+        test_zoom_in()
+    else:
+        main_loop(max_runs=50)
