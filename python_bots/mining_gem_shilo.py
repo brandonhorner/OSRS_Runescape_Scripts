@@ -189,8 +189,8 @@ def click_tile_randomly(si, color_hex, region, tolerance=5, offset_range=(-18, 1
 
 def _run_to_mining_pi(si):
     """
-    Low-visibility path: yellow tile (p1 or p2) → 7-9s → red tile (p1 or p2) → 6-7s →
-    interact with first pink node → zoom in → wait 3-5s. Then ready for mining loop.
+    Low-visibility path: yellow tile (p1 or p2) → 7-9s → red tile (p2 only) →
+    interact with first pink node → wait 3-5s. Then ready for mining loop.
     """
     for region_label in ["p1", "p2"]:
         click = click_tile_randomly(si, COLOR_YELLOW, region_label)
@@ -206,14 +206,12 @@ def _run_to_mining_pi(si):
     time.sleep(wait)
     _maybe_afk()
 
-    for region_label in ["p1", "p2"]:
-        click = click_tile_randomly(si, COLOR_RED, region_label)
-        if click:
-            print(f"Clicked red tile in {region_label}.")
-            break
-    else:
-        print("Red tile not found in p1 or p2.")
+    # Red tile in p2 only (p1 false-flags on Pi)
+    click = click_tile_randomly(si, COLOR_RED, "p2")
+    if not click:
+        print("Red tile not found in p2.")
         return False
+    print("Clicked red tile in p2.")
 
     wait = random.uniform(9.0, 11.0)  # longer so we're fully at red tile before right-clicking pink
     print(f"Waiting {wait:.1f}s...")
@@ -279,7 +277,7 @@ def run_to_mining_via_pink_node(si, low_visibility=False):
     time.sleep(random.uniform(0.2, 0.4))
 
     print("Zooming in a little (so you can zoom up from there)...")
-    si.zoom_in(times=1, scroll_amount=10)
+    si.zoom_in(times=1, scroll_amount=80)
     time.sleep(random.uniform(0.4, 0.8))
 
     elapsed = time.time() - start
@@ -534,7 +532,7 @@ def return_to_bank_and_deposit(si, low_visibility=False):
 def _offset_ranges_for_pixel_relative_to_center(pixel_x, pixel_y, screen_w, screen_h):
     """
     Return (offset_x_range, offset_y_range) from the found pixel so we click toward the
-    node. Reduced overall offsets. Node down-left of us -> offset further down-left; etc.
+    node. Small offsets so we still hit the node when zoomed out (nodes appear smaller).
     """
     cx, cy = screen_w // 2, screen_h // 2
     left_of_center = pixel_x < cx
@@ -543,20 +541,20 @@ def _offset_ranges_for_pixel_relative_to_center(pixel_x, pixel_y, screen_w, scre
     above_center = pixel_y < cy
 
     if below_center and left_of_center:
-        return ((-14, -5), (5, 14))   # down-left
+        return ((-7, -2), (2, 7))    # down-left
     if below_center and right_of_center:
-        return ((5, 14), (5, 14))     # down-right
+        return ((2, 7), (2, 7))      # down-right
     if above_center and left_of_center:
-        return ((-14, -5), (-14, -5)) # up-left
+        return ((-7, -2), (-7, -2))  # up-left
     if above_center and right_of_center:
-        return ((5, 14), (-14, -5))   # up-right
+        return ((2, 7), (-7, -2))    # up-right
     if right_of_center:
-        return ((5, 14), (-4, 4))     # right of us
+        return ((2, 7), (-2, 2))     # right of us
     if left_of_center:
-        return ((-14, -5), (-4, 4))   # left of us
+        return ((-7, -2), (-2, 2))   # left of us
     if below_center:
-        return ((-4, 4), (5, 14))     # below
-    return ((-4, 4), (-14, -5))       # above
+        return ((-2, 2), (2, 7))     # below
+    return ((-2, 2), (-7, -2))      # above
 
 
 def _right_click_pixel_with_directional_converge(si, pixel_xy, confirm_image_path, max_attempts=5):
@@ -579,10 +577,10 @@ def _right_click_pixel_with_directional_converge(si, pixel_xy, confirm_image_pat
         else:
             mid_x = (ox_lo + ox_hi) / 2
             mid_y = (oy_lo + oy_hi) / 2
-            opposite_x = random.randint(2, 6) if mid_x < 0 else random.randint(-6, -2)
-            opposite_y = random.randint(2, 6) if mid_y < 0 else random.randint(-6, -2)
+            opposite_x = random.randint(1, 3) if mid_x < 0 else random.randint(-3, -1)
+            opposite_y = random.randint(1, 3) if mid_y < 0 else random.randint(-3, -1)
             offset_x = opposite_x
-            offset_y = opposite_y + random.randint(-3, 3)
+            offset_y = opposite_y + random.randint(-1, 1)
         target_x = max(0, min(x + offset_x, screen_w - 1))
         target_y = max(0, min(y + offset_y, screen_h - 1))
 
