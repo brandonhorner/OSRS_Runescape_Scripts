@@ -12,7 +12,10 @@ class ScreenInteractor:
         # Set working directory to python_bots folder (parent of this script)
         script_dir = os.path.dirname(os.path.abspath(__file__))
         os.chdir(script_dir)
+        # Explicitly disable PyAutoGUI corner failsafe for unattended bot runs.
+        pyautogui.FAILSAFE = False
         print(f"ScreenInteractor working directory set to: {os.getcwd()}")
+        print("PyAutoGUI FAILSAFE disabled.")
 
     def get_scan_area(self, label):
         screen_width, screen_height = pyautogui.size()
