@@ -875,24 +875,47 @@ class ScreenInteractor:
         return False
 
     def zoom_out(self, times=3, delay_low=0.005, delay_high=0.01, scroll_amount=-400):
+        """Zoom out safely on low-res/edge-case displays without tripping PyAutoGUI failsafe."""
         screen_width, screen_height = pyautogui.size()
-        x, y = screen_width // 6, screen_height // 6
+        # Keep well inside screen bounds to avoid corner-triggered failsafe.
+        safe_x = max(50, min(screen_width - 50, screen_width // 6))
+        safe_y = max(50, min(screen_height - 50, screen_height // 6))
         original = pyautogui.position()
-        pyautogui.moveTo(x, y)
-        for _ in range(times):
-            pyautogui.scroll(scroll_amount)
-            time.sleep(random.uniform(delay_low, delay_high))
-        pyautogui.moveTo(original)
+
+        # Save and temporarily disable failsafe during controlled bot movement.
+        prev_failsafe = pyautogui.FAILSAFE
+        pyautogui.FAILSAFE = False
+        try:
+            pyautogui.moveTo(safe_x, safe_y)
+            for _ in range(times):
+                pyautogui.scroll(scroll_amount)
+                time.sleep(random.uniform(delay_low, delay_high))
+            # Return near original, still clamped safely.
+            return_x = max(50, min(screen_width - 50, int(original[0])))
+            return_y = max(50, min(screen_height - 50, int(original[1])))
+            pyautogui.moveTo(return_x, return_y)
+        finally:
+            pyautogui.FAILSAFE = prev_failsafe
 
     def zoom_in(self, times=3, delay_low=0.005, delay_high=0.01, scroll_amount=400):
+        """Zoom in safely on low-res/edge-case displays without tripping PyAutoGUI failsafe."""
         screen_width, screen_height = pyautogui.size()
-        x, y = screen_width // 6, screen_height // 6
+        safe_x = max(50, min(screen_width - 50, screen_width // 6))
+        safe_y = max(50, min(screen_height - 50, screen_height // 6))
         original = pyautogui.position()
-        pyautogui.moveTo(x, y)
-        for _ in range(times):
-            pyautogui.scroll(scroll_amount)
-            time.sleep(random.uniform(delay_low, delay_high))
-        pyautogui.moveTo(original)
+
+        prev_failsafe = pyautogui.FAILSAFE
+        pyautogui.FAILSAFE = False
+        try:
+            pyautogui.moveTo(safe_x, safe_y)
+            for _ in range(times):
+                pyautogui.scroll(scroll_amount)
+                time.sleep(random.uniform(delay_low, delay_high))
+            return_x = max(50, min(screen_width - 50, int(original[0])))
+            return_y = max(50, min(screen_height - 50, int(original[1])))
+            pyautogui.moveTo(return_x, return_y)
+        finally:
+            pyautogui.FAILSAFE = prev_failsafe
 
     def find_closest_pixel(self, color_hex, tolerance=1, max_radius=1440, local_search_size=90):
         """Find the closest pixel of the specified color to the center of the screen by expanding search radius.
