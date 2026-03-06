@@ -41,12 +41,6 @@ COLOR_TEAL = "00FFFF"  # bank deposit box
 COLOR_PINK = "FF00FF"  # gem mining nodes (exact match, tolerance=0)
 
 MAX_CONSECUTIVE_PINK_FAILURES = 20  # exit mining loop after this many failures to find/click a node
-AFK_CHANCE = 0.05  # 5% chance to idle at various steps (tiles, bank steps, mining)
-AFK_MIN = 3.0
-AFK_MAX = 90.0  # 1.5 min
-# Bell curve centered near 25th percentile of [AFK_MIN, AFK_MAX] so most AFKs are short
-_AFK_MEAN = AFK_MIN + 0.25 * (AFK_MAX - AFK_MIN)  # ~24.75s
-_AFK_SIGMA = 20.0  # spread; result is clipped to [AFK_MIN, AFK_MAX]
 
 
 def _config_path():
@@ -90,20 +84,6 @@ def get_low_visibility_config():
     save_config(config)
     print(f"Saved config: {CONFIG_FILENAME} -> low_visibility = {low}")
     return low
-
-
-def _random_afk_duration():
-    """Return a single AFK duration (3s to 1.5min) from a normal distribution leaning toward the short end (25th percentile)."""
-    t = random.gauss(_AFK_MEAN, _AFK_SIGMA)
-    return max(AFK_MIN, min(AFK_MAX, t))
-
-
-def _maybe_afk():
-    """5% chance to idle 3s–1.5min (bell curve, leaning short) to simulate multitasking."""
-    if random.random() < AFK_CHANCE:
-        extra = _random_afk_duration()
-        print(f"Simulating multitasking - idling for {extra:.1f}s...")
-        time.sleep(extra)
 
 
 def save_debug_screenshot(reason="failure"):
@@ -191,49 +171,39 @@ def click_tile_randomly(si, color_hex, region, tolerance=5, offset_range=(-18, 1
 
 def _run_to_mining_pi(si):
     """
-    Low-visibility path: yellow tile (p1 or p2) → 7-9s → red tile (p2 only) →
-    interact with first pink node → wait 3-5s. Then ready for mining loop.
+    Low-visibility path: yellow tile → 7-9s → red tile → interact with first pink node → wait 3-5s.
+    Tiles and pink use game_screen.
     """
-    for region_label in ["p1", "p2"]:
-        click = click_tile_randomly(si, COLOR_YELLOW, region_label)
-        if click:
-            print(f"Clicked yellow tile in {region_label}.")
-            break
-    else:
-        print("Yellow tile not found in p1 or p2.")
+    click = click_tile_randomly(si, COLOR_YELLOW, "game_screen")
+    if not click:
+        print("Yellow tile not found on game_screen.")
         return False
+    print("Clicked yellow tile.")
 
     wait = random.uniform(7.0, 9.0)
     print(f"Waiting {wait:.1f}s...")
     time.sleep(wait)
-    _maybe_afk()
+    si.maybe_afk()
 
-    # Red tile in p2 only (p1 false-flags on Pi)
-    click = click_tile_randomly(si, COLOR_RED, "p2")
+    click = click_tile_randomly(si, COLOR_RED, "game_screen")
     if not click:
-        print("Red tile not found in p2.")
+        print("Red tile not found on game_screen.")
         return False
-    print("Clicked red tile in p2.")
+    print("Clicked red tile.")
 
     wait = random.uniform(9.0, 11.0)  # longer so we're fully at red tile before right-clicking pink
     print(f"Waiting {wait:.1f}s...")
     time.sleep(wait)
-    _maybe_afk()
+    si.maybe_afk()
 
-    regions = ["p1", "p2"]
-    random.shuffle(regions)
-    clicked_mine = False
-    for region_label in regions:
-        print(f"Looking for pink node in {region_label}...")
-        region = si.get_scan_area(region_label)
-        found = si.find_pixel(COLOR_PINK, region=region, tolerance=0)
-        if found:
-            print(f"Found pink node in {region_label}, right-clicking and selecting mine...")
-            if _right_click_at_and_confirm(si, found, MINE_GEM_ROCKS_OPTION_IMAGE):
-                clicked_mine = True
-                break
-    if not clicked_mine:
-        print("No pink node found in p1 or p2, or failed to click mine option.")
+    print("Looking for pink node on game_screen...")
+    region = si.get_scan_area("game_screen")
+    found = si.find_pixel(COLOR_PINK, region=region, tolerance=0)
+    if not found:
+        print("No pink node found on game_screen, or failed to click mine option.")
+        return False
+    print("Found pink node, right-clicking and selecting mine...")
+    if not _right_click_at_and_confirm(si, found, MINE_GEM_ROCKS_OPTION_IMAGE):
         return False
 
     print("Zooming in a little (so you can zoom up from there)...")
@@ -251,26 +221,20 @@ def _run_to_mining_pi(si):
 def run_to_mining_via_pink_node(si, low_visibility=False):
     """
     If low_visibility: use intermediate tiles (yellow → red → pink) then zoom and short wait.
-    Else: right-click a pink gem node in p1 or p2, wait 18-30s (camera adjust during run),
+    Else: right-click a pink gem node on game_screen, wait 18-30s (camera adjust during run),
     zoom in. Ready for mining loop.
     """
     if low_visibility:
         return _run_to_mining_pi(si)
 
-    regions = ["p1", "p2"]
-    random.shuffle(regions)
-    clicked_mine = False
-    for region_label in regions:
-        print(f"Looking for pink node in {region_label}...")
-        region = si.get_scan_area(region_label)
-        found = si.find_pixel(COLOR_PINK, region=region, tolerance=0)
-        if found:
-            print(f"Found pink node in {region_label}, right-clicking and selecting mine...")
-            if _right_click_at_and_confirm(si, found, MINE_GEM_ROCKS_OPTION_IMAGE):
-                clicked_mine = True
-                break
-    if not clicked_mine:
-        print("No pink node found in p1 or p2, or failed to click mine option.")
+    print("Looking for pink node on game_screen...")
+    region = si.get_scan_area("game_screen")
+    found = si.find_pixel(COLOR_PINK, region=region, tolerance=0)
+    if not found:
+        print("No pink node found on game_screen, or failed to click mine option.")
+        return False
+    print("Found pink node, right-clicking and selecting mine...")
+    if not _right_click_at_and_confirm(si, found, MINE_GEM_ROCKS_OPTION_IMAGE):
         return False
 
     total_wait = random.uniform(18, 30)
@@ -378,11 +342,7 @@ def mine_until_inventory_full(si):
             print("Inventory full (chat message) - stopping mining.")
             break
 
-        # Small random chance to idle like we're multitasking
-        if random.random() < 0.05:
-            extra_wait = _random_afk_duration()
-            print(f"Simulating multitasking - idling for {extra_wait:.1f}s before next node...")
-            time.sleep(extra_wait)
+        si.maybe_afk()
 
         time.sleep(random.uniform(0.3, 0.7))
 
@@ -402,54 +362,54 @@ def return_to_bank_and_deposit(si, low_visibility=False):
     si.zoom_out(times=5, delay_low=0.005, delay_high=0.01, scroll_amount=-400)
     time.sleep(random.uniform(0.5, 1.0))
 
-    print("Walking to red square (p5)...")
-    click = click_tile_randomly(si, COLOR_RED, "p5")
+    print("Walking to red square (game_screen)...")
+    click = click_tile_randomly(si, COLOR_RED, "game_screen")
     if not click:
-        print("Red square (p5) not found on return.")
+        print("Red square not found on return.")
         save_debug_screenshot("bank_red_tile_not_found")
         return False
     wait = random.uniform(7.8, 8.4)  # tighter range, closer to min; +0.4s so we don't interact too soon
     print(f"Waiting {wait:.1f}s to reach yellow tile area...")
     time.sleep(wait)
-    _maybe_afk()
+    si.maybe_afk()
 
-    print("Walking to yellow square (p5)...")
-    click = click_tile_randomly(si, COLOR_YELLOW, "p5")
+    print("Walking to yellow square (game_screen)...")
+    click = click_tile_randomly(si, COLOR_YELLOW, "game_screen")
     if not click:
-        print("Yellow square (p5) not found on return.")
+        print("Yellow square not found on return.")
         save_debug_screenshot("bank_yellow_tile_not_found")
         return False
     wait = random.uniform(5.8, 6.4)  # tighter range, closer to min
     print(f"Waiting {wait:.1f}s at yellow tile...")
     time.sleep(wait)
-    _maybe_afk()
+    si.maybe_afk()
 
-    # From yellow tile: try up to 3 times to interact with bank deposit box in p6
-    print("Interacting with bank deposit box (p6) from yellow tile (up to 3 tries)...")
-    success = si.find_pixel_right_click_confirm(COLOR_TEAL, DEPOSIT_OPTION_IMAGE, attempts=3, region=si.get_scan_area("p6"))
+    # From yellow tile: try up to 3 times to interact with bank deposit box (game_screen_center)
+    print("Interacting with bank deposit box (game_screen_center) from yellow tile (up to 3 tries)...")
+    success = si.find_pixel_right_click_confirm(COLOR_TEAL, DEPOSIT_OPTION_IMAGE, attempts=3, region=si.get_scan_area("game_screen_center"))
     if not success:
-        print("Could not interact with deposit box from yellow tile (p6). Moving to fallback red tile...")
+        print("Could not interact with deposit box from yellow tile. Moving to fallback red tile...")
 
-        print("Walking to fallback red square (p5)...")
-        click = click_tile_randomly(si, COLOR_RED, "p5")
+        print("Walking to fallback red square (game_screen)...")
+        click = click_tile_randomly(si, COLOR_RED, "game_screen")
         if not click:
-            print("Fallback red square (p5) not found on return.")
+            print("Fallback red square not found on return.")
             save_debug_screenshot("bank_fallback_red_not_found")
             return False
         wait = random.uniform(5.8, 6.4)
         print(f"Waiting {wait:.1f}s at fallback red tile (near bank)...")
         time.sleep(wait)
-        _maybe_afk()
+        si.maybe_afk()
 
-        print("Interacting with bank deposit box (p5) from fallback red tile (up to 3 tries)...")
-        success = si.find_pixel_right_click_confirm(COLOR_TEAL, DEPOSIT_OPTION_IMAGE, attempts=3, region=si.get_scan_area("p5"))
+        print("Interacting with bank deposit box (game_screen_center) from fallback red tile (up to 3 tries)...")
+        success = si.find_pixel_right_click_confirm(COLOR_TEAL, DEPOSIT_OPTION_IMAGE, attempts=3, region=si.get_scan_area("game_screen_center"))
         if not success:
             print("Failed to open deposit box menu from both yellow and fallback red tiles.")
             save_debug_screenshot("bank_deposit_box_failed")
             return False
 
     print("Deposit box interaction succeeded.")
-    _maybe_afk()
+    si.maybe_afk()
 
     # Fixed-ish wait before we look for the pane (character runs a short distance)
     wait = random.uniform(4.5, 5.0)
@@ -496,7 +456,7 @@ def return_to_bank_and_deposit(si, low_visibility=False):
         save_debug_screenshot("bank_deposit_all_failed")
         return False
     time.sleep(1.0)  # troubleshoot: pause after click before closing bank
-    _maybe_afk()
+    si.maybe_afk()
 
     # Close bank (deposit box close button) - search same region as deposit UI first
     close_click = si.click_image_cv2_without_moving(
@@ -524,7 +484,7 @@ def return_to_bank_and_deposit(si, low_visibility=False):
         print("Bank closed.")
     else:
         print("Warning: Bank close button not found. Continuing.")
-    _maybe_afk()
+    si.maybe_afk()
 
     if not low_visibility:
         print("Pointing camera back down (hold s 0.7-0.9s)...")

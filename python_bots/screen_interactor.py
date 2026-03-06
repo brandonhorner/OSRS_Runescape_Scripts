@@ -920,6 +920,20 @@ class ScreenInteractor:
         finally:
             pyautogui.FAILSAFE = prev_failsafe
 
+    def maybe_afk(self, chance=0.05, min_sec=3.0, max_sec=90.0, percentile=0.25, sigma=20.0):
+        """
+        With given chance (default 5%), idle for a random duration (min_sec to max_sec).
+        Duration is from a normal distribution centered at the given percentile of the range,
+        so most idles are on the shorter end. Reusable for any bot to simulate multitasking.
+        """
+        if random.random() >= chance:
+            return
+        mean = min_sec + percentile * (max_sec - min_sec)
+        duration = random.gauss(mean, sigma)
+        duration = max(min_sec, min(max_sec, duration))
+        print(f"Simulating multitasking - idling for {duration:.1f}s...")
+        time.sleep(duration)
+
     def find_closest_pixel(self, color_hex, tolerance=1, max_radius=1440, local_search_size=90):
         """Find the closest pixel of the specified color to the center of the screen by expanding search radius.
         Optionally performs a local search around the found pixel to find the top-left most pixel.
@@ -1777,7 +1791,7 @@ class ScreenInteractor:
             print(f"Error activating game window via click fallback: {e}")
             return False
 
-    def close_runelite_client(self):
+    def _close_runelite_client(self):
         """
         Close the RuneLite client window.
         
@@ -1817,12 +1831,12 @@ class ScreenInteractor:
                 
         except ImportError:
             print("win32gui not available. Trying alternative method...")
-            return self.try_alternative_runelite_close()
+            return self._try_alternative_runelite_close()
         except Exception as e:
             print(f"Error closing RuneLite client: {e}")
-            return self.try_alternative_runelite_close()
+            return self._try_alternative_runelite_close()
     
-    def try_alternative_runelite_close(self):
+    def _try_alternative_runelite_close(self):
         """Alternative method to close RuneLite using taskkill."""
         print("Trying to close RuneLite via taskkill...")
         
@@ -1848,7 +1862,7 @@ class ScreenInteractor:
             print(f"Error with taskkill: {e}")
             return False
 
-    def handle_servers_updated_restart(self, post_login_callback=None):
+    def _handle_servers_updated_restart(self, post_login_callback=None):
         """
         Handle the special case when game servers are being updated.
         This requires waiting 3 minutes, closing RuneLite, and restarting via Jagex Launcher.
@@ -1875,24 +1889,24 @@ class ScreenInteractor:
         
         # Step 2: Close RuneLite client
         print("Closing RuneLite client...")
-        runelite_closed = self.close_runelite_client()
+        runelite_closed = self._close_runelite_client()
         if not runelite_closed:
             print("Warning: Could not close RuneLite client, proceeding anyway...")
         
         # Step 3: Try to find and activate Jagex Launcher
-        launcher_found = self.find_jagex_launcher_window()
+        launcher_found = self._find_jagex_launcher_window()
         if not launcher_found:
             print("Failed to find/activate Jagex Launcher")
             return False
         
         # Step 4: Click play button in launcher
-        play_clicked = self.click_launcher_play_button()
+        play_clicked = self._click_launcher_play_button()
         if not play_clicked:
             print("Failed to click play button in launcher")
             return False
         
         # Step 5: Monitor for login screen and complete login
-        login_completed = self.monitor_for_login_screen_after_restart(post_login_callback=post_login_callback)
+        login_completed = self._monitor_for_login_screen_after_restart(post_login_callback=post_login_callback)
         
         if login_completed:
             print("=" * 60)
@@ -1905,7 +1919,7 @@ class ScreenInteractor:
             print("=" * 60)
             return False
     
-    def find_jagex_launcher_window(self):
+    def _find_jagex_launcher_window(self):
         """Try to find and activate the Jagex Launcher window."""
         print("Attempting to find Jagex Launcher window...")
         
@@ -1939,12 +1953,12 @@ class ScreenInteractor:
                 
         except ImportError:
             print("win32gui not available. Trying alternative method...")
-            return self.try_alternative_launcher_activation()
+            return self._try_alternative_launcher_activation()
         except Exception as e:
             print(f"Error finding Jagex Launcher window: {e}")
-            return self.try_alternative_launcher_activation()
+            return self._try_alternative_launcher_activation()
     
-    def try_alternative_launcher_activation(self):
+    def _try_alternative_launcher_activation(self):
         """Alternative method to activate Jagex Launcher using subprocess."""
         print("Trying to launch Jagex Launcher via subprocess...")
         
@@ -1975,7 +1989,7 @@ class ScreenInteractor:
         print("Could not find or launch Jagex Launcher")
         return False
     
-    def click_launcher_play_button(self):
+    def _click_launcher_play_button(self):
         """Click the play button in Jagex Launcher."""
         print("Looking for Jagex Launcher play button...")
         
@@ -2006,7 +2020,7 @@ class ScreenInteractor:
             print("Play button not found in Jagex Launcher")
             return False
     
-    def monitor_for_login_screen_after_restart(self, timeout=120, post_login_callback=None):
+    def _monitor_for_login_screen_after_restart(self, timeout=120, post_login_callback=None):
         """Monitor for login screen after launcher restart."""
         print("Monitoring for login screen after launcher restart...")
         
@@ -2033,12 +2047,12 @@ class ScreenInteractor:
             print("Login screen detected! Proceeding with login process...")
             # Use the existing resolveLogin logic but skip the initial error checks
             # since we're already past the launcher restart
-            return self.complete_login_after_restart(post_login_callback)
+            return self._complete_login_after_restart(post_login_callback)
         else:
             print("Login screen not detected within timeout period")
             return False
     
-    def complete_login_after_restart(self, post_login_callback=None):
+    def _complete_login_after_restart(self, post_login_callback=None):
         """Complete the login process after launcher restart."""
         print("Completing login process after restart...")
         
@@ -2151,7 +2165,7 @@ class ScreenInteractor:
         print(f"⚠️ Internet connectivity check timed out after {timeout_minutes} minutes")
         return False
 
-    def handle_account_logged_in_error(self, post_login_callback=None):
+    def _handle_account_logged_in_error(self, post_login_callback=None):
         """
         Handle the "Account logged in" error by checking internet connectivity
         and restarting the launcher/client if needed.
@@ -2168,7 +2182,7 @@ class ScreenInteractor:
         print("Restarting launcher and client for fresh session...")
         
         # Close RuneLite client
-        runelite_closed = self.close_runelite_client()
+        runelite_closed = self._close_runelite_client()
         if runelite_closed:
             print("RuneLite client closed successfully")
         else:
@@ -2205,19 +2219,19 @@ class ScreenInteractor:
         time.sleep(2)
         
         # Find and activate Jagex Launcher
-        launcher_found = self.find_jagex_launcher_window()
+        launcher_found = self._find_jagex_launcher_window()
         if not launcher_found:
             print("Failed to find/activate Jagex Launcher")
             return False
         
         # Click play button
-        play_clicked = self.click_launcher_play_button()
+        play_clicked = self._click_launcher_play_button()
         if not play_clicked:
             print("Failed to click play button")
             return False
         
         # Monitor for login screen and complete login
-        login_completed = self.monitor_for_login_screen_after_restart(
+        login_completed = self._monitor_for_login_screen_after_restart(
             timeout=120, 
             post_login_callback=post_login_callback
         )
@@ -2402,7 +2416,7 @@ class ScreenInteractor:
                 time.sleep(random.uniform(1, 2))
             
             # Handle the account logged in error (internet connectivity issue)
-            return self.handle_account_logged_in_error(post_login_callback)
+            return self._handle_account_logged_in_error(post_login_callback)
         
         if servers_updated_error:
             print("Found 'Game servers being updated' error. This requires a 3-minute wait and launcher restart.")
@@ -2418,7 +2432,7 @@ class ScreenInteractor:
                 time.sleep(random.uniform(2, 4))  # Wait for error to clear
                 
                 # Handle the special case of servers being updated
-                return self.handle_servers_updated_restart(post_login_callback)
+                return self._handle_servers_updated_restart(post_login_callback)
             else:
                 print("Failed to click OK button.")
                 return False
