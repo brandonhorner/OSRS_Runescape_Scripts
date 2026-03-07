@@ -70,3 +70,6 @@ Thumbs.db
 # Project specific exclusions
 Karambwans/__pycache__/
 *.pyc
+python_bots/mining_gem_config.json
+python_bots/debug_screenshots/
+python_bots/.codex/
