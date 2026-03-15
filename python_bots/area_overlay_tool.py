@@ -74,12 +74,13 @@ class AreaOverlayTool:
         self._build_controls()
         self._load_profile(self.default_profile_name)
         self._refresh_listbox()
+
+        # Hotkey to bring controls to front if they get hidden behind overlay.
+        self.root.bind("<Control-Shift-G>", lambda _e: self._show_controls())
+        self.overlay.bind("<Control-Shift-G>", lambda _e: self._show_controls())
+
         if _is_linux():
-            # Keep controls visible above fullscreen overlay.
-            self.root.attributes("-topmost", True)
-            self.root.update_idletasks()
-            self.root.lift()
-            self.root.focus_force()
+            self._show_controls()
             self.root.after(500, self._keep_control_front)
 
     def _build_overlay_canvas(self):
@@ -157,7 +158,8 @@ class AreaOverlayTool:
             "- Drag inside a box to move.\n"
             "- Drag the small square (bottom-right) to resize.\n"
             "- Save writes only changed areas for this profile.\n"
-            "- On Linux/Pi, use 'Refresh Backdrop' after camera/client changes."
+            "- On Linux/Pi, use 'Refresh Backdrop' after camera/client changes.\n"
+            "- If controls disappear: press Ctrl+Shift+G to bring GUI front."
         )
         tk.Label(self.root, text=help_text, justify="left", fg="#333333", padx=10, pady=8).pack(anchor="w")
 
@@ -341,13 +343,27 @@ class AreaOverlayTool:
         label = selected[0]
         self.status_var.set(f"{label}: {self.areas.get(label)}")
 
+    def _show_controls(self):
+        """Force the control GUI to the front (handy on Pi/Linux compositors)."""
+        try:
+            self.root.deiconify()
+            # Place controls consistently in top-left so they are easy to find.
+            self.root.geometry("560x760+20+20")
+            self.root.attributes("-topmost", True)
+            self.root.lift()
+            self.root.focus_force()
+            # Drop topmost shortly after so it doesn't permanently block other windows.
+            self.root.after(400, lambda: self.root.attributes("-topmost", False))
+        except Exception:
+            pass
+
     def _keep_control_front(self):
         if not _is_linux():
             return
         try:
             if self.root.winfo_exists():
                 self.root.lift()
-                self.root.after(1000, self._keep_control_front)
+                self.root.after(1200, self._keep_control_front)
         except Exception:
             pass
 
