@@ -1,6 +1,7 @@
 import pyautogui
 import time
 import random
+import json
 from PIL import Image, ImageChops  # if needed for additional processing
 import cv2
 import numpy as np
@@ -12,37 +13,132 @@ class ScreenInteractor:
         # Set working directory to python_bots folder (parent of this script)
         script_dir = os.path.dirname(os.path.abspath(__file__))
         os.chdir(script_dir)
+        self._script_dir = script_dir
         # Explicitly disable PyAutoGUI corner failsafe for unattended bot runs.
         pyautogui.FAILSAFE = False
         print(f"ScreenInteractor working directory set to: {os.getcwd()}")
         print("PyAutoGUI FAILSAFE disabled.")
+        self._scan_area_profile_name = None
+        self._scan_area_overrides = self._load_scan_area_overrides()
 
-    def get_scan_area(self, label):
+    def _scan_area_profiles_path(self):
+        return os.path.join(self._script_dir, "scan_area_profiles.json")
+
+    def _clean_profile_raw(self, raw_profile):
+        """Convert raw profile dict (label -> list of 4 numbers) to label -> (x, y, w, h)."""
+        if not isinstance(raw_profile, dict):
+            return {}
+        cleaned = {}
+        for label, values in raw_profile.items():
+            if (
+                isinstance(values, (list, tuple))
+                and len(values) == 4
+                and all(isinstance(v, (int, float)) for v in values)
+            ):
+                cleaned[label] = tuple(int(v) for v in values)
+        return cleaned
+
+    def _load_scan_area_overrides(self):
+        """
+        Load scan area overrides from scan_area_profiles.json.
+        If both "<res>_runelite_open" and "<res>_runelite_closed" exist for current resolution,
+        we do not pick a profile here; get_scan_area will choose based on menu detection.
+        Otherwise: SCAN_AREA_PROFILE env -> "<width>x<height>" -> active_profile.
+        """
+        path = self._scan_area_profiles_path()
         screen_width, screen_height = pyautogui.size()
-        # todo: Offset these in the x direction if menu is open (check if combat tab (active or not) is on screen)
-        # Note: Some areas need both X and width adjustment, others only X adjustment
-        # Use the width_adjustment_areas dictionary below to control this behavior
+        resolution_profile = f"{screen_width}x{screen_height}"
+        open_key = f"{resolution_profile}_runelite_open"
+        closed_key = f"{resolution_profile}_runelite_closed"
+        selected_profile = os.getenv("SCAN_AREA_PROFILE")
+
+        if not os.path.isfile(path):
+            self._all_profiles = {}
+            self._use_runelite_profile_switch = False
+            return {}
+
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception as e:
+            print(f"Could not read scan area profiles ({path}): {e}")
+            self._all_profiles = {}
+            self._use_runelite_profile_switch = False
+            return {}
+
+        profiles = data.get("profiles", {})
+        self._all_profiles = profiles
+
+        if open_key in profiles and closed_key in profiles:
+            self._use_runelite_profile_switch = True
+            self._scan_area_profile_name = None
+            print(f"Loaded scan area profiles: will use '{open_key}' or '{closed_key}' based on RuneLite menu state.")
+            return {}
+        if not selected_profile:
+            if resolution_profile in profiles:
+                selected_profile = resolution_profile
+            else:
+                selected_profile = data.get("active_profile")
+        if not selected_profile:
+            self._use_runelite_profile_switch = False
+            return {}
+        raw_profile = profiles.get(selected_profile, {})
+        cleaned = self._clean_profile_raw(raw_profile)
+        self._scan_area_profile_name = selected_profile
+        self._use_runelite_profile_switch = False
+        print(f"Loaded scan area profile '{selected_profile}' with {len(cleaned)} overrides.")
+        return cleaned
+
+    def _get_effective_scan_area_overrides(self):
+        """
+        Return the scan area overrides to apply. When runelite open/closed profiles exist
+        for current resolution, runs menu detection (cached 30s) and returns that profile's overrides.
+        """
+        if not getattr(self, "_use_runelite_profile_switch", False):
+            return self._scan_area_overrides
+        screen_width, screen_height = pyautogui.size()
+        resolution_profile = f"{screen_width}x{screen_height}"
+        open_key = f"{resolution_profile}_runelite_open"
+        closed_key = f"{resolution_profile}_runelite_closed"
+        # Menu detection can be slow; cache 30s to avoid ~10s delays per action when profile switch is on.
+        _menu_cache_sec = 30
+        cache_valid = (
+            getattr(self, "_effective_overrides_cache_time", None) is not None
+            and (time.time() - self._effective_overrides_cache_time) < _menu_cache_sec
+        )
+        if cache_valid and getattr(self, "_cached_effective_overrides", None) is not None:
+            return self._cached_effective_overrides
+        t0_overrides = time.time()
         runelite_top_margin = floor(screen_height // 62)
         runelite_right_margin = floor(screen_width // 82)
-        windows_bottom_margin = floor(screen_height // 62)
-        
-        runelite_right_menu_area = (screen_width - runelite_right_margin, runelite_top_margin, runelite_right_margin, (screen_height // 2))
-        
-        # Cache menu status to avoid multiple checks in the same execution
-        if not hasattr(self, '_menu_cache_time') or time.time() - self._menu_cache_time > 5:
-            self._cached_menu_offset = None
-            self._menu_cache_time = time.time()
+        runelite_right_menu_area = (
+            screen_width - runelite_right_margin,
+            runelite_top_margin,
+            runelite_right_margin,
+            (screen_height // 2),
+        )
+        menu_found = None
+        try:
+            menu_found = self.find_image_cv2_silent(
+                "image_library/runelite_menu_is_open.png",
+                region=runelite_right_menu_area,
+                threshold=0.98,
+            )
+        except Exception:
+            menu_found = False
+        elapsed_overrides = time.time() - t0_overrides
+        print(f"[timing] get_scan_area_overrides: menu detection took {elapsed_overrides:.3f}s")
+        profile_key = open_key if menu_found else closed_key
+        raw_profile = self._all_profiles.get(profile_key, {})
+        overrides = self._clean_profile_raw(raw_profile)
+        self._cached_effective_overrides = overrides
+        self._effective_overrides_cache_time = time.time()
+        if overrides:
+            print(f"Using scan area profile '{profile_key}' (menu {'open' if menu_found else 'closed'}).")
+        return overrides
 
-        # when adding areas.. calculate them like this:                            y1____________
-        # find the top left corner of the area, that will be the x1, y1           x1|        |   |
-        # then find the width of the area, that will be w = x2 - x1                 |---w----h---|
-        # then find the height of the area, that will be h = y2 - y1                |________|___|  
-        # now say your area is starts at 1/3 of the screen's width, you'd want to say screen_width // 3 versus 2560/3,
-        # you should also express your width and height in terms of screen_width and screen_height
-        # Example: center below, we want to start at 1/3 of the screen's width, and go to 2/3 of the screen's width, it should extend to the height of the screen
-        # so we'd say x1:screen_width // 3, y1:runelite_top_margin, width:screen_width // 3, height:screen_height - runelite_top_margin - windows_bottom_margin)
-        # use the floor function when you're dividing by numbers with decimals, so the coordinate is a flat integer.
-        areas = {
+    def _build_default_scan_areas(self, screen_width, screen_height, runelite_top_margin, runelite_right_margin, windows_bottom_margin):
+        return {
             "game_screen": (0, 90, screen_width - floor(screen_width // 6.7), screen_height - floor(screen_height // 4)),
             "game_screen_center": (floor(screen_width * 0.2637), floor(screen_height * 0.0167), floor(screen_width * 0.6016), floor(screen_height * 0.9493)),
             "center": (screen_width // 3, runelite_top_margin, screen_width // 3, screen_height - runelite_top_margin - windows_bottom_margin),
@@ -58,80 +154,75 @@ class ScreenInteractor:
             "v2": (screen_width // 3 - runelite_right_margin, runelite_top_margin, screen_width // 3, screen_height - runelite_top_margin - windows_bottom_margin),
             "v3": (2 * screen_width // 3 - runelite_right_margin, runelite_top_margin, (screen_width // 3) - runelite_right_margin, screen_height - runelite_top_margin - windows_bottom_margin),
             "bag": (screen_width - 306, screen_height - floor(screen_height // 3.34), floor(screen_width // 10.9), floor(screen_height // 4.27)),
-            "bag_last_slot": (floor(screen_width * 0.9492), floor(screen_height * 0.8986), floor(screen_width * 0.0187), floor(screen_height * 0.0319)),            
-            "chat": (floor(screen_width // 320), screen_height - floor(screen_height// 5.69), (screen_width // 4), floor(screen_height // 8.47)),
+            "bag_last_slot": (floor(screen_width * 0.9492), floor(screen_height * 0.8986), floor(screen_width * 0.0187), floor(screen_height * 0.0319)),
+            "chat": (floor(screen_width // 320), screen_height - floor(screen_height // 5.69), (screen_width // 4), floor(screen_height // 8.47)),
             "bank_pane": ((screen_width // 3), floor(screen_height // 8.08), floor(screen_width // 5.30), floor(screen_height // 1.62)),
             "bank_pane_with_menus": ((screen_width // 3) - floor(screen_width // 37), floor(screen_height // 18.04), floor(screen_width // 4.03), floor(screen_height // 1.38)),
             "bank_deposit_box": (floor(screen_width * 0.3219), floor(screen_height * 0.2757), floor(screen_width * 0.2164), floor(screen_height * 0.2812)),
-            "activity_pane": (floor(screen_width * 0.0023), floor(screen_height * 0.0340), floor(screen_width * 0.0844), floor(screen_height * 0.1514)),                
-            "chat_area": (floor(screen_width // 320), screen_height - floor(screen_height// 5.69), (screen_width // 4), floor(screen_height // 8.47)),
+            "activity_pane": (floor(screen_width * 0.0023), floor(screen_height * 0.0340), floor(screen_width * 0.0844), floor(screen_height * 0.1514)),
+            "chat_area": (floor(screen_width // 320), screen_height - floor(screen_height // 5.69), (screen_width // 4), floor(screen_height // 8.47)),
             "runelite_right_menu": (screen_width - runelite_right_margin, runelite_top_margin, runelite_right_margin, (screen_height // 2)),
             "game_screen_middle_horizontal": (0, 292, 2525, 950),
             "bottom_of_char_zoom_8": (1245, 743, 1285, 779),
-            "left_of_char_zoom_8": (1183, 689, 1228, 723)
+            "left_of_char_zoom_8": (1183, 689, 1228, 723),
         }
-        
-        # Get the base area
-        base_area = areas.get(label, (0, 0, screen_width, screen_height))
-        
-        # Apply dynamic adjustments for right-side areas that need menu offset
-        # Define which areas need width adjustment vs X-only adjustment
-        width_adjustment_areas = {
-            "game_screen_center": True,  # Adjust width only
-            "bag": False,                 # Adjust X only
-            "bank_pane": False,           # Adjust X only
-            "bank_pane_with_menus": False, # Adjust X only
-            "bag_last_slot": False,         # Adjust X only
-            "bank_deposit_box": False         # Adjust X only
-        }
-        
-        if label in width_adjustment_areas:
-            # Check if RuneLite menu is open (use cached result if available)
-            if hasattr(self, '_cached_menu_offset') and self._cached_menu_offset is not None:
-                menu_offset = self._cached_menu_offset
-            else:
-                menu_offset = 0
-                menu_found = None
-                try:
-                    # Use existing find_image_cv2 function to check for menu (silently)
-                    menu_found = self.find_image_cv2_silent(
-                        'image_library/runelite_menu_is_open.png',
-                        region=runelite_right_menu_area,
-                        threshold=0.98
-                    )
-                    if menu_found:
-                        if label in ["bank_pane", "bank_pane_with_menus", "bank_deposit_box"]:
-                            menu_offset = -floor(screen_width // 21)
-                        else:
-                            menu_offset = -floor(screen_width // 10.6)
-                        print(f"RuneLite menu OPEN - applying {menu_offset} offset to {label} search area")
-                    # Cache the result
-                    self._cached_menu_offset = menu_offset
-                except Exception as e:
-                    print(f"RuneLite menu check failed - treating as CLOSED (no offset)")
-                    menu_offset = 0
-                    self._cached_menu_offset = menu_offset
-            
-            # Apply offset based on area type
-            if menu_offset != 0:
-                needs_width_adjustment = width_adjustment_areas.get(label, False)
-                
-                if needs_width_adjustment:
-                    # Adjust width only to maintain proper area size (keep same X position)
-                    adjusted_area = (base_area[0], base_area[1], base_area[2] + menu_offset, base_area[3])
-                    print(f"Applied width adjustment for {label}: W={base_area[2]}->{base_area[2] + menu_offset}")
-                else:
-                    # Adjust X coordinate only (applies to menu items)
-                    adjusted_area = (base_area[0] + menu_offset, base_area[1], base_area[2], base_area[3])
-                    print(f"Applied X-only adjustment for {label}: X={base_area[0]}->{base_area[0] + menu_offset}")
-                return adjusted_area
-        return base_area
+
+    def get_all_scan_areas(self, include_overrides=True):
+        """Return all scan areas as a dict for current screen size."""
+        screen_width, screen_height = pyautogui.size()
+        runelite_top_margin = floor(screen_height // 62)
+        runelite_right_margin = floor(screen_width // 82)
+        windows_bottom_margin = floor(screen_height // 62)
+
+        areas = self._build_default_scan_areas(
+            screen_width,
+            screen_height,
+            runelite_top_margin,
+            runelite_right_margin,
+            windows_bottom_margin,
+        )
+        effective = self._get_effective_scan_area_overrides()
+        if include_overrides and effective:
+            for area_label, override_region in effective.items():
+                if area_label in areas:
+                    areas[area_label] = override_region
+        return areas
+
+    def get_scan_area(self, label):
+        """Return (x, y, w, h) for the given area label. Uses runelite_open/closed profile when available."""
+        t0 = time.time()
+        screen_width, screen_height = pyautogui.size()
+        runelite_top_margin = floor(screen_height // 62)
+        runelite_right_margin = floor(screen_width // 82)
+        windows_bottom_margin = floor(screen_height // 62)
+        areas = self._build_default_scan_areas(
+            screen_width,
+            screen_height,
+            runelite_top_margin,
+            runelite_right_margin,
+            windows_bottom_margin,
+        )
+        effective = self._get_effective_scan_area_overrides()
+        if effective:
+            for area_label, override_region in effective.items():
+                if area_label in areas:
+                    areas[area_label] = override_region
+        result = areas.get(label, (0, 0, screen_width, screen_height))
+        elapsed = time.time() - t0
+        if elapsed > 0.05:
+            print(f"[timing] get_scan_area({label!r}) took {elapsed:.3f}s")
+        return result
     
     def resolve_region(self, region):
-        """If region is a string, look it up using get_scan_area; otherwise return it directly."""
+        """If region is a string, look it up using get_scan_area; otherwise return it directly.
+        Ensures returned region is (x, y, w, h) with Python ints for pyautogui.screenshot compatibility."""
         if isinstance(region, str):
-            return self.get_scan_area(region)
-        return region
+            out = self.get_scan_area(region)
+        else:
+            out = region
+        if out is not None and len(out) == 4:
+            return (int(out[0]), int(out[1]), int(out[2]), int(out[3]))
+        return out
 
     def find_pixel(self, color_hex, region=None, tolerance=10):
         screenshot = pyautogui.screenshot(region=region)
@@ -468,22 +559,26 @@ class ScreenInteractor:
         return (target_x, target_y)
 
     def find_image_cv2(self, image_path, region=None, threshold=0.98):
+        t0_total = time.time()
         # Resolve the region if it's given as a label
         region = self.resolve_region(region) if region is not None else None
-        
+        t_resolve = time.time() - t0_total
+
         # Load the template image and convert to BGR
         target = cv2.imread(image_path)
         if target is None:
             print(f"Failed to load image: {image_path}")
             return None
 
+        t_before_shot = time.time()
         if region:
             screenshot = pyautogui.screenshot(region=region)
             region_offset = (region[0], region[1])
         else:
             screenshot = pyautogui.screenshot()
             region_offset = (0, 0)
-            
+        t_screenshot = time.time() - t_before_shot
+
         # Convert screenshot to BGR format
         screenshot_cv = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
         
@@ -494,56 +589,57 @@ class ScreenInteractor:
             elif screenshot_cv.shape[2] == 4:
                 screenshot_cv = cv2.cvtColor(screenshot_cv, cv2.COLOR_BGRA2BGR)
         
+        t_before_match = time.time()
         result = cv2.matchTemplate(screenshot_cv, target, cv2.TM_CCOEFF_NORMED)
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+        t_match = time.time() - t_before_match
+        t_total = time.time() - t0_total
+        print(f"[timing] find_image_cv2 {os.path.basename(image_path)}: resolve={t_resolve:.3f}s screenshot={t_screenshot:.3f}s match={t_match:.3f}s total={t_total:.3f}s")
         if max_val >= threshold:
             target_h, target_w = target.shape[:2]
             top_left = max_loc
             center = (top_left[0] + target_w // 2, top_left[1] + target_h // 2)
             center = (center[0] + region_offset[0], center[1] + region_offset[1])
-            print(f"CV2: ✓ Found {os.path.basename(image_path)} at {center} (Score: {max_val:.3f})")
+            print(f"CV2: Found {os.path.basename(image_path)} at {center} (Score: {max_val:.3f})")
             return center
         else:
-            print(f"CV2: ✗ No match found for {os.path.basename(image_path)} (Best score: {max_val:.3f} < {threshold})")
+            print(f"CV2: No match found for {os.path.basename(image_path)} (Best score: {max_val:.3f} < {threshold})")
             return None
 
-    def find_image_cv2_silent(self, image_path, region=None, threshold=0.98):
-        """Silent version of find_image_cv2 that doesn't output anything - for internal checks."""
-        # Resolve the region if it's given as a label
+    def find_image_cv2_silent(self, image_path, region=None, threshold=0.98, return_score=False):
+        """Silent version of find_image_cv2. If return_score=True, returns (center, max_val) or (None, None)."""
+        t0 = time.time()
         region = self.resolve_region(region) if region is not None else None
-        
-        # Load the template image and convert to BGR
         target = cv2.imread(image_path)
         if target is None:
-            return None
-
+            return (None, None) if return_score else None
+        t_before_shot = time.time()
         if region:
             screenshot = pyautogui.screenshot(region=region)
             region_offset = (region[0], region[1])
         else:
             screenshot = pyautogui.screenshot()
             region_offset = (0, 0)
-            
-        # Convert screenshot to BGR format
+        t_screenshot = time.time() - t_before_shot
         screenshot_cv = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-        
-        # Ensure both images are in the same format
         if target.shape[2] != screenshot_cv.shape[2]:
-            if target.shape[2] == 4:  # If template has alpha channel
+            if target.shape[2] == 4:
                 target = cv2.cvtColor(target, cv2.COLOR_BGRA2BGR)
             elif screenshot_cv.shape[2] == 4:
                 screenshot_cv = cv2.cvtColor(screenshot_cv, cv2.COLOR_BGRA2BGR)
-        
+        t_before_match = time.time()
         result = cv2.matchTemplate(screenshot_cv, target, cv2.TM_CCOEFF_NORMED)
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+        t_match = time.time() - t_before_match
+        t_total = time.time() - t0
+        print(f"[timing] find_image_cv2_silent {os.path.basename(image_path)}: screenshot={t_screenshot:.3f}s match={t_match:.3f}s total={t_total:.3f}s")
         if max_val >= threshold:
             target_h, target_w = target.shape[:2]
             top_left = max_loc
             center = (top_left[0] + target_w // 2, top_left[1] + target_h // 2)
             center = (center[0] + region_offset[0], center[1] + region_offset[1])
-            return center
-        else:
-            return None
+            return (center, float(max_val)) if return_score else center
+        return (None, None) if return_score else None
 
     def find_all_images_cv2(self, image_path, region=None, threshold=0.98):
         """Find all instances of an image in the specified region that match above the threshold.
@@ -931,7 +1027,7 @@ class ScreenInteractor:
         mean = min_sec + percentile * (max_sec - min_sec)
         duration = random.gauss(mean, sigma)
         duration = max(min_sec, min(max_sec, duration))
-        print(f"Simulating multitasking - idling for {duration:.1f}s...")
+        print(f"[timing] maybe_afk: idling for {duration:.1f}s")
         time.sleep(duration)
 
     def find_closest_pixel(self, color_hex, tolerance=1, max_radius=1440, local_search_size=90):
@@ -1174,25 +1270,29 @@ class ScreenInteractor:
             print(f"Error clicking on compass: {e}")
             return None
 
-    def find_image_cv3(self, image_path, region=None, threshold=0.98, color_tolerance=30, 
-                       shape_weight=0.7, color_weight=0.3, shape_threshold=None, color_threshold=None):
+    def find_image_cv3(self, image_path, region=None, threshold=0.98, color_tolerance=30,
+                       shape_weight=0.7, color_weight=0.3, shape_threshold=None, color_threshold=None,
+                       candidate_threshold=None):
         """
         Enhanced image finding with color-aware template matching and multiple validation techniques.
-        This method finds all structural matches and continues searching until a color-validated match is found.
+        Structural matchTemplate produces candidates; each is validated with color and composite score.
         
         Args:
             image_path: Path to the template image
             region: Region to search in
-            threshold: Overall confidence threshold
+            threshold: Overall confidence threshold for accepting a match
             color_tolerance: RGB color difference tolerance for validation
             shape_weight: Weight for structural similarity (0.0-1.0)
             color_weight: Weight for color similarity (0.0-1.0)
             shape_threshold: Minimum shape similarity threshold (if None, uses threshold)
             color_threshold: Minimum color similarity threshold (if None, uses threshold)
+            candidate_threshold: Min structural score to consider a candidate (default 0.9). Lower (e.g. 0.2–0.5)
+                yields more candidates so color/composite can decide; use with higher color_weight for color-weighted search.
         
         Returns:
             Center coordinates if found, None otherwise
         """
+        t0 = time.time()
         # Use provided thresholds or fall back to main threshold
         if shape_threshold is None:
             shape_threshold = threshold
@@ -1208,15 +1308,15 @@ class ScreenInteractor:
             print(f"Failed to load image: {image_path}")
             return None
 
-        # Debug: Show template dimensions
         target_h, target_w = target.shape[:2]
-        
+        t_before_shot = time.time()
         if region:
             screenshot = pyautogui.screenshot(region=region)
             region_offset = (region[0], region[1])
         else:
             screenshot = pyautogui.screenshot()
             region_offset = (0, 0)
+        t_screenshot = time.time() - t_before_shot
             
         # Convert screenshot to BGR format
         screenshot_cv = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
@@ -1230,23 +1330,23 @@ class ScreenInteractor:
         
         target_h, target_w = target.shape[:2]
         
-        # Find all structural matches above a lower threshold for candidates
+        # Structural match: candidates above candidate_threshold (default 0.9; lower = more candidates, color-weighted)
         result_structural = cv2.matchTemplate(screenshot_cv, target, cv2.TM_CCOEFF_NORMED)
-        # Use a high candidate threshold to only consider good structural matches
-        # This prevents checking thousands of low-quality candidates
-        candidate_threshold = 0.9  # High threshold to only consider good structural matches
-        locations = np.where(result_structural >= candidate_threshold)
+        struct_bar = 0.9 if candidate_threshold is None else candidate_threshold
+        locations = np.where(result_structural >= struct_bar)
         
-        # Sort candidates by structural score (highest first)
         candidates = []
         for pt in zip(*locations[::-1]):
             x, y = pt
             structural_score = result_structural[y, x]
             candidates.append((x, y, structural_score))
         
-        # Sort by structural score descending
+        # Sort by structural score descending; cap to avoid long loop
         candidates.sort(key=lambda x: x[2], reverse=True)
+        candidates = candidates[: self.FIND_IMAGE_CV3_MAX_CANDIDATES]
         
+        best_composite_seen = 0.0
+        best_color_seen = 0.0
         # Test each candidate with color validation
         for x, y, structural_score in candidates:
             # Extract the region around this candidate
@@ -1287,44 +1387,134 @@ class ScreenInteractor:
                 composite_score = (shape_weight * structural_score + 
                                   color_weight * (color_similarity * 0.5 + color_distribution_score * 0.5))
                 
-                # STRICT COLOR THRESHOLD VALIDATION
-                # The color similarity must meet a minimum threshold regardless of composite score
-                color_passed = color_similarity >= color_threshold and color_tolerance_passed
+                # Color gate: when color_weight >= 0.7 trust composite only; when composite is high (>=0.72) also accept
+                if color_weight >= 0.7:
+                    color_passed = True  # color-weighted mode: composite already encodes color
+                elif composite_score >= 0.72 and composite_score >= threshold:
+                    color_passed = True  # strong composite (e.g. 0.76) accept even with strict color bar
+                else:
+                    color_passed = color_similarity >= color_threshold and color_tolerance_passed
                 
-                                # If this candidate meets BOTH the composite threshold AND the color threshold, return it
+                if color_similarity > best_color_seen:
+                    best_color_seen = color_similarity
+                if composite_score > best_composite_seen:
+                    best_composite_seen = composite_score
+                
                 if composite_score >= threshold and color_passed:
                     center = (x + target_w // 2, y + target_h // 2)
-                    # Convert numpy integers to regular integers to clean up logs
                     center = (int(center[0] + region_offset[0]), int(center[1] + region_offset[1]))
-                    print(f"CV3: ✓ Found {os.path.basename(image_path)} at {center} (Score: {composite_score:.3f})")
+                    t_total = time.time() - t0
+                    print(f"[timing] find_image_cv3 {os.path.basename(image_path)}: screenshot={t_screenshot:.3f}s match+loop={t_total - t_screenshot:.3f}s total={t_total:.3f}s")
+                    print(f"CV3: Found {os.path.basename(image_path)} at {center} (Score: {composite_score:.3f})")
                     return center
         
-        # If we get here, no valid match was found
-        print(f"CV3: ✗ No valid match found for {os.path.basename(image_path)} above threshold {threshold}")
+        t_total = time.time() - t0
+        if candidates and (best_composite_seen > 0 or best_color_seen > 0):
+            print(f"CV3: best candidate composite={best_composite_seen:.3f} color_sim={best_color_seen:.3f} (threshold={threshold})")
+        print(f"[timing] find_image_cv3 {os.path.basename(image_path)}: screenshot={t_screenshot:.3f}s match+loop={t_total - t_screenshot:.3f}s total={t_total:.3f}s")
+        print(f"CV3: No valid match found for {os.path.basename(image_path)} above threshold {threshold}")
         return None
 
-    def find_all_images_cv3(self, image_path, region=None, threshold=0.98, color_tolerance=30, 
-                           shape_weight=0.7, color_weight=0.3):
+    def find_image_cv3_silent(self, image_path, region=None, threshold=0.98, color_tolerance=30,
+                              shape_weight=0.7, color_weight=0.3, shape_threshold=None, color_threshold=None,
+                              candidate_threshold=None, return_score=False):
         """
-        Enhanced image finding that returns all matches with color-aware validation.
+        Same as find_image_cv3 but no print output. For small templates (e.g. 2x2 pixel groups),
+        use low candidate_threshold (e.g. 0.2) and color_weight=0.99 so color dominates over shape.
+        If return_score=True, returns (center, composite_score) or (None, None).
         """
-        # Resolve the region if it's given as a label
+        t0 = time.time()
+        if shape_threshold is None:
+            shape_threshold = threshold
+        if color_threshold is None:
+            color_threshold = threshold
+        if candidate_threshold is None:
+            candidate_threshold = 0.9
         region = self.resolve_region(region) if region is not None else None
-        
-        # Load the template image
         target = cv2.imread(image_path)
         if target is None:
-            print(f"Failed to load image: {image_path}")
-            return []
-
+            return (None, None) if return_score else None
+        target_h, target_w = target.shape[:2]
+        t_before_shot = time.time()
         if region:
             screenshot = pyautogui.screenshot(region=region)
             region_offset = (region[0], region[1])
         else:
             screenshot = pyautogui.screenshot()
             region_offset = (0, 0)
+        t_screenshot = time.time() - t_before_shot
+        screenshot_cv = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+        if target.shape[2] != screenshot_cv.shape[2]:
+            if target.shape[2] == 4:
+                target = cv2.cvtColor(target, cv2.COLOR_BGRA2BGR)
+            elif screenshot_cv.shape[2] == 4:
+                screenshot_cv = cv2.cvtColor(screenshot_cv, cv2.COLOR_BGRA2BGR)
+        target_h, target_w = target.shape[:2]
+        result_structural = cv2.matchTemplate(screenshot_cv, target, cv2.TM_CCOEFF_NORMED)
+        locations = np.where(result_structural >= candidate_threshold)
+        candidates = []
+        for pt in zip(*locations[::-1]):
+            x, y = pt
+            structural_score = float(result_structural[y, x])
+            candidates.append((x, y, structural_score))
+        candidates.sort(key=lambda c: c[2], reverse=True)
+        # Cap so we don't spend 20s+ in color validation when candidate_threshold is low (e.g. 0.2)
+        for x, y, structural_score in candidates[: self.PIXEL_GROUP_MAX_CANDIDATES]:
+            if (x + target_w <= screenshot_cv.shape[1] and y + target_h <= screenshot_cv.shape[0]):
+                matched_region = screenshot_cv[y:y + target_h, x:x + target_w]
+                color_diff = cv2.absdiff(target, matched_region)
+                color_mse = np.mean(color_diff ** 2)
+                max_possible_mse = 255 ** 2
+                color_similarity = 1.0 - (color_mse / max_possible_mse)
+                target_mean_color = np.mean(target, axis=(0, 1))
+                matched_mean_color = np.mean(matched_region, axis=(0, 1))
+                color_distance = np.linalg.norm(target_mean_color - matched_mean_color)
+                max_color_distance = np.sqrt(3 * 255**2)
+                color_distribution_score = 1.0 - (color_distance / max_color_distance)
+                color_tolerance_passed = True
+                if color_tolerance < 255:
+                    pixel_diff = np.abs(target.astype(np.int16) - matched_region.astype(np.int16))
+                    max_pixel_diff = np.max(pixel_diff, axis=(0, 1))
+                    if np.any(max_pixel_diff > color_tolerance):
+                        color_tolerance_passed = False
+                        color_similarity *= 0.3
+                        color_distribution_score *= 0.3
+                composite_score = (shape_weight * structural_score +
+                                  color_weight * (color_similarity * 0.5 + color_distribution_score * 0.5))
+                if color_weight >= 0.7:
+                    color_passed = True
+                else:
+                    color_passed = color_similarity >= color_threshold and color_tolerance_passed
+                if composite_score >= threshold and color_passed:
+                    center = (int(x + target_w // 2 + region_offset[0]), int(y + target_h // 2 + region_offset[1]))
+                    t_total = time.time() - t0
+                    print(f"[timing] find_image_cv3_silent {os.path.basename(image_path)}: screenshot={t_screenshot:.3f}s match+loop={t_total - t_screenshot:.3f}s total={t_total:.3f}s")
+                    return (center, composite_score) if return_score else center
+        t_total = time.time() - t0
+        print(f"[timing] find_image_cv3_silent {os.path.basename(image_path)}: screenshot={t_screenshot:.3f}s match+loop={t_total - t_screenshot:.3f}s total={t_total:.3f}s")
+        return (None, None) if return_score else None
+
+    def find_all_images_cv3(self, image_path, region=None, threshold=0.98, color_tolerance=30, 
+                           shape_weight=0.7, color_weight=0.3):
+        """
+        Enhanced image finding that returns all matches with color-aware validation.
+        """
+        t0 = time.time()
+        region = self.resolve_region(region) if region is not None else None
+        target = cv2.imread(image_path)
+        if target is None:
+            print(f"Failed to load image: {image_path}")
+            return []
+
+        t_before_shot = time.time()
+        if region:
+            screenshot = pyautogui.screenshot(region=region)
+            region_offset = (region[0], region[1])
+        else:
+            screenshot = pyautogui.screenshot()
+            region_offset = (0, 0)
+        t_screenshot = time.time() - t_before_shot
             
-        # Convert screenshot to BGR format
         screenshot_cv = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
         
         # Ensure both images are in the same format
@@ -1388,6 +1578,8 @@ class ScreenInteractor:
                     center = (center[0] + region_offset[0], center[1] + region_offset[1])
                     matches.append(center)
         
+        t_total = time.time() - t0
+        print(f"[timing] find_all_images_cv3 {os.path.basename(image_path)}: screenshot={t_screenshot:.3f}s match+loop={t_total - t_screenshot:.3f}s total={t_total:.3f}s ({len(matches)} matches)")
         return matches
 
     def click_image_cv3_without_moving(self, image_path, region=None, confidence=0.95, 
@@ -1535,10 +1727,10 @@ class ScreenInteractor:
             test_time = time.time() - start_time
             
             if result:
-                print(f"  ✓ Found at: {result}")
+                print(f"  Found at: {result}")
                 success = True
             else:
-                print(f"  ✗ Not found")
+                print(f"  Not found")
                 success = False
             
             results.append({
@@ -1558,7 +1750,7 @@ class ScreenInteractor:
         print(f"{'='*50}")
         
         if successful_combinations:
-            print(f"✓ Successful combinations: {len(successful_combinations)}")
+            print(f"Successful combinations: {len(successful_combinations)}")
             fastest_success = min(successful_combinations, key=lambda x: x["time"])
             print(f"  Fastest successful: Shape {fastest_success['shape_weight']:.1f}, "
                   f"Color {fastest_success['color_weight']:.1f} ({fastest_success['time']:.3f}s)")
@@ -1579,11 +1771,11 @@ class ScreenInteractor:
                 print(f"  Only successful: Shape {recommended['shape_weight']:.1f}, "
                       f"Color {recommended['color_weight']:.1f}")
         else:
-            print("✗ No successful combinations found")
+            print("No successful combinations found")
             print("  Try lowering the threshold or using different weights")
         
         if failed_combinations:
-            print(f"\n✗ Failed combinations: {len(failed_combinations)}")
+            print(f"\nFailed combinations: {len(failed_combinations)}")
             # Show a few examples
             for r in failed_combinations[:3]:
                 print(f"  Shape {r['shape_weight']:.1f}, Color {r['color_weight']:.1f}")

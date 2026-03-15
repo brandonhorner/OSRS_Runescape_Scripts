@@ -1,15 +1,11 @@
 """
-Gem mining bot for OSRS.
-Starts at bank deposit box (image 1). Trip to gem nodes: right-click a pink node in p1 or p2
-(random), wait 18-30s to run there, zoom in, then mine until full (inventory full = chat message; monitor mining_inactive in p1).
-Returns to bank via red/yellow tiles, deposits, repeat.
+Gem mining bot for OSRS (low-visibility / Pi path only).
+Starts at bank deposit box. Trip to gem nodes via intermediate tiles (yellow → red → pink),
+zoom in, mine until full (inventory full = chat message). Return to bank via red/yellow tiles,
+deposit, repeat.
 
-Supports two modes via config (mining_gem_config.json):
-- Normal: full visibility (e.g. 117 HD), direct pink click + long run, camera angle in setup.
-- Low visibility (Pi / no 117 HD): first-run prompt; setup skips camera angle; run to mining
-  uses intermediate tiles (yellow p1/p2 → 7-9s → red p1/p2 → 6-7s → pink → zoom → 3-5s).
+Requires bot_config.json from running setup_config.py first (resolution).
 """
-import json
 import os
 import sys
 import time
@@ -19,11 +15,9 @@ from datetime import datetime
 import pyautogui
 from screen_interactor import ScreenInteractor
 from image_monitor import ImageMonitor
-from pixel_monitor import PixelMonitor
+from bot_config import require_config, get_os, OS_WINDOWS, OS_LINUX
 
 DEBUG_SCREENSHOTS_DIR = "debug_screenshots"
-CONFIG_FILENAME = "mining_gem_config.json"
-CONFIG_KEY_LOW_VISIBILITY = "low_visibility"
 
 
 # Image library paths
@@ -34,56 +28,13 @@ MINE_GEM_ROCKS_OPTION_IMAGE = "image_library/mine_gem_rocks_option.png"
 MINING_INACTIVE_IMAGE = "image_library/mining_inactive.png"
 INVENTORY_FULL_IMAGE = "image_library/inventory_full.png"
 
-# Colors for overlay markers and nodes
-COLOR_YELLOW = "FFFF00"
-COLOR_RED = "FF0000"
-COLOR_TEAL = "00FFFF"  # bank deposit box
-COLOR_PINK = "FF00FF"  # gem mining nodes (exact match, tolerance=0)
+# Hex colors for tiles and nodes (find_pixel / pixel_click_without_moving / find_pixel_right_click_confirm)
+PIXEL_COLOR_YELLOW = "FFFF00"   # yellow walk tile
+PIXEL_COLOR_RED = "FF0000"     # red walk tile
+PIXEL_COLOR_PINK = "FF00FF"    # pink gem node
+PIXEL_COLOR_TEAL = "00FFFF"    # teal bank deposit box
 
-MAX_CONSECUTIVE_PINK_FAILURES = 20  # exit mining loop after this many failures to find/click a node
-
-
-def _config_path():
-    """Path to config file (same directory as this script)."""
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)), CONFIG_FILENAME)
-
-
-def load_config():
-    """Load config dict. Returns {} if file missing or invalid."""
-    path = _config_path()
-    if not os.path.isfile(path):
-        return {}
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return {}
-
-
-def save_config(config):
-    """Overwrite config file with given dict."""
-    path = _config_path()
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(config, f, indent=2)
-
-
-def get_low_visibility_config():
-    """
-    Return low_visibility flag. If config doesn't exist or key missing, prompt once
-    ('Running on low visibility / Pi (no 117 HD)? [y/N]:'), save config, and return.
-    """
-    config = load_config()
-    if CONFIG_KEY_LOW_VISIBILITY in config:
-        return config[CONFIG_KEY_LOW_VISIBILITY]
-    try:
-        answer = input("Running on low visibility / Pi (no 117 HD)? [y/N]: ").strip().lower()
-    except EOFError:
-        answer = "n"
-    low = answer in ("y", "yes")
-    config[CONFIG_KEY_LOW_VISIBILITY] = low
-    save_config(config)
-    print(f"Saved config: {CONFIG_FILENAME} -> low_visibility = {low}")
-    return low
+MAX_CONSECUTIVE_PINK_FAILURES = 3  # exit mining loop after this many failures to find/click a node
 
 
 def save_debug_screenshot(reason="failure"):
@@ -101,39 +52,23 @@ def save_debug_screenshot(reason="failure"):
         print(f"Could not save debug screenshot: {e}")
 
 
-def setup_gem_mining(si, low_visibility=False):
-    """Initial setup: activate game window, zoom out; if not low_visibility, camera up (w) then down (s); compass, inventory."""
+def setup_gem_mining(si):
+    """Initial setup: zoom out, brief 'w' to align camera above character, compass, inventory.
+    Pi/low-visibility: user must focus the game window before starting (no Win32 activate).
+    """
     print("Starting gem mining setup...")
-    if low_visibility:
-        print("Low visibility mode: skipping camera angle (w/s).")
-
-    if low_visibility:
-        # Pi/Linux: skip Win32 activate; user must focus the game window before starting
-        print("Low visibility mode: skipping window activate (ensure game window is focused).")
-        time.sleep(0.5)
-    else:
-        print("Activating game window...")
-        if si.activate_game_window():
-            time.sleep(0.5)
-        else:
-            print("Warning: Could not activate game window. Key inputs may go to the wrong app.")
+    print("Ensure game window is focused (Pi/low-visibility mode).")
+    time.sleep(0.5)
 
     print("Zooming out for better visibility...")
     si.zoom_out(times=5, delay_low=0.005, delay_high=0.01, scroll_amount=-400)
     time.sleep(random.uniform(0.5, 1.0))
 
-    if not low_visibility:
-        print("Holding 'w' to put camera up...")
-        pyautogui.keyDown("w")
-        time.sleep(random.uniform(1.5, 2.0))
-        pyautogui.keyUp("w")
-        time.sleep(random.uniform(0.2, 0.4))
-
-        print("Holding 's' 0.7-0.9s to bring camera down a bit...")
-        pyautogui.keyDown("s")
-        time.sleep(random.uniform(0.7, 0.9))
-        pyautogui.keyUp("s")
-        time.sleep(random.uniform(0.3, 0.5))
+    print("Holding 'w' briefly to align camera above character...")
+    pyautogui.keyDown("w")
+    time.sleep(random.uniform(1.5, 2.0))
+    pyautogui.keyUp("w")
+    time.sleep(random.uniform(0.2, 0.4))
 
     print("Clicking compass to correct north...")
     compass_clicked = si.click_on_compass(region="p3", confidence=0.90)
@@ -150,120 +85,95 @@ def setup_gem_mining(si, low_visibility=False):
     return True
 
 
-def click_tile_randomly(si, color_hex, region, tolerance=5, offset_range=(-18, 18)):
-    """Find a pixel of color in region and left-click randomly around that tile.
+def click_tile_by_color_center_then_screen(si, color_hex, tolerance=10):
+    """Try to find and left-click the tile by color in game_screen_center first, then game_screen. Returns True if clicked."""
+    for region_name in ("game_screen_center", "game_screen"):
+        try:
+            si.pixel_click_without_moving(color_hex, region_name, tolerance=tolerance, button="left")
+            return True
+        except ValueError:
+            continue
+    return False
 
-    Uses a wider offset so we don't always land on the exact same tile – movement looks less robotic.
-    """
-    region_resolved = si.resolve_region(region)
-    found = si.find_pixel(color_hex, region=region_resolved, tolerance=tolerance)
-    if not found:
-        return None
-    ox = random.randint(offset_range[0], offset_range[1])
-    oy = random.randint(offset_range[0], offset_range[1])
-    x = max(0, min(found[0] + ox, pyautogui.size()[0] - 1))
-    y = max(0, min(found[1] + oy, pyautogui.size()[1] - 1))
-    pyautogui.moveTo(x, y)
-    time.sleep(random.uniform(0.01, 0.02))  # minimal delay: move and click together
-    pyautogui.click()
-    return (x, y)
+
+def click_tile_by_color_p5_then_screen(si, color_hex, tolerance=10):
+    """Try to find and left-click the tile by color in p5 first, then game_screen_center, then game_screen. Returns True if clicked."""
+    for region_name in ("p5", "game_screen_center", "game_screen"):
+        try:
+            si.pixel_click_without_moving(color_hex, region_name, tolerance=tolerance, button="left")
+            return True
+        except ValueError:
+            continue
+    return False
 
 
 def _run_to_mining_pi(si):
     """
     Low-visibility path: yellow tile → 7-9s → red tile → interact with first pink node → wait 3-5s.
-    Tiles and pink use game_screen.
+    Tiles and pink use find_pixel / pixel_click_without_moving / find_pixel_right_click_confirm (color-based).
     """
-    click = click_tile_randomly(si, COLOR_YELLOW, "game_screen")
-    if not click:
-        print("Yellow tile not found on game_screen.")
+    if not click_tile_by_color_center_then_screen(si, PIXEL_COLOR_YELLOW):
+        print("Yellow tile not found (game_screen_center or game_screen).")
         return False
     print("Clicked yellow tile.")
+
+    wait = random.uniform(5.5, 7.0)
+    print(f"Waiting {wait:.1f}s...")
+    time.sleep(wait)
+
+    if not click_tile_by_color_center_then_screen(si, PIXEL_COLOR_RED):
+        print("Red tile not found (game_screen_center or game_screen).")
+        return False
+    print("Clicked red tile.")
 
     wait = random.uniform(7.0, 9.0)
     print(f"Waiting {wait:.1f}s...")
     time.sleep(wait)
-    si.maybe_afk()
 
-    click = click_tile_randomly(si, COLOR_RED, "game_screen")
-    if not click:
-        print("Red tile not found on game_screen.")
-        return False
-    print("Clicked red tile.")
-
-    wait = random.uniform(9.0, 11.0)  # longer so we're fully at red tile before right-clicking pink
-    print(f"Waiting {wait:.1f}s...")
-    time.sleep(wait)
-    si.maybe_afk()
-
-    print("Looking for pink node on game_screen...")
-    region = si.get_scan_area("game_screen")
-    found = si.find_pixel(COLOR_PINK, region=region, tolerance=0)
+    # First pink: bottom-up search (16 horizontal slices) with find_pixel_right_click_confirm
+    print("Looking for pink node on game_screen (bottom-up slices)...")
+    game_screen = si.get_scan_area("game_screen")
+    x, y, w, h = game_screen
+    slice_h = max(1, h // 16)
+    found = False
+    for i in range(15, -1, -1):
+        slice_region = (x, y + i * slice_h, w, slice_h)
+        if si.find_pixel_right_click_confirm(
+                PIXEL_COLOR_PINK, MINE_GEM_ROCKS_OPTION_IMAGE,
+                region=slice_region, attempts=2):
+            found = True
+            break
     if not found:
-        print("No pink node found on game_screen, or failed to click mine option.")
+        print("No pink node found on game_screen.")
         return False
-    print("Found pink node, right-clicking and selecting mine...")
-    if not _right_click_at_and_confirm(si, found, MINE_GEM_ROCKS_OPTION_IMAGE):
-        return False
+    print("Found pink node, right-clicked and selected mine.")
 
-    print("Zooming in a little (so you can zoom up from there)...")
-    # Pi-friendly zoom: small scroll amount, slower delay
-    si.zoom_in(times=8, delay_low=0.2, delay_high=0.3, scroll_amount=1)
+    # Zoom in: Windows uses less zoom; Linux/Pi uses small scroll amount and slower delay
+    if get_os() == OS_WINDOWS:
+        print("Zooming in (Windows)...")
+        si.zoom_in(times=2, delay_low=0.005, delay_high=0.01, scroll_amount=400)
+    else:
+        print("Zooming in (Linux/Pi)...")
+        si.zoom_in(times=8, delay_low=0.2, delay_high=0.3, scroll_amount=1)
     time.sleep(random.uniform(0.4, 0.8))
 
-    wait = random.uniform(3.0, 5.0)
+    wait = random.uniform(3.5, 5.0)
     print(f"Waiting {wait:.1f}s before monitoring for NOT mining...")
     time.sleep(wait)
 
     return True
 
 
-def run_to_mining_via_pink_node(si, low_visibility=False):
-    """
-    If low_visibility: use intermediate tiles (yellow → red → pink) then zoom and short wait.
-    Else: right-click a pink gem node on game_screen, wait 18-30s (camera adjust during run),
-    zoom in. Ready for mining loop.
-    """
-    if low_visibility:
-        return _run_to_mining_pi(si)
-
-    print("Looking for pink node on game_screen...")
-    region = si.get_scan_area("game_screen")
-    found = si.find_pixel(COLOR_PINK, region=region, tolerance=0)
-    if not found:
-        print("No pink node found on game_screen, or failed to click mine option.")
-        return False
-    print("Found pink node, right-clicking and selecting mine...")
-    if not _right_click_at_and_confirm(si, found, MINE_GEM_ROCKS_OPTION_IMAGE):
-        return False
-
-    total_wait = random.uniform(18, 30)
-    print(f"Running to mining area; adjusting camera during the {total_wait:.1f}s run...")
-    start = time.time()
-
-    print("Holding 'w' to tip camera up for easier node clicking...")
-    pyautogui.keyDown("w")
-    time.sleep(random.uniform(1.5, 2.0))
-    pyautogui.keyUp("w")
-    time.sleep(random.uniform(0.2, 0.4))
-
-    print("Zooming in a little (so you can zoom up from there)...")
-    si.zoom_in(times=1, scroll_amount=400)
-    time.sleep(random.uniform(0.4, 0.8))
-
-    elapsed = time.time() - start
-    remaining = max(0.0, total_wait - elapsed)
-    if remaining > 0:
-        time.sleep(remaining)
-
-    return True
+def run_to_mining_via_pink_node(si):
+    """Use intermediate tiles (yellow → red → pink), zoom in, short wait. Ready for mining loop."""
+    return _run_to_mining_pi(si)
 
 
 def is_inventory_full_message_in_chat(si):
     """
     Return True if the inventory-full message appears in the search area (p4).
     """
-    loc = si.find_image_cv2(INVENTORY_FULL_IMAGE, region="p4", threshold=0.85)
+    loc = si.find_image_cv2(INVENTORY_FULL_IMAGE, region="chat_area", threshold=0.85)
     return loc is not None
 
 
@@ -309,8 +219,11 @@ def mine_until_inventory_full(si):
             print(f"No pink node found or click failed {MAX_CONSECUTIVE_PINK_FAILURES} times - leaving mining area.")
             break
 
-        # Right-click closest pink node (uses directional offset converge; pixel is truly closest to us)
-        if not _right_click_closest_pink_and_confirm(si, MINE_GEM_ROCKS_OPTION_IMAGE):
+        # Right-click closest pink node (find_pixel_right_click_confirm)
+        pink_region = _region_around_center(800)
+        if not si.find_pixel_right_click_confirm(
+                PIXEL_COLOR_PINK, MINE_GEM_ROCKS_OPTION_IMAGE,
+                region=pink_region, attempts=PINK_NODE_RESEARCH_ATTEMPTS):
             consecutive_failures += 1
             print(f"Failed to find/click pink node ({consecutive_failures}/{MAX_CONSECUTIVE_PINK_FAILURES}) - waiting 1s and retrying...")
             time.sleep(1.0)
@@ -318,7 +231,7 @@ def mine_until_inventory_full(si):
 
         consecutive_failures = 0  # reset on success
 
-        time.sleep(random.uniform(3.0, 5.0))  # wait after clicking mine gem rocks (between nodes) before monitoring for NOT mining
+        time.sleep(random.uniform(3.0, 5.0))
 
         print("Mining started - waiting for mining_inactive (NOT mining) in p1...")
         inactive_monitor = ImageMonitor(
@@ -342,76 +255,85 @@ def mine_until_inventory_full(si):
             print("Inventory full (chat message) - stopping mining.")
             break
 
+        print("Looking for next closest pink node...")
         si.maybe_afk()
-
         time.sleep(random.uniform(0.3, 0.7))
 
     return True
 
 
-def return_to_bank_and_deposit(si, low_visibility=False):
+def return_to_bank_and_deposit(si):
     """
-    Zoom out, walk to red tile (wait 7-9s), walk to yellow tile (wait 5-7s).
-    From yellow tile, first try to right-click bank deposit box in p6 and confirm deposit option.
-    If that fails (teal box not loaded / off-screen), walk to the fallback red tile and then try to
-    right-click the bank deposit box in p5 instead. After success, wait ~4.5s for pane to open.
-    ImageMonitor for deposit all inventory button, then left-click it, then bank close.
-    If not low_visibility, point camera back down (hold s).
+    Zoom out. Return trip: look for red tile, yellow tile, and bank (teal) in p5 first.
+    Walk to red (wait), walk to yellow (wait). From yellow, right-click teal in p5 and confirm; retry teal a few times if we fail.
+    If still no bank, walk to fallback red and retry teal a few times. After success, wait ~4.5s for pane.
+    ImageMonitor for deposit all inventory button, click it, close bank.
     """
     print("Zooming out...")
     si.zoom_out(times=5, delay_low=0.005, delay_high=0.01, scroll_amount=-400)
     time.sleep(random.uniform(0.5, 1.0))
 
-    print("Walking to red square (game_screen)...")
-    click = click_tile_randomly(si, COLOR_RED, "game_screen")
-    if not click:
-        print("Red square not found on return.")
+    # Return trip: red and yellow tiles in p5 first, then game_screen_center, then game_screen
+    print("Walking to red tile (p5 then game_screen_center then game_screen)...")
+    if not click_tile_by_color_p5_then_screen(si, PIXEL_COLOR_RED):
+        print("Red tile not found on return.")
         save_debug_screenshot("bank_red_tile_not_found")
         return False
-    wait = random.uniform(7.8, 8.4)  # tighter range, closer to min; +0.4s so we don't interact too soon
+    print("Clicked red tile.")
+    wait = random.uniform(7.8, 8.4)
     print(f"Waiting {wait:.1f}s to reach yellow tile area...")
     time.sleep(wait)
-    si.maybe_afk()
 
-    print("Walking to yellow square (game_screen)...")
-    click = click_tile_randomly(si, COLOR_YELLOW, "game_screen")
-    if not click:
-        print("Yellow square not found on return.")
+    print("Walking to yellow tile (p5 then game_screen_center then game_screen)...")
+    if not click_tile_by_color_p5_then_screen(si, PIXEL_COLOR_YELLOW):
+        print("Yellow tile not found on return.")
         save_debug_screenshot("bank_yellow_tile_not_found")
         return False
-    wait = random.uniform(5.8, 6.4)  # tighter range, closer to min
+    print("Clicked yellow tile.")
+    wait = random.uniform(5.8, 6.4)
     print(f"Waiting {wait:.1f}s at yellow tile...")
     time.sleep(wait)
-    si.maybe_afk()
 
-    # From yellow tile: try up to 3 times to interact with bank deposit box (game_screen_center)
-    print("Interacting with bank deposit box (game_screen_center) from yellow tile (up to 3 tries)...")
-    success = si.find_pixel_right_click_confirm(COLOR_TEAL, DEPOSIT_OPTION_IMAGE, attempts=3, region=si.get_scan_area("game_screen_center"))
+    # Bank (teal) in p5; retry finding teal a few times before moving to fallback red
+    bank_region = si.get_scan_area("p5")
+    max_teal_rounds = 3
+    success = False
+    for round_num in range(1, max_teal_rounds + 1):
+        print(f"Interacting with bank deposit box in p5 (teal round {round_num}/{max_teal_rounds})...")
+        success = si.find_pixel_right_click_confirm(PIXEL_COLOR_TEAL, DEPOSIT_OPTION_IMAGE, attempts=5, region=bank_region)
+        if success:
+            break
+        if round_num < max_teal_rounds:
+            time.sleep(random.uniform(0.5, 1.0))
+
     if not success:
         print("Could not interact with deposit box from yellow tile. Moving to fallback red tile...")
 
-        print("Walking to fallback red square (game_screen)...")
-        click = click_tile_randomly(si, COLOR_RED, "game_screen")
-        if not click:
-            print("Fallback red square not found on return.")
+        print("Walking to fallback red tile (p5 then game_screen_center then game_screen)...")
+        if not click_tile_by_color_p5_then_screen(si, PIXEL_COLOR_RED):
+            print("Fallback red tile not found on return.")
             save_debug_screenshot("bank_fallback_red_not_found")
             return False
+        print("Clicked fallback red tile.")
         wait = random.uniform(5.8, 6.4)
         print(f"Waiting {wait:.1f}s at fallback red tile (near bank)...")
         time.sleep(wait)
-        si.maybe_afk()
 
-        print("Interacting with bank deposit box (game_screen_center) from fallback red tile (up to 3 tries)...")
-        success = si.find_pixel_right_click_confirm(COLOR_TEAL, DEPOSIT_OPTION_IMAGE, attempts=3, region=si.get_scan_area("game_screen_center"))
+        for round_num in range(1, max_teal_rounds + 1):
+            print(f"Interacting with bank deposit box in p5 from fallback red (teal round {round_num}/{max_teal_rounds})...")
+            success = si.find_pixel_right_click_confirm(PIXEL_COLOR_TEAL, DEPOSIT_OPTION_IMAGE, attempts=5, region=bank_region)
+            if success:
+                break
+            if round_num < max_teal_rounds:
+                time.sleep(random.uniform(0.5, 1.0))
+
         if not success:
             print("Failed to open deposit box menu from both yellow and fallback red tiles.")
             save_debug_screenshot("bank_deposit_box_failed")
             return False
 
     print("Deposit box interaction succeeded.")
-    si.maybe_afk()
 
-    # Fixed-ish wait before we look for the pane (character runs a short distance)
     wait = random.uniform(4.5, 5.0)
     print(f"Waiting {wait:.1f}s for character to open bank deposit pane...")
     time.sleep(wait)
@@ -421,7 +343,7 @@ def return_to_bank_and_deposit(si, low_visibility=False):
     bank_monitor = ImageMonitor(
         screen_interactor=si,
         image_path=DEPOSIT_ALL_IMAGE,
-        region="game_screen_center",
+        region="bank_deposit_box",
         confidence=0.92,
         check_interval=1.5,
         wait_for="appear",
@@ -434,17 +356,17 @@ def return_to_bank_and_deposit(si, low_visibility=False):
         return False
     bank_monitor.stop()
 
-    time.sleep(1.5)  # troubleshoot: pause after monitor found button so UI is settled
+    time.sleep(1.5)
 
     # Search same region as ImageMonitor (game_screen_center) so we find the button we just detected
     deposit_click = si.click_image_cv2_without_moving(
         DEPOSIT_ALL_IMAGE,
-        region="game_screen_center",
+        region="bank_deposit_box",
         confidence=0.88,
         offset_range=(0, 5),
     )
     if not deposit_click:
-        time.sleep(2.0)  # troubleshoot: pause before retry so you can see the screen
+        time.sleep(2.0)
         deposit_click = si.click_image_cv2_without_moving(
             DEPOSIT_ALL_IMAGE,
             region="bank_deposit_box",
@@ -455,13 +377,12 @@ def return_to_bank_and_deposit(si, low_visibility=False):
         print("Failed to click deposit all inventory.")
         save_debug_screenshot("bank_deposit_all_failed")
         return False
-    time.sleep(1.0)  # troubleshoot: pause after click before closing bank
-    si.maybe_afk()
+    time.sleep(1.0)
 
     # Close bank (deposit box close button) - search same region as deposit UI first
     close_click = si.click_image_cv2_without_moving(
         BANK_CLOSE_IMAGE,
-        region="game_screen_center",
+        region="bank_deposit_box",
         confidence=0.88,
         offset_range=(0, 5),
     )
@@ -476,23 +397,15 @@ def return_to_bank_and_deposit(si, low_visibility=False):
     if not close_click:
         close_click = si.click_image_cv2_without_moving(
             BANK_CLOSE_IMAGE,
-            region="bank_pane",
+            region="bank_deposit_box",
             confidence=0.85,
             offset_range=(0, 5),
         )
     if close_click:
         print("Bank closed.")
     else:
-        print("Warning: Bank close button not found. Continuing.")
+        print("Warning: Bank close button not found. Attempting to continue...")
     si.maybe_afk()
-
-    if not low_visibility:
-        print("Pointing camera back down (hold s 0.7-0.9s)...")
-        pyautogui.keyDown("s")
-        time.sleep(random.uniform(0.7, 0.9))
-        pyautogui.keyUp("s")
-        time.sleep(random.uniform(0.2, 0.4))
-
     return True
 
 
@@ -552,7 +465,7 @@ def _right_click_pixel_with_directional_converge(si, pixel_xy, confirm_image_pat
         target_y = max(0, min(y + offset_y, screen_h - 1))
 
         pyautogui.moveTo(target_x, target_y)
-        time.sleep(random.uniform(0.01, 0.02))  # minimal: move and click together
+        time.sleep(random.uniform(0.01, 0.02))
         pyautogui.click(button="right")
 
         left = max(0, target_x - 300)
@@ -586,36 +499,7 @@ def _right_click_pixel_with_directional_converge(si, pixel_xy, confirm_image_pat
     return False
 
 
-PINK_NODE_RESEARCH_ATTEMPTS = 7  # max attempts; if no pink found we wait for it via PixelMonitor
-PINK_WAIT_TIMEOUT = 60  # seconds to wait for pink pixel to appear before retrying attempt
-_EXPAND_BOX_SIZE = 12  # search box 12x12 around each offset point
-_EXPAND_OFFSET = 5  # search at ±5 in x and ±5 in y only (no expanding)
-
-
-def _find_pink_around(si, base_x, base_y):
-    """
-    Search for a pink pixel in 4 directions from (base_x, base_y): +5x, -5x, +5y, -5y.
-    Small box at each. Returns (px, py) or None. No expansion—fixed offset 5 only.
-    """
-    screen_w, screen_h = pyautogui.size()
-    box = _EXPAND_BOX_SIZE
-    offset = _EXPAND_OFFSET
-    for dx, dy in [(offset, 0), (-offset, 0), (0, offset), (0, -offset)]:
-        cx = base_x + dx
-        cy = base_y + dy
-        left = max(0, cx - box // 2)
-        top = max(0, cy - box // 2)
-        right = min(screen_w, left + box)
-        bottom = min(screen_h, top + box)
-        w = right - left
-        h = bottom - top
-        if w <= 0 or h <= 0:
-            continue
-        region = (left, top, w, h)
-        found = si.find_pixel(COLOR_PINK, region=region, tolerance=0)
-        if found:
-            return found
-    return None
+PINK_NODE_RESEARCH_ATTEMPTS = 7  # max attempts for find_pixel_right_click_confirm on pink node
 
 
 def _region_around_center(size=800):
@@ -630,121 +514,51 @@ def _region_around_center(size=800):
     return (left, top, w, h)
 
 
-def _right_click_closest_pink_and_confirm(si, confirm_image_path):
+def test_yellow_tile(si, iterations=5):
     """
-    Use only expand-around search: find closest pink, search 4 dirs ±5 from it, right-click if found.
-    If no pink found, wait for pink to appear via PixelMonitor (no sleep loop).
+    Test finding and clicking the yellow tile (pixel_click_without_moving, game_screen_center then game_screen).
+    Run: python mining_gem_shilo.py test-yellow [N]
     """
-    pink_region = _region_around_center(800)
-    for attempt in range(PINK_NODE_RESEARCH_ATTEMPTS):
-        coords = si.find_closest_pixel(
-            COLOR_PINK,
-            tolerance=0,
-            max_radius=800,
-            local_search_size=15,
-        )
-        if not coords:
-            print("No pink node in range; waiting for pink to appear (PixelMonitor)...")
-            pm = PixelMonitor(
-                si, COLOR_PINK, region=pink_region,
-                tolerance=0, check_interval=0.5, wait_for="appear",
-            )
-            pm.start()
-            if pm.wait_for_condition(timeout=PINK_WAIT_TIMEOUT):
-                loc = pm.get_found_location()
-                pm.stop()
-                if loc and _right_click_at_and_confirm(
-                    si, loc, confirm_image_path, max_attempts=5
-                ):
-                    return True
-            else:
-                pm.stop()
+    print("Testing yellow tile (color-based: game_screen_center then game_screen).")
+    print("Ensure game window is focused and yellow tile is visible.")
+    for i in range(iterations):
+        print(f"\n--- Attempt {i + 1}/{iterations} ---")
+        ok = click_tile_by_color_center_then_screen(si, PIXEL_COLOR_YELLOW)
+        if not ok:
+            print("  Yellow tile NOT found in game_screen_center or game_screen.")
+            if i < iterations - 1:
+                time.sleep(2.0)
             continue
-        found = _find_pink_around(si, coords[0], coords[1])
-        if found and _right_click_at_and_confirm(
-            si, found, confirm_image_path, max_attempts=5
-        ):
-            return True
-        print("No pink in 4-dir search; waiting for pink to appear (PixelMonitor)...")
-        pm = PixelMonitor(
-            si, COLOR_PINK, region=pink_region,
-            tolerance=0, check_interval=0.5, wait_for="appear",
-        )
-        pm.start()
-        if pm.wait_for_condition(timeout=PINK_WAIT_TIMEOUT):
-            loc = pm.get_found_location()
-            pm.stop()
-            if loc and _right_click_at_and_confirm(
-                si, loc, confirm_image_path, max_attempts=5
-            ):
-                return True
-        pm.stop()
-    return False
+        print("  Found and clicked yellow tile.")
+        if i < iterations - 1:
+            time.sleep(2.0)
+    print("\nTest done.")
 
 
-def _right_click_at_and_confirm(si, pixel_xy, confirm_image_path, max_attempts=15):
+def test_pink_mining_loop(si, iterations=5):
     """
-    Simple right-click at a pixel (e.g. from region scan p1/p2). No directional offset—
-    scan order is top-left to bottom-right so the first pixel found may not be 'toward' us.
-    Just try small random offsets around the pixel until confirm menu appears.
+    Run find_pixel_right_click_confirm for pink N times (game_screen region).
+    Run: python mining_gem_shilo.py test-pink [N]
     """
-    x, y = pixel_xy
-    screen_w, screen_h = pyautogui.size()
-    orig = pyautogui.position()
-    offset_range = 4  # small random offset 1–4 px down/right for more accurate initial node click
-
-    for attempt in range(max_attempts):
-        # For the first trip to mining, the gem rock is visually down/right of the found pixel.
-        # Always bias the click slightly down and to the right of the located pixel.
-        offset_x = random.randint(1, offset_range)
-        offset_y = random.randint(1, offset_range)
-        target_x = max(0, min(x + offset_x, screen_w - 1))
-        target_y = max(0, min(y + offset_y, screen_h - 1))
-
-        pyautogui.moveTo(target_x, target_y)
-        time.sleep(random.uniform(0.01, 0.02))  # minimal: move and click together
-        pyautogui.click(button="right")
-
-        left = max(0, target_x - 300)
-        right = min(screen_w, target_x + 300)
-        top = max(0, target_y - screen_h // 2)
-        bottom = min(screen_h, target_y + screen_h // 2)
-        search_region = (left, top, right - left, bottom - top)
-        time.sleep(random.uniform(0.15, 0.3))
-
-        for conf_attempt in range(4):
-            conf = max(0.72, 0.90 - conf_attempt * 0.03)
-            try:
-                loc = si.find_image_cv2(confirm_image_path, region=search_region, threshold=conf)
-                if loc:
-                    cx = loc[0] + random.randint(-2, 2)
-                    cy = loc[1] + random.randint(-1, 1)
-                    pyautogui.moveTo(cx, cy)
-                    time.sleep(0.04)
-                    pyautogui.click()
-                    pyautogui.moveTo(orig)
-                    return True
-            except Exception:
-                pass
-            time.sleep(0.05)
-
-        reset_x = max(0, min(target_x + random.randint(180, 350), screen_w - 1))
-        reset_y = max(0, min(target_y + random.randint(-350, -180), screen_h - 1))
-        pyautogui.moveTo(reset_x, reset_y)
-        time.sleep(0.06)
-    pyautogui.moveTo(orig)
-    return False
+    game_screen = si.get_scan_area("game_screen")
+    print(f"Test: pink mining loop ({iterations} iterations), region=game_screen. Using find_pixel_right_click_confirm.")
+    for i in range(iterations):
+        ok = si.find_pixel_right_click_confirm(
+            PIXEL_COLOR_PINK, MINE_GEM_ROCKS_OPTION_IMAGE,
+            region=game_screen, attempts=5)
+        print(f"  {i + 1}/{iterations} Result: {ok}")
+        if i < iterations - 1:
+            time.sleep(2.0)
+    print("Test done.")
 
 
 def main_loop(max_runs=10):
     """Run until we have max_runs successful deposits (each deposit = one full mining run + bank)."""
+    require_config()
     si = ScreenInteractor()
-    low_visibility = get_low_visibility_config()
-    if low_visibility:
-        print("Using low visibility / Pi path (intermediate tiles to mining).")
-    print("Starting gem mining bot in 3 seconds...")
+    print("Starting gem mining bot (low-visibility / Pi path) in 3 seconds...")
     time.sleep(3)
-    if not setup_gem_mining(si, low_visibility=low_visibility):
+    if not setup_gem_mining(si):
         print("Setup failed. Exiting.")
         save_debug_screenshot("setup_failed")
         return
@@ -756,8 +570,8 @@ def main_loop(max_runs=10):
     while completed_deposits < max_runs:
         print(f"\n--- Run (target: {completed_deposits + 1}/{max_runs} successful deposits) ---")
 
-        if not run_to_mining_via_pink_node(si, low_visibility=low_visibility):
-            print("Failed to run to mining (pink node in p1/p2). Retrying...")
+        if not run_to_mining_via_pink_node(si):
+            print("Failed to run to mining (pink node). Retrying...")
             save_debug_screenshot("run_to_mining_failed")
             failed_runs += 1
             if failed_runs >= max_failed_runs:
@@ -768,7 +582,7 @@ def main_loop(max_runs=10):
 
         mine_until_inventory_full(si)
 
-        if not return_to_bank_and_deposit(si, low_visibility=low_visibility):
+        if not return_to_bank_and_deposit(si):
             print("Failed to bank. Retrying...")
             save_debug_screenshot("bank_failed")
             continue
@@ -782,4 +596,16 @@ def main_loop(max_runs=10):
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1].lower() == "test-yellow":
+        require_config()
+        si = ScreenInteractor()
+        n = int(sys.argv[2]) if len(sys.argv) > 2 else 5
+        test_yellow_tile(si, iterations=n)
+        sys.exit(0)
+    if len(sys.argv) > 1 and sys.argv[1].lower() == "test-pink":
+        require_config()
+        si = ScreenInteractor()
+        n = int(sys.argv[2]) if len(sys.argv) > 2 else 5
+        test_pink_mining_loop(si, iterations=n)
+        sys.exit(0)
     main_loop(max_runs=50)
