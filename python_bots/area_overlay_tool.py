@@ -75,20 +75,19 @@ class AreaOverlayTool:
         self._load_profile(self.default_profile_name)
         self._refresh_listbox()
         if _is_linux():
-            # Keep control window above the overlay so profile/buttons are always visible.
+            # Keep controls visible above fullscreen overlay.
             self.root.attributes("-topmost", True)
             self.root.update_idletasks()
-            self.overlay.lower()  # stack overlay below control window
             self.root.lift()
             self.root.focus_force()
+            self.root.after(500, self._keep_control_front)
 
     def _build_overlay_canvas(self):
         self.overlay = tk.Toplevel(self.root)
         self.overlay.title("Overlay")
         self.overlay.overrideredirect(True)
-        # On Pi/Linux leave overlay non-topmost so the control window can stay on top.
-        if not _is_linux():
-            self.overlay.attributes("-topmost", True)
+        # Keep overlay above client window on all platforms.
+        self.overlay.attributes("-topmost", True)
         self.overlay.geometry(f"{self.screen_w}x{self.screen_h}+0+0")
 
         bg_key = "#010101"
@@ -341,6 +340,16 @@ class AreaOverlayTool:
             return
         label = selected[0]
         self.status_var.set(f"{label}: {self.areas.get(label)}")
+
+    def _keep_control_front(self):
+        if not _is_linux():
+            return
+        try:
+            if self.root.winfo_exists():
+                self.root.lift()
+                self.root.after(1000, self._keep_control_front)
+        except Exception:
+            pass
 
     def _close(self):
         try:
