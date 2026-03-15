@@ -5,6 +5,7 @@ from pathlib import Path
 from tkinter import messagebox
 
 import pyautogui
+from PIL import ImageTk
 
 from screen_interactor import ScreenInteractor
 
@@ -65,39 +66,35 @@ class AreaOverlayTool:
         self.drag_orig_region = None
         self.item_to_label = {}
         self.item_type = {}
+        self.use_snapshot_backdrop = _is_linux()
+        self._bg_photo = None
+        self._bg_image_id = None
 
         self._build_overlay_canvas()
         self._build_controls()
         self._load_profile(self.default_profile_name)
         self._refresh_listbox()
+
+        # Hotkey to bring controls to front if they get hidden behind overlay.
+        self.root.bind("<Control-Shift-G>", lambda _e: self._show_controls())
+        self.overlay.bind("<Control-Shift-G>", lambda _e: self._show_controls())
+
         if _is_linux():
-            # Keep control window above the overlay so profile/buttons are always visible.
-            self.root.attributes("-topmost", True)
-            self.root.update_idletasks()
-            self.overlay.lower()  # stack overlay below control window
-            self.root.lift()
-            self.root.focus_force()
+            self._show_controls()
+            self.root.after(500, self._keep_control_front)
 
     def _build_overlay_canvas(self):
         self.overlay = tk.Toplevel(self.root)
         self.overlay.title("Overlay")
         self.overlay.overrideredirect(True)
-        # On Pi/Linux leave overlay non-topmost so the control window can stay on top.
-        if not _is_linux():
-            self.overlay.attributes("-topmost", True)
+        # Keep overlay above client window on all platforms.
+        self.overlay.attributes("-topmost", True)
         self.overlay.geometry(f"{self.screen_w}x{self.screen_h}+0+0")
 
         bg_key = "#010101"
         self.overlay.configure(bg=bg_key)
 
-        if _is_linux():
-            # Pi/Linux: -transparentcolor shows as solid black. Use whole-window alpha so the
-            # overlay is see-through; keep alpha low so game and GUI remain visible.
-            try:
-                self.overlay.attributes("-alpha", 0.25)
-            except tk.TclError:
-                pass
-        else:
+        if not _is_linux():
             try:
                 self.overlay.wm_attributes("-transparentcolor", bg_key)
             except tk.TclError:
@@ -108,6 +105,9 @@ class AreaOverlayTool:
         self.canvas.bind("<ButtonPress-1>", self._on_canvas_press)
         self.canvas.bind("<B1-Motion>", self._on_canvas_drag)
         self.canvas.bind("<ButtonRelease-1>", self._on_canvas_release)
+
+        if self.use_snapshot_backdrop:
+            self._refresh_backdrop()
 
     def _build_controls(self):
         tk.Label(self.root, text="Scan Area Overlay Editor", font=("Segoe UI", 12, "bold"), padx=10, pady=8).pack(anchor="w")
@@ -149,13 +149,17 @@ class AreaOverlayTool:
         self.edit_enabled = tk.BooleanVar(value=True)
         tk.Checkbutton(action_row_2, text="Enable Drag Edit", variable=self.edit_enabled).pack(side="left")
         tk.Button(action_row_2, text="Reset Selected To Default", command=self._reset_selected_to_default).pack(side="left", padx=(12, 0))
+        if self.use_snapshot_backdrop:
+            tk.Button(action_row_2, text="Refresh Backdrop", command=self._refresh_backdrop).pack(side="left", padx=(8, 0))
         tk.Button(action_row_2, text="Exit", command=self._close).pack(side="right")
 
         help_text = (
             "Overlay interactions:\n"
             "- Drag inside a box to move.\n"
             "- Drag the small square (bottom-right) to resize.\n"
-            "- Save writes only changed areas for this profile."
+            "- Save writes only changed areas for this profile.\n"
+            "- On Linux/Pi, use 'Refresh Backdrop' after camera/client changes.\n"
+            "- If controls disappear: press Ctrl+Shift+G to bring GUI front."
         )
         tk.Label(self.root, text=help_text, justify="left", fg="#333333", padx=10, pady=8).pack(anchor="w")
 
@@ -208,8 +212,25 @@ class AreaOverlayTool:
         self._render_overlay()
         self.status_var.set(f"Reset {len(selected)} selected area(s) to default.")
 
+    def _refresh_backdrop(self):
+        if not self.use_snapshot_backdrop:
+            return
+        try:
+            shot = pyautogui.screenshot()
+            self._bg_photo = ImageTk.PhotoImage(shot)
+            if self._bg_image_id is None:
+                self._bg_image_id = self.canvas.create_image(0, 0, anchor="nw", image=self._bg_photo, tags=("bg",))
+            else:
+                self.canvas.itemconfig(self._bg_image_id, image=self._bg_photo)
+            self.canvas.tag_lower("bg")
+            if hasattr(self, "status_var"):
+                self.status_var.set("Backdrop refreshed.")
+        except Exception as e:
+            if hasattr(self, "status_var"):
+                self.status_var.set(f"Backdrop refresh failed: {e}")
+
     def _render_overlay(self):
-        self.canvas.delete("all")
+        self.canvas.delete("overlay")
         self.item_to_label.clear()
         self.item_type.clear()
 
@@ -218,9 +239,9 @@ class AreaOverlayTool:
                 continue
             x, y, w, h = self.areas[label]
             color = deterministic_color(label)
-            rect = self.canvas.create_rectangle(x, y, x + w, y + h, outline=color, width=2)
-            text = self.canvas.create_text(x + 6, max(12, y - 6), text=label, anchor="sw", fill=color, font=("Consolas", 10, "bold"))
-            handle = self.canvas.create_rectangle(x + w - 7, y + h - 7, x + w + 7, y + h + 7, fill=color, outline=color)
+            rect = self.canvas.create_rectangle(x, y, x + w, y + h, outline=color, width=2, tags=("overlay",))
+            text = self.canvas.create_text(x + 6, max(12, y - 6), text=label, anchor="sw", fill=color, font=("Consolas", 10, "bold"), tags=("overlay",))
+            handle = self.canvas.create_rectangle(x + w - 7, y + h - 7, x + w + 7, y + h + 7, fill=color, outline=color, tags=("overlay",))
 
             self.item_to_label[rect] = label
             self.item_to_label[text] = label
@@ -321,6 +342,30 @@ class AreaOverlayTool:
             return
         label = selected[0]
         self.status_var.set(f"{label}: {self.areas.get(label)}")
+
+    def _show_controls(self):
+        """Force the control GUI to the front (handy on Pi/Linux compositors)."""
+        try:
+            self.root.deiconify()
+            # Place controls consistently in top-left so they are easy to find.
+            self.root.geometry("560x760+20+20")
+            self.root.attributes("-topmost", True)
+            self.root.lift()
+            self.root.focus_force()
+            # Drop topmost shortly after so it doesn't permanently block other windows.
+            self.root.after(400, lambda: self.root.attributes("-topmost", False))
+        except Exception:
+            pass
+
+    def _keep_control_front(self):
+        if not _is_linux():
+            return
+        try:
+            if self.root.winfo_exists():
+                self.root.lift()
+                self.root.after(1200, self._keep_control_front)
+        except Exception:
+            pass
 
     def _close(self):
         try:
