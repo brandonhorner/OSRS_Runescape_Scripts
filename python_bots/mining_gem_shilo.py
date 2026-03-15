@@ -6,18 +6,14 @@ deposit, repeat.
 
 Requires bot_config.json from running setup_config.py first (resolution).
 """
-import os
 import sys
 import time
 import random
-from datetime import datetime
 
 import pyautogui
 from screen_interactor import ScreenInteractor
 from image_monitor import ImageMonitor
 from bot_config import require_config, get_os, OS_WINDOWS, OS_LINUX
-
-DEBUG_SCREENSHOTS_DIR = "debug_screenshots"
 
 
 # Image library paths
@@ -35,21 +31,6 @@ PIXEL_COLOR_PINK = "FF00FF"    # pink gem node
 PIXEL_COLOR_TEAL = "00FFFF"    # teal bank deposit box
 
 MAX_CONSECUTIVE_PINK_FAILURES = 3  # exit mining loop after this many failures to find/click a node
-
-
-def save_debug_screenshot(reason="failure"):
-    """Take a screenshot and save to debug_screenshots/ with timestamp and reason."""
-    os.makedirs(DEBUG_SCREENSHOTS_DIR, exist_ok=True)
-    stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    safe_reason = "".join(c if c.isalnum() or c in "-_" else "_" for c in reason)
-    filename = f"{stamp}_{safe_reason}.png"
-    path = os.path.join(DEBUG_SCREENSHOTS_DIR, filename)
-    try:
-        im = pyautogui.screenshot()
-        im.save(path)
-        print(f"Debug screenshot saved: {path}")
-    except Exception as e:
-        print(f"Could not save debug screenshot: {e}")
 
 
 def setup_gem_mining(si):
@@ -277,7 +258,6 @@ def return_to_bank_and_deposit(si):
     print("Walking to red tile (p5 then game_screen_center then game_screen)...")
     if not click_tile_by_color_p5_then_screen(si, PIXEL_COLOR_RED):
         print("Red tile not found on return.")
-        save_debug_screenshot("bank_red_tile_not_found")
         return False
     print("Clicked red tile.")
     wait = random.uniform(7.8, 8.4)
@@ -287,7 +267,6 @@ def return_to_bank_and_deposit(si):
     print("Walking to yellow tile (p5 then game_screen_center then game_screen)...")
     if not click_tile_by_color_p5_then_screen(si, PIXEL_COLOR_YELLOW):
         print("Yellow tile not found on return.")
-        save_debug_screenshot("bank_yellow_tile_not_found")
         return False
     print("Clicked yellow tile.")
     wait = random.uniform(5.8, 6.4)
@@ -312,7 +291,6 @@ def return_to_bank_and_deposit(si):
         print("Walking to fallback red tile (p5 then game_screen_center then game_screen)...")
         if not click_tile_by_color_p5_then_screen(si, PIXEL_COLOR_RED):
             print("Fallback red tile not found on return.")
-            save_debug_screenshot("bank_fallback_red_not_found")
             return False
         print("Clicked fallback red tile.")
         wait = random.uniform(5.8, 6.4)
@@ -329,7 +307,6 @@ def return_to_bank_and_deposit(si):
 
         if not success:
             print("Failed to open deposit box menu from both yellow and fallback red tiles.")
-            save_debug_screenshot("bank_deposit_box_failed")
             return False
 
     print("Deposit box interaction succeeded.")
@@ -352,7 +329,6 @@ def return_to_bank_and_deposit(si):
     if not bank_monitor.wait_for_condition(timeout=20):
         print("Bank interface did not appear.")
         bank_monitor.stop()
-        save_debug_screenshot("bank_interface_not_appeared")
         return False
     bank_monitor.stop()
 
@@ -375,7 +351,6 @@ def return_to_bank_and_deposit(si):
         )
     if not deposit_click:
         print("Failed to click deposit all inventory.")
-        save_debug_screenshot("bank_deposit_all_failed")
         return False
     time.sleep(1.0)
 
@@ -560,7 +535,6 @@ def main_loop(max_runs=10):
     time.sleep(3)
     if not setup_gem_mining(si):
         print("Setup failed. Exiting.")
-        save_debug_screenshot("setup_failed")
         return
 
     completed_deposits = 0
@@ -572,11 +546,9 @@ def main_loop(max_runs=10):
 
         if not run_to_mining_via_pink_node(si):
             print("Failed to run to mining (pink node). Retrying...")
-            save_debug_screenshot("run_to_mining_failed")
             failed_runs += 1
             if failed_runs >= max_failed_runs:
                 print(f"Aborting: failed to start a run {failed_runs} times in a row.")
-                save_debug_screenshot("abort_max_failed_runs")
                 break
             continue
 
@@ -584,7 +556,6 @@ def main_loop(max_runs=10):
 
         if not return_to_bank_and_deposit(si):
             print("Failed to bank. Retrying...")
-            save_debug_screenshot("bank_failed")
             continue
 
         completed_deposits += 1
