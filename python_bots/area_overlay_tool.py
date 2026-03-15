@@ -1,4 +1,5 @@
 import json
+import platform
 import tkinter as tk
 from pathlib import Path
 from tkinter import messagebox
@@ -6,6 +7,11 @@ from tkinter import messagebox
 import pyautogui
 
 from screen_interactor import ScreenInteractor
+
+
+def _is_linux():
+    """True when running on Linux/Pi where -transparentcolor often renders as black."""
+    return platform.system().lower() == "linux"
 
 
 PROFILE_FILE = Path(__file__).with_name("scan_area_profiles.json")
@@ -64,20 +70,38 @@ class AreaOverlayTool:
         self._build_controls()
         self._load_profile(self.default_profile_name)
         self._refresh_listbox()
+        if _is_linux():
+            # Keep control window above the overlay so profile/buttons are always visible.
+            self.root.attributes("-topmost", True)
+            self.root.update_idletasks()
+            self.overlay.lower()  # stack overlay below control window
+            self.root.lift()
+            self.root.focus_force()
 
     def _build_overlay_canvas(self):
         self.overlay = tk.Toplevel(self.root)
         self.overlay.title("Overlay")
         self.overlay.overrideredirect(True)
-        self.overlay.attributes("-topmost", True)
+        # On Pi/Linux leave overlay non-topmost so the control window can stay on top.
+        if not _is_linux():
+            self.overlay.attributes("-topmost", True)
         self.overlay.geometry(f"{self.screen_w}x{self.screen_h}+0+0")
 
         bg_key = "#010101"
         self.overlay.configure(bg=bg_key)
-        try:
-            self.overlay.wm_attributes("-transparentcolor", bg_key)
-        except tk.TclError:
-            self.overlay.attributes("-alpha", 0.25)
+
+        if _is_linux():
+            # Pi/Linux: -transparentcolor shows as solid black. Use whole-window alpha so the
+            # overlay is see-through; keep alpha low so game and GUI remain visible.
+            try:
+                self.overlay.attributes("-alpha", 0.25)
+            except tk.TclError:
+                pass
+        else:
+            try:
+                self.overlay.wm_attributes("-transparentcolor", bg_key)
+            except tk.TclError:
+                self.overlay.attributes("-alpha", 0.25)
 
         self.canvas = tk.Canvas(self.overlay, width=self.screen_w, height=self.screen_h, highlightthickness=0, bg=bg_key)
         self.canvas.pack(fill="both", expand=True)
